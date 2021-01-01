@@ -1,0 +1,17 @@
+<?php
+//
+//  Configuration
+//
+
+return [
+
+    // Database
+    'db' => [
+        'connectUrl' => 'mysql:dbname=dbname;host=ip;charset=utf8',
+        'username' => '',
+        'password' => '',
+    ],
+];
+
+?>
+
