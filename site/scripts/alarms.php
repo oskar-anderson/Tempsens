@@ -1,21 +1,26 @@
 <?php
-// Alarms Notification Script; ver 0.01; 4th January 2021; Indrek Hiie
+// Alarms Notification Script; ver 0.03; 7th January 2021; Indrek Hiie
+//
+// Revision history:
+// 0.01, 04.01.2021 - initial test script
+// 0.02, 05.01.2021 - basic queries [2h]
+// 0.03, 07.01.2021 - watchdog [3h+3h]
 // #######################################################################################
 //  * START *
 // #######################################################################################
-
-global $missed;
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 require '../vendor/autoload.php';  // Load PHPMailer
 
+global $missed;
+require("functions.inc.php");
+
 // cmdline option processing
 cmdline();
 
 date_default_timezone_set('Europe/Tallinn');
-
 $datenow0=date("YmdHis");
 echo "* timestamp: $datenow0";
 if(!$silent) echo "\n";
@@ -30,7 +35,7 @@ try {
         exit;
 } echo "OK"; if(!$silent) echo "\n";
 
-$process('1', $db);
+if($u1) process($db);
 
 $timer_0=$timer_start=time();
 
@@ -47,24 +52,54 @@ echo "* total time used: " . ($timer_end-$timer_0) . " sec\n";
 // #######################################################################################
 
 
-function process($days, $db ) {
+function process($db) {
+   global $timer_start;
    global $limit;
    global $silent;
    global $silentall;
    global $datenow0;
 
-   $topic= $days . '_days_watchdog';
+   $parms=getParms($db);
+   $sen=getSensors($db);
+   //print_r($sen);
+   $sensors = count($sen);
 
-      if(!$silent) echo "* $topic started\n";
+   //$sen[$i][0]=$values["id"];
+   //$sen[$i][1]=$values["name"];
+   //$sen[$i][2]=$values["serial"];
+   //$sen[$i][3]=$values["ip"];
+   //$sen[$i][4]=$values["desc"];
+   //$sen[$i][5]=$values["portable"];
+   //$sen[$i][6]=$i;
+
+   $topic= 'WatchDog';
+
+   if(!$silent) echo "* $topic started\n";
+
+   $mailBody="Status report:<br /><br />\n\n";
+   $aCnt=0;
+   $lCnt=0;
+
+   foreach ($sen as $nam) {
+      $serial=$nam[2];
 
       $sql="
-            select $limit FROM webtemp WHERE 1;
+            SELECT a1.`id`, a1.`passKey`, a1.`temp`, a1.`alarms`, a1.`dactdate`,
+               a3.`alarmStatus`, a3.`lostStatus`, a3.`id` AS sensID,
+               (SELECT ROUND(AVG(`temp`),2) FROM (SELECT `temp` FROM `webtemp` WHERE `passKey`='$serial' ORDER BY `dactdate` DESC LIMIT 4) AS t1) AS avg4temp,
+               (DATE_FORMAT(NOW(),'%Y%m%d%H')-DATE_FORMAT(STR_TO_DATE(a1.`dactdate`, '%Y%m%d%H%i'),'%Y%m%d%H')) AS diffHrs
+            FROM `webtemp` AS a1
+            INNER JOIN `sensors` AS a2 ON a1.`passKey`=a2.`serial`
+            INNER JOIN `alarms` AS a3 ON a1.`passKey`=a3.`serial`
+            WHERE a2.`active`= '1' AND a2.`portable`= '0'
+            AND a1.`passKey`='$serial'
+            ORDER BY a1.`dactdate` DESC LIMIT 1;
          ";
-
       //echo $sql."\n";
       $res = $db->query($sql);
 
       $i=0;
+
       if(!$res)
       {
          die("Execute query error, because: ". print_r($db->errorInfo(),true) );
@@ -73,79 +108,144 @@ function process($days, $db ) {
          while($row = $res->fetch())
          {
             $i++;
-            $res=$row['minduedate'];
+            $res01=$row['id'];
+            $res02=$row['passKey'];
+            $res03=$row['temp'];
+            $res04=$row['alarms'];
+            $res05=$row['dactdate'];
+            $res06=$row['alarmStatus'];
+            $res07=$row['lostStatus'];
+            $res08=$row['sensID'];
+            $res09=$row['avg4temp'];
+            $res10=$row['diffHrs'];
 
-            $email=$row['user_email'];
-            $name =$row['user_name'];
+            $str="Row: $res01 Serial:$res02 Temp:$res03 ";
+            $str.="Status:$res04 Time:$res05 AlarmSt:$res06 ";
+            $str.="lostSt:$res07 sensID:$res08 AVG: $res09 DiffHr:$res10 ";
+            echo "$str\n";
+            $mailBody.=$str . "<br />\n";
 
+	    echo "Sensor '$nam[1]' ser:'$nam[2]' status: \n";
+	    $mailBody.="Sensor '$nam[1]' ser:'$nam[2]' status: <br />\n";
 
-                  $mailAddr=$email;
-                  $mailName=$name;
-                  $mailSubject="ALARM: tempsens - ";
+            if ( ($res09 < $parms['alert_mintemp']) OR ($res09 > $parms['alert_maxtemp']) ) {
+               echo "Average temp " . $res09 . "ºC (4 last rec's) out of range (<" . $parms['alert_mintemp'] . "ºC or >" . $parms['alert_maxtemp'] . "ºC) !!!\n";
+               $mailBody.="Average temp " . $res09 . "ºC (4 last rec's) out of range (<" . $parms['alert_mintemp'] . "ºC or >" . $parms['alert_maxtemp'] . "ºC) !!!<br />\n";
 
-                  $mailBody= message($lang,1) . "<br />\n";
-                  $mailBody.= message($lang,2) . $cid . "<br />\n";
-                  $mailBody.= message($lang,3) . $email . "<br/>\n<br />\n";
-                  $mailBody.= message($lang,4) . "<br />\n";
-                  $mailBody.= message($lang,5) . "<br />\n";
-
-		  $mailErr = mailer($mailAddr,$mailName,$mailSubject,$mailBody);
-
-                  if($mailErr) {
-                     echo "ERROR: Mail '" . $mailErr . "' for user $res03 ($cid), email '$email'!\n";
-                  }
-                  else echo "OK: User $res03 ($cid) email to '$email' sent ('$lang')! [$res04;$res07;$res1d;$overdue EUR;$res1c days]\n";
-
-               } // if email found...
-               else {
-                  echo "WARNING: User $res03 ($cid) email not found! [$res04;$res07;$res1d;$overdue EUR; $res1c days]\n";
+               if(!$res06) {
+                  echo "--Range ALARM set--\n";
+                  $mailBody.="--Range ALARM set--<br />\n";
+                  upd_alarm($db,$res02,'1',$datenow0);
+                  $aCnt++;
                }
-            } //if debit..
-         } //else_while...
+
+            } else {
+               if($res06) {
+                  echo "--Range OK set--\n";
+                  $mailBody.="--Range OK set--<br />\n";
+                  upd_alarm($db,$res02,'0',$datenow0);
+               }
+               echo "Range OK\n";
+               $mailBody.="Range OK<br />\n";
+            }
+
+            if($res10 > $parms['watchdog_hrs']) {
+               echo "Sensor not seen $res10 hrs (>" . $parms['watchdog_hrs'] . " hrs) !!!\n";
+               $mailBody.="Sensor not seen $res10 hrs (>" . $parms['watchdog_hrs'] . " hrs) !!!<br />\n";
+
+               if(!$res07) {
+                  echo "--WatchDog ALARM set--\n";
+                  $mailBody.="--WatchDog ALARM set--<br />\n";
+                  upd_lost($db,$res02,'1',$datenow0);
+                  $lCnt++;
+               }
+
+            } else {
+               if($res07) {
+                  echo "--WatchDog OK set--\n";
+                  $mailBody.="--WatchDog OK set--<br />\n";
+                  upd_lost($db,$res02,'0',$datenow0);
+               }
+               echo "WatchDog OK\n";
+               $mailBody.="WatchDog OK<br />\n";
+            }
+
+         } // else_while...
+
+   } //foreach sensor
+
+//      $email=$row['user_email'];
+//      $name =$row['user_name'];
+
+      $mailAddr=config()['dev']['email'];
+      $mailName=config()['dev']['name'];
+      $mailSubject="ALARM: tempsens";
+      $mailBody.= "<br/>\nWbr, WatchDog<br />\n";
+      //echo $mailBody;
+
+      if($aCnt OR $lCnt) {
+         $mailErr = mailer($mailAddr,$mailName,$mailSubject,$mailBody);
+         if($mailErr) {
+            echo "ERROR: Mail '" . $mailErr . "' for user $mailName, email '$mailAddr'!\n";
+         }
+         else echo "OK: User $mailName email to '$mailAddr' sent!\n";
+      }
+      else echo "Email not needed to send!\n";
 
       $timer_end=time();
-      $lap=$timer_end-$timer_start;
-      $speed=round(1000*$lap/$i21,3);
       $datenow=date("YmdHis");
-      if(!$silentall) echo "* timestamp: $datenow ** from $i21 -> $j21 overdue matches found, $i1 mails, $l21 lines, $topic done ($lap sec, $speed ms/row)\n";
-      //entertoDB_mdimp($db1,$topic,$timer_start,$timer_end,$lap,$i21,$k,$speed,!($limit),$datenow0);
+      if(!$silentall) echo "* timestamp: $datenow **\n";
       return $timer_end;
-
-   } //days...
 }
 
-function entertoDB_mdimp($db1,$w00,$w01,$w02,$w03,$w04,$w05,$w06,$w07,$w08) {
-   $sql1="INSERT INTO `mdimp` (`ctry`,`stage`,`start`,`stop`,`duration`,`records`,`err_records`,`speed`,`status`,`dactdate`)";
-   $sql1=$sql1." VALUES ('EE','$w00','$w01','$w02','$w03','$w04','$w05','$w06','$w07','$w08');";
-   //echo $sql1."\n";
-   if (!$res1 = $db1->query($sql1)) {
-      echo "MySQL insert error: $sql1 \n";
+function entertoDB_alarms($db,$w00,$w01,$w02,$w03,$w04,$w05) {
+   $sql="UPDATE `alarms` (`id`,`serial`,`alarmStatus`,`alarmDate`,`lostStatus`,`lostDate`)";
+   $sql.=" VALUES ('EE','$w00','$w01','$w02','$w03','$w04','$w05');";
+   //echo $sql."\n";
+   if (!$res = $db->query($sql)) {
+      echo "MySQL update error: $sql \n";
+   }
+}
+
+function upd_alarm($db,$w00,$w01,$w02) {
+   $sql = "UPDATE `alarms` SET
+             `alarmStatus`    = '$w01',
+             `alarmDate`   = '$w02'
+           WHERE `serial` = '$w00';";
+   //echo $sql."\n";
+   if (!$res = $db->query($sql)) {
+      echo "MySQL update error: $sql \n";
+   }
+}
+
+function upd_lost($db,$w00,$w01,$w02) {
+   $sql = "UPDATE `alarms` SET
+             `lostStatus`    = '$w01',
+             `lostDate`   = '$w02'
+           WHERE `serial` = '$w00';";
+   //echo $sql."\n";
+   if (!$res = $db->query($sql)) {
+      echo "MySQL update error: $sql \n";
    }
 }
 
 function cmdline() {
 
-   global $u14;
-   global $u21;
-   global $u24;
-   global $u30;
+   global $u1;
+   global $u2;
    global $u_limit;
-   global $u_period;
 
    global $limit;
    global $silent;
    global $silentall;
 
-   $u14=$u21=$u24=$u30=0;
-   $u_period=$u_limit=$u_silent=$u_silentall=0;
+   $u1=$u2=0;
+   $u_limit=$u_silent=$u_silentall=0;
 
    $longopts  = array(
-      "14",
-      "21",
-      "24",
-      "30",
+      "1",
+      "2",
       "all",
-      "period",
       "limit",
       "silent",
       "silentall"
@@ -155,26 +255,16 @@ function cmdline() {
 
    // Handle command line arguments
    foreach (array_keys($opts) as $opt) switch ($opt) {
-      case '14':
-         $u14=true;
+      case '1':
+         $u1=true;
          //$something = $opts['product'];
          break;
-      case '21':
-         $u21=true;
-         break;
-      case '24':
-         $u24=true;
-         break;
-      case '30':
-         $u30=true;
+      case '2':
+         $u2=true;
          break;
       case 'all':
-         $u14=true;
-         $u21=true;
-         $u24=true;
-         break;
-      case 'period':
-         $u_period=true;
+         $u1=true;
+         $u2=true;
          break;
       case 'limit':
          $u_limit=true;
@@ -190,26 +280,24 @@ function cmdline() {
    if($u_silent) $silent = true; else $silent = false;
    if($u_silentall) { $silentall = true; $silent = true; } else $silentall = false;
 
-   if($u14 & $u21 & $u24) {
+   if($u1 & $u2) {
       if(!$silent) echo "Processing: everything\n";
    }
    else
       if(!$silent)
-         if($u14 | $u21 | $u24 | $u30) {
+         if($u1 | $u2 ) {
             echo "Processing: [ ";
-            if($u14) echo "14 days ";
-            if($u21) echo "21 days ";
-            if($u24) echo "24 days ";
-            if($u30) echo "30 days ";
+            if($u1) echo "1x ";
+            if($u2) echo "2x ";
             echo "]\n";
          }
-         else echo "Use: php overdue-ee.php [--14|--21|--24|--30|--all] [--period|--limit|--silent|--silentall]\n";
+         else echo "Use: php alarm.php [--1|--2|--all] [--limit|--silent|--silentall]\n";
 
-   if($u_period) if(!$silent) echo "NB! Period handling mode: on\n";
-   if($u_limit)  { if(!$silent) echo "limit mode: 2 rows limit\n"; $limit = 'TOP 2 '; } else $limit ='';
+   if($u_limit)  { if(!$silent) echo "limit mode: 2 rows limit\n"; $limit = 'LIMIT 1 '; } else $limit ='';
 
 }
 
+/*
 function time_passed($secs)
    {
    $bit = array(
@@ -234,15 +322,7 @@ function escape($value)
 
        return str_replace($search, $replace, $value);
    }
-
-function config()
-   {
-      global $configData;
-      if (! isset($configData)) {
-         $configData = require ("./config/config.php");
-      }
-      return $configData;
-   }
+*/
 
 function mailer($mailAddr, $mailName, $mailSubject, $mailBody)
    {
@@ -260,8 +340,20 @@ function mailer($mailAddr, $mailName, $mailSubject, $mailBody)
          $mail->Username = config()['smtp']['username'];
          $mail->Password = config()['smtp']['password'];
          $mail->SMTPSecure = 'tls';
-         $mail->Port = 587;
+         $mail->Port = config()['smtp']['port'];
 
+/*
+         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+         $mail->SMTPOptions = array(
+            'ssl' => [
+            'verify_peer' => false,
+            'verify_depth' => 3,
+            'allow_self_signed' => false,
+            'peer_name' => 'smtp.sirowa.com',
+            'cafile' => '~/.ssh/ProxyCA.cer',
+            ],
+         );
+*/
          $mail->setFrom(config()['smtp']['email'], config()['smtp']['name']);
 
          $mailBody="<style type='text/css'><!--\n
@@ -270,15 +362,15 @@ function mailer($mailAddr, $mailName, $mailSubject, $mailBody)
             table td { border: 1px #b9bbbe solid; padding: 8px; text-align: left; }\n
             -->\n</style>\n" . $mailBody;
 
-$mailAddr = "indrek.hiie@sirowa.com";
-$mailName = "Indrek Hiie";
+//$mailAddr = "indrek.hiie@mail.ee";
+//$mailName = "Indrek Hiie";
 
          $mail->addAddress($mailAddr, $mailName);
 
 //         $mail->addAddress('recipient2@example.com');
 //         $mail->addReplyTo('noreply@example.com', 'noreply');
 //         $mail->addCC('cc@example.com');
-         $mail->addBCC(config()['dev']['email'], config()['dev']['name']);
+//         $mail->addBCC(config()['dev']['email'], config()['dev']['name']);
 //         Attachments
 //         $mail->addAttachment('/backup/myfile.tar.gz');
 
@@ -294,6 +386,7 @@ $mailName = "Indrek Hiie";
       }
    }
 
+/*
 function message($lang, $part)
    {
 
@@ -302,13 +395,14 @@ function message($lang, $part)
    switch ($lang) {
       case 'et':
       case 'ET':
-         $msg[1]="Armas kolleeg,<br />\n";
+         $msg[1]="Armas,<br />\n";
          break;
       default:
-         $msg[1]="Dear Colleague,<br />\n";
+         $msg[1]="Dear,<br />\n";
          break;
    }
    return $msg[$part];
 }
+*/
 
 ?>
