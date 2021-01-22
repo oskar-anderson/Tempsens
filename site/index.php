@@ -23,7 +23,6 @@
 
    <link rel="shortcut icon" href="gfx/favicon.ico" type="image/ico" />
    <link rel="icon" href="gfx/favicon.ico" type="image/ico" />
-   <!--link rel="stylesheet" href="/resources/demos/style.css"-->
    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
    <link rel="stylesheet" type="text/css" media="screen" href="./css/css.php" />
@@ -80,7 +79,7 @@
       var chart = new google.visualization.LineChart(document.getElementById("chart"));
       google.visualization.events.addListener(chart, 'error', function (googleError) {
       google.visualization.errors.removeError(googleError.id);
-      document.getElementById("chart").innerHTML = "No data";
+      document.getElementById("chart").innerHTML = "-- No data for selected period/sensor --";
    });
    chart.draw(data,options);
    }
