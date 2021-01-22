@@ -3,6 +3,7 @@
 
    global $parms;
    global $baseurl;
+   global $datenow;
    $baseurl="index.php";
 
    $per_a = [
@@ -15,6 +16,9 @@
       ['6', '-1 year', '1 year'],
       ['7', '-10 years', '10 years']
    ];
+
+   date_default_timezone_set('Europe/Tallinn');
+   $datenow=date("YmdHi");
 
    require("functions.inc.php");
 

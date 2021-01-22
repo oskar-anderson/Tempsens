@@ -24,7 +24,9 @@
 
   function getSensors($db1)
   {
-    $qry = "SELECT * FROM `sensors` WHERE `active`='1'; ";
+//    $qry = "SELECT * FROM `sensors` WHERE `active`='1'; ";
+    $qry = "SELECT a1.`id`, a1.`name`, a1.`serial`, a1.`ip`, a1.`desc`, a1.`portable`, a2.`alarmStatus`, a2.`alarmDate`, a2.`lostStatus`, a2.`lostDate`
+              FROM `sensors` AS a1 LEFT JOIN `alarms` AS a2 ON a1.`serial` = a2.`serial` WHERE a1.`active`='1'; ";
     //echo $qry;
     $sen = array();
     if (! $res = $db1->query($qry)) {
@@ -40,6 +42,10 @@
             $sen[$i][4]=$values["desc"];
             $sen[$i][5]=$values["portable"];
             $sen[$i][6]=$i;
+            $sen[$i][7]=$values["alarmStatus"];
+            $sen[$i][8]=$values["alarmDate"];
+            $sen[$i][9]=$values["lostStatus"];
+            $sen[$i][10]=$values["lostDate"];
         }
     }
     return $sen;
@@ -79,7 +85,7 @@
     if($portable) $table="portable"; else $table="webtemp";
     $qry = "SELECT a1.`dactdate`, a1.`temp`, a2.`name` from `$table` AS a1
             INNER JOIN `sensors` AS a2 ON a1.`passKey`=a2.`serial`
-            WHERE a1.`passKey`=a2.`serial` AND `temp` <= '". $parms['alert_mintemp'] . "' OR `temp` >= '" . $parms['alert_maxtemp'] ."' ";
+            WHERE a1.`passKey`=a2.`serial` AND `temp` <= '". $parms['stat_mintemp'] . "' OR `temp` >= '" . $parms['stat_maxtemp'] ."' ";
     if($scope!='all') $qry .= "AND a2.`id`='$scope' ";
     $qry .= "ORDER BY a1.`id` DESC LIMIT 6";
 
@@ -92,7 +98,8 @@
       while ($values = $res->fetch()) {
         $t = strtotime($values['dactdate']);
         $name = $values['name'];
-        $disp .= "      " . $values['temp'] . "°&nbsp;&nbsp;&nbsp;@" . date('d-m-Y  H:i',$t) . "&nbsp;&nbsp;&nbsp;Sensor:&nbsp;$name<br />\n";
+        $temp = sprintf('%04.1f',$values['temp']);
+        $disp .= "               " . $temp . "°C&nbsp;&nbsp;&nbsp;@" . date('d-m-Y  H:i',$t) . "&nbsp;&nbsp;&nbsp;Sensor:&nbsp;$name<br />\n";
       }
     }
   return $disp;
@@ -145,4 +152,3 @@
   }
 
 ?>
-

@@ -45,6 +45,7 @@
   $input_shadow                = $red;
   $input_kast                  = $light_grey_03;    // form input area border;
 
+  $sel_bg		       = $light_grey_02;    // current sensor alarm color background
 ?>
 
 /* http://meyerweb.com/eric/tools/css/reset/
@@ -148,7 +149,7 @@ body .groov {
    min-width: 1100px;
    padding: 0px 0px 0px 15px;
 
-   flex-wrap: wrap; 
+   flex-wrap: wrap;
    align-content: flex-start;
    min-height:850px;
    height:expression(this.scrollHeight > 850 ? "auto":"850px");
@@ -167,7 +168,9 @@ select {
 #chart {
    width: 100%;
    height: 500px;
-   border: 0px solid <?php echo $red; ?>;
+   border: 0px solid <?php echo $red; ?>
+   vertical-align: middle;
+   color: <?php echo $red; ?>
 }
 
 #footer {
@@ -176,7 +179,7 @@ select {
    margin: 0px;
    width:100%;
    //min-width: 1000px;
-   border: 0px solid red;
+   border: 0px solid <?php echo $red; ?>
 }
 
 #footleft {
@@ -208,4 +211,15 @@ select {
    min-width: 1000px;
    font-size:10px;
    color: rgba(191,191,191,1);
+}
+
+#alert_sel {
+   margin: 0px 0px 0px 0px;
+   background-color: <?php echo $sel_bg ?>;
+   border: 1px solid <?php echo $sel_bg ?>;
+   vertical-align: middle;
+}
+
+#alert {
+   vertical-align: middle;
 }

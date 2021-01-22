@@ -1,12 +1,13 @@
 <?php require("header.php"); ?>
 <!DOCTYPE HTML>
 <!--
-    Termsens rev. 0.3.0, 30.12.2020
+    Termsens rev. 0.4.0, 24.01.2020
 
     Revison history:
     ver 0.1.0, 15.01.2020 by Indrek Hiie - Soap Data Collector
     ver 0.2.0, 27.02.2020 by Timm Soodla - initial GUI version
     ver 0.3.0, 30.12.2020 by Indrek Hiie - moved to PDO MySQL driver, sensors now in DB, more modular code and some bugfixes applied
+    ver 0.3.5, 24.01.2020 - improvements related to watchdog
 
     Thank you for reading my HTML sources. I can be reached at indrek.hiie¤mail.ee.
 -->
@@ -17,7 +18,7 @@
    <meta http-equiv="Content-Style-Type" content="text/css" />
    <meta name="robots" content="index,nofollow" />
    <meta name="keywords" content="Sensors" />
-   <meta name="description" content="SIROWA Sensors" />
+   <meta name="description" content="Sensors" />
    <title>Sensor</title>
 
    <link rel="shortcut icon" href="gfx/favicon.ico" type="image/ico" />
@@ -79,7 +80,7 @@
       var chart = new google.visualization.LineChart(document.getElementById("chart"));
       google.visualization.events.addListener(chart, 'error', function (googleError) {
       google.visualization.errors.removeError(googleError.id);
-      document.getElementById("error_msg").innerHTML = "No data";
+      document.getElementById("chart").innerHTML = "No data";
    });
    chart.draw(data,options);
    }
@@ -91,7 +92,7 @@
       <div id="content">
          <span>
          <br />Period &nbsp;
-         <select class="active" onchange="window.location='?id=<?php echo $id; ?>&per='+this.value">
+         <select class="active" onchange="window.location='?id=<?php echo $id; ?>&inter=<?php echo $inter; ?>&per='+this.value">
 <?php
   foreach ($per_a as $item) {
   echo "            <option value='" . $item[0] . "'";
@@ -102,7 +103,7 @@
          </select> &nbsp; &nbsp; &nbsp;
 
          Interval &nbsp;
-         <select class="active" onchange="window.location='?id=<?php echo $id; ?>&inter='+this.value">
+         <select class="active" onchange="window.location='?id=<?php echo $id; ?>&per=<?php echo $per; ?>&inter='+this.value">
             <option value="1" <?php if ($inter == 1) echo "selected";?>> 15 minutes </option>
             <option value="2" <?php if ($inter == 2) echo "selected";?>> 30 minutes </option>
             <option value="4" <?php if ($inter == 4) echo "selected";?>> 1 hour </option>
@@ -112,15 +113,29 @@
          </select> &nbsp;
          </span>
 
-         <br \>Sensor &nbsp;
-         <select class="active" onchange="window.location='?per=<?php echo $per; ?>&id='+this.value">
+         <br />Sensors:
 <?php
   foreach ($sen as $nam) {
-  echo "            <option value='" . $nam[0] . "'";
-  if ($id == $nam[0]) echo " selected";
-  echo "> " . $nam[1] . " </option>\n";
-}
+     echo "            <a href='$baseurl?id=" . $nam[0] . "&per=" . $per. "&inter=" . $inter . "' title='" . $nam[1] . "' >";
+     echo "<img src='gfx/";
+     if($nam[5]) echo "ballb"; //portable
+        else if($nam[9]) echo "bally"; // lost
+        else if($nam[7]) echo "ballr"; // alarm
+        else echo "ballg"; //ok
+     echo ".png' alt='' id='";
+     if($id == $nam[0]) echo "alert_sel"; else echo "alert";
+     echo "' /></a> \n";
+  }
+?>
+         &nbsp;&nbsp;View:&nbsp;
 
+         <select class="active" onchange="window.location='?per=<?php echo $per; ?>&inter=<?php echo $inter; ?>&id='+this.value">
+<?php
+  foreach ($sen as $nam) {
+     echo "            <option value='" . $nam[0] . "'";
+     if ($id == $nam[0]) echo " selected";
+     echo "> " . $nam[1] . " </option>\n";
+  }
 ?>
          </select>
 
@@ -132,6 +147,8 @@
                <input type="text" id="dateTo" name="dateTo" size="15" value="<?php echo date('d-m-Y', strtotime($dateTo)); ?>" />
                &nbsp;&nbsp;
                <input type="hidden" id="id" name="id" value="<?php echo $id; ?>" />
+               <input type="hidden" id="per" name="per" value="<?php echo $per; ?>" />
+               <input type="hidden" id="inter" name="inter" value="<?php echo $inter; ?>" />
                <input type="submit" class="groov" value="Load" style="height:21px;" />
             </form>
 
@@ -146,27 +163,32 @@
             </form>
          </div>
 
-         Sensor interface: <a href="http://<?php echo $sen[$sen_id][3]; ?>" target="_blank">http://<?php echo $sen[$sen_id][3]; ?></a><br />
-         Location: <?php echo $sen[$sen_id][4]; ?><br />
-         Serial: <?php echo $sen[$sen_id][2]; ?><br />
+         Sensor (serial: <?php echo $sen[$sen_id][2] ?>, location: <?php echo $sen[$sen_id][4]; ?>) interface: <a href="http://<?php echo $sen[$sen_id][3]; ?>" target="_blank">http://<?php echo $sen[$sen_id][3]; ?></a><br />
+         Alarm: <?php
+         if($sen[$sen_id][7]) echo '--ACTIVE-- @' . date('d-m-Y H:i',strtotime($sen[$sen_id][8])) . '&nbsp;(' . (strtotime($datenow)-strtotime($sen[$sen_id][8]))/60 . ' min ago)';
+         else echo "none";
+         ?><br />
+         Online: <?php
+         if($sen[$sen_id][9]) echo '--LOST-- @' . date('d-m-Y H:i',strtotime($sen[$sen_id][10])) . '&nbsp;(' . (strtotime($datenow)-strtotime($sen[$sen_id][10]))/60 . ' min ago)';
+         else echo "ok";
+         ?><br />
 
-         <div id="error_msg"></div>
          <div id="chart"></div>
          <div id="footer">
-            <div id="footleft"><b>Recent global alerts:</b> <=<?php echo $parms['alert_mintemp']; ?>ºC, >=<?php echo $parms['alert_maxtemp']; ?>ºC<br />
-<?php  echo getGlobalAlert('0', 'all', $db1); ?>
+            <div id="footleft"><b>Recent global stats:</b> <=<?php echo $parms['stat_mintemp']; ?>ºC, >=<?php echo $parms['stat_maxtemp']; ?>ºC<br />
+<?php echo getGlobalAlert('0', 'all', $db1); ?>
             </div>
-            <div id="footcenter"><b>Recent sensor (local) alerts:</b> <=<?php echo $parms['alert_mintemp']; ?>ºC, >=<?php echo $parms['alert_maxtemp']; ?>ºC<br />
-<?php  echo getGlobalAlert($sen[$sen_id][5], $id, $db1); ?>
+            <div id="footcenter"><b>Recent current sensor stats:</b> <=<?php echo $parms['stat_mintemp']; ?>ºC, >=<?php echo $parms['stat_maxtemp']; ?>ºC<br />
+<?php echo getGlobalAlert($sen[$sen_id][5], $id, $db1); ?>
             </div>
             <div id="footright"><b>Max/min:</b><br />
 <?php
-  echo "      Total Min: ". getTop('min',0,'all',$db1);
-  echo "      Total Max: ". getTop('max',0,'all',$db1);
-  echo "      Total Avg: ". getTop('avg',0,'all',$db1);
-  echo "      Sensor Min: ". getTop('min',$sen[$sen_id][5],$id,$db1);
-  echo "      Sensor Max: ". getTop('max',$sen[$sen_id][5],$id,$db1);
-  echo "      Sensor Avg: ". getTop('avg',$sen[$sen_id][5],$id,$db1);
+  echo "               Total Min: ". getTop('min',0,'all',$db1);
+  echo "               Total Max: ". getTop('max',0,'all',$db1);
+  echo "               Total Avg: ". getTop('avg',0,'all',$db1);
+  echo "               Sensor Min: ". getTop('min',$sen[$sen_id][5],$id,$db1);
+  echo "               Sensor Max: ". getTop('max',$sen[$sen_id][5],$id,$db1);
+  echo "               Sensor Avg: ". getTop('avg',$sen[$sen_id][5],$id,$db1);
 ?>
             </div>
          </div>
