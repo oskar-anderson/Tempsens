@@ -126,13 +126,14 @@ LOCK TABLES `parms` WRITE;
 INSERT INTO `parms` (`id`, `label`, `value`)
 VALUES
 	(1,'name','TempSens'),
-	(2,'release','v0.3.4'),
-	(3,'date','30.12.2020'),
-	(11,'mintemp','15'),
-	(12,'maxtemp','25'),
+	(2,'release','v0.3.5'),
+	(3,'date','24.01.2021'),
+	(11,'stat_mintemp','15'),
+	(12,'stat_maxtemp','25'),
 	(13,'alert_mintemp','15'),
 	(14,'alert_maxtemp','25'),
-	(15,'watchdog_hrs','3');
+	(15,'watchdog_hrs','3'),
+        (16,'avg_cnt','4');
 
 /*!40000 ALTER TABLE `parms` ENABLE KEYS */;
 UNLOCK TABLES;
