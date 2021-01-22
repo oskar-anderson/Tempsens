@@ -1,13 +1,13 @@
 <?php require("header.php"); ?>
 <!DOCTYPE HTML>
 <!--
-    Termsens rev. 0.4.0, 24.01.2020
+    Termsens rev. 0.3.5, 24.01.2020
 
     Revison history:
     ver 0.1.0, 15.01.2020 by Indrek Hiie - Soap Data Collector
     ver 0.2.0, 27.02.2020 by Timm Soodla - initial GUI version
     ver 0.3.0, 30.12.2020 by Indrek Hiie - moved to PDO MySQL driver, sensors now in DB, more modular code and some bugfixes applied
-    ver 0.3.5, 24.01.2020 - improvements related to watchdog
+    ver 0.3.5, 24.01.2020 - watchdog added
 
     Thank you for reading my HTML sources. I can be reached at indrek.hiie¤mail.ee.
 -->
