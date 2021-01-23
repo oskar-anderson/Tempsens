@@ -223,7 +223,7 @@ function process($db) {
       foreach ($contacts as $con) {
          $mailAddr=$con[1];
          $mailName=$con[2];
-         $mailSubject="=?utf-8?Q?ALARM:=E2=80=BC=EF=B8=8F_" . $parms['name'] . $parms['name_ext'] . "tempsens_global?=";
+         $mailSubject="=?utf-8?Q?ALARM:=E2=80=BC=EF=B8=8F_" . $parms['name'] . $parms['name_ext'] . "_Global?=";
 
          entertoDB_queue($db,$mailAddr,$mailName,addslashes($mailSubject),addslashes($mailBody),'0',$datenow0);
          echo "Email for $mailName '$mailAddr' put into queue!\n";
