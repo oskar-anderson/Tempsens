@@ -126,8 +126,9 @@ LOCK TABLES `parms` WRITE;
 INSERT INTO `parms` (`id`, `label`, `value`)
 VALUES
 	(1,'name','TempSens'),
-	(2,'release','v0.3.5'),
-	(3,'date','24.01.2021'),
+	(2,'name_ext','-LIVE'),
+	(3,'release','v0.3.5'),
+	(4,'date','24.01.2021'),
 	(11,'stat_mintemp','15'),
 	(12,'stat_maxtemp','25'),
 	(13,'alert_mintemp','15'),

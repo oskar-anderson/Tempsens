@@ -203,8 +203,7 @@ function process($db) {
                foreach ($contacts as $con) {
                   $mailAddr=$con[1];
                   $mailName=$con[2];
-                  //$mailSubject="ALARM: Sensor '" . $nam[1] . "'";
-                  $mailSubject="=?utf-8?Q?ALARM:=E2=80=BC=EF=B8=8F_Sensor_'" . $nam[1] . "'?=";
+                  $mailSubject="=?utf-8?Q?ALARM:=E2=80=BC=EF=B8=8F_" . $parms['name']. $parms['name_ext'] . "_Sensor_'" . $nam[1] . "'?=";
                   entertoDB_queue($db,$mailAddr,$mailName,addslashes($mailSubject),addslashes($str),'0',$datenow0);
                   echo "Email for $mailName '$mailAddr' put into queue!\n";
                }
@@ -224,10 +223,7 @@ function process($db) {
       foreach ($contacts as $con) {
          $mailAddr=$con[1];
          $mailName=$con[2];
-         $mailSubject="ALARM: tempsens global";
-
-//=?utf-8?Q?Sample_&_Seconds_Sale=E2=80=BC=EF=B8=8F_ON_NOW?=
-         $mailSubject="=?utf-8?Q?ALARM:=E2=80=BC=EF=B8=8F_tempsens_global?=";
+         $mailSubject="=?utf-8?Q?ALARM:=E2=80=BC=EF=B8=8F_" . $parms['name'] . $parms['name_ext'] . "tempsens_global?=";
 
          entertoDB_queue($db,$mailAddr,$mailName,addslashes($mailSubject),addslashes($mailBody),'0',$datenow0);
          echo "Email for $mailName '$mailAddr' put into queue!\n";

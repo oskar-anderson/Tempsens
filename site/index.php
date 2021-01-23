@@ -102,7 +102,7 @@
          </select> &nbsp; &nbsp; &nbsp;
 
          Interval &nbsp;
-         <select class="active" onchange="window.location='?id=<?php echo $id; ?>&per=<?php echo $per; ?>&inter='+this.value">
+         <select class="active" onchange="window.location='?id=<?php echo $id; ?>&per=<?php echo $per; ?>&dateFrom=<?php echo $dateFrom; ?>&dateTo=<?php echo $dateTo; ?>&inter='+this.value">
             <option value="1" <?php if ($inter == 1) echo "selected";?>> 15 minutes </option>
             <option value="2" <?php if ($inter == 2) echo "selected";?>> 30 minutes </option>
             <option value="4" <?php if ($inter == 4) echo "selected";?>> 1 hour </option>
@@ -115,7 +115,7 @@
          <br />Sensors:
 <?php
   foreach ($sen as $nam) {
-     echo "            <a href='$baseurl?id=" . $nam[0] . "&per=" . $per. "&inter=" . $inter . "' title='" . $nam[1] . "' >";
+     echo "            <a href='$baseurl?id=" . $nam[0] . "&per=" . $per. "&inter=" . $inter . "&dateFrom=" . $dateFrom ."&dateTo=" . $dateTo ."' title='" . $nam[1] . "' >";
      echo "<img src='gfx/";
      if($nam[5]) echo "ballb"; //portable
         else if($nam[9]) echo "bally"; // lost
@@ -128,7 +128,7 @@
 ?>
          &nbsp;&nbsp;View:&nbsp;
 
-         <select class="active" onchange="window.location='?per=<?php echo $per; ?>&inter=<?php echo $inter; ?>&id='+this.value">
+         <select class="active" onchange="window.location='?per=<?php echo $per; ?>&inter=<?php echo $inter; ?>&dateFrom=<?php echo $dateFrom; ?>&dateTo=<?php echo $dateTo; ?>&id='+this.value">
 <?php
   foreach ($sen as $nam) {
      echo "            <option value='" . $nam[0] . "'";
@@ -174,10 +174,10 @@
 
          <div id="chart"></div>
          <div id="footer">
-            <div id="footleft"><b>Recent global stats:</b> <=<?php echo $parms['stat_mintemp']; ?>ºC, >=<?php echo $parms['stat_maxtemp']; ?>ºC<br />
+            <div id="footleft"><b>Recent global alerts:</b> <=<?php echo $parms['stat_mintemp']; ?>ºC, >=<?php echo $parms['stat_maxtemp']; ?>ºC<br />
 <?php echo getGlobalAlert('0', 'all', $db1); ?>
             </div>
-            <div id="footcenter"><b>Recent current sensor stats:</b> <=<?php echo $parms['stat_mintemp']; ?>ºC, >=<?php echo $parms['stat_maxtemp']; ?>ºC<br />
+            <div id="footcenter"><b>Recent current sensor alerts:</b> <=<?php echo $parms['stat_mintemp']; ?>ºC, >=<?php echo $parms['stat_maxtemp']; ?>ºC<br />
 <?php echo getGlobalAlert($sen[$sen_id][5], $id, $db1); ?>
             </div>
             <div id="footright"><b>Max/min:</b><br />
