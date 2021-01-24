@@ -39,7 +39,15 @@
          onSelect: function( selectedDate ) {
             var newDate = $(this).datepicker("getDate");
             if (newDate) { // Not null
-               newDate.setDate(newDate.getDate() + <?php echo $per_a[$per][3]; ?>);
+               if('<?php echo $per_a[$per][3]; ?>' == 'D') {
+                  newDate.setDate(newDate.getDate() + <?php echo $per_a[$per][4]; ?>);
+               }
+               if('<?php echo $per_a[$per][3]; ?>' == 'M') {
+                  newDate.setMonth(newDate.getMonth() + <?php echo $per_a[$per][4]; ?>);
+               }
+               if('<?php echo $per_a[$per][3]; ?>' == 'Y') {
+                  newDate.setFullYear(newDate.getFullYear() + <?php echo $per_a[$per][4]; ?>);
+               }
             };
             $( "#dateTo" ).datepicker("option", "minDate", newDate);
             $( "#dateTo" ).datepicker("setDate", newDate);

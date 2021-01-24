@@ -7,14 +7,14 @@
    $baseurl="index.php";
 
    $per_a = [
-      ['0', '-1 day', '1 day','1'],
-      ['1', '-1 week', '1 week','7'],
-      ['2', '-2 weeks', '2 weeks', '14'],
-      ['3', '-1 month', '1 month', '30'],
-      ['4', '-3 months', '3 months', '60'],
-      ['5', '-6 months', '6 months', '180'],
-      ['6', '-1 year', '1 year', '365'],
-      ['7', '-10 years', '10 years', '3650']
+      ['0', '-1 day', '1 day', 'D', '1'],
+      ['1', '-1 week', '1 week', 'D', '7'],
+      ['2', '-2 weeks', '2 weeks', 'D', '14'],
+      ['3', '-1 month', '1 month', 'M', '1'],
+      ['4', '-3 months', '3 months', 'M', '3'],
+      ['5', '-6 months', '6 months', 'M', '6'],
+      ['6', '-1 year', '1 year', 'Y', '1'],
+      ['7', '-10 years', '10 years', 'Y', '10']
    ];
 
    date_default_timezone_set('Europe/Tallinn');
