@@ -23,29 +23,31 @@
 
    <link rel="shortcut icon" href="gfx/favicon.ico" type="image/ico" />
    <link rel="icon" href="gfx/favicon.ico" type="image/ico" />
+
    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
    <link rel="stylesheet" type="text/css" media="screen" href="./css/css.php" />
 
-   <script type="text/javascript" src="https://www.google.com/jsapi"></script>
    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-   <script>
+   <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+   <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+   <script type="text/javascript">
    $( function() {
       $( "#dateFrom" ).datepicker({
-         dateFormat: 'dd-mm-yy',
-         onSelect: function(dateStr) {
-            var newDate = $(this).datepicker('getDate');
+         dateFormat: "dd-mm-yy",
+         onSelect: function( selectedDate ) {
+            var newDate = $(this).datepicker("getDate");
             if (newDate) { // Not null
-               newDate.setDate(newDate.getDate() + 1);
-            }
-            $('#dateTo').datepicker('setDate', newDate).
-            datepicker('option', 'minDate', newDate);
+               newDate.setDate(newDate.getDate() + <?php echo $per_a[$per][3]; ?>);
+            };
+            $( "#dateTo" ).datepicker("option", "minDate", newDate);
+            $( "#dateTo" ).datepicker("setDate", newDate);
          }
       });
-      $( "#dateTo" ).datepicker({dateFormat: 'dd-mm-yy'});
+      $( "#dateTo" ).datepicker({
+         dateFormat: "dd-mm-yy"
+      });
    } );
    </script>
 
@@ -67,14 +69,7 @@
          title: '<?php echo "$row[3]"; ?> Temperatures',
          fontSize: 13,
          explorer: {},
-         // vAxis: {title: 'Temp'},
-         // hAxis: {title: 'Time'},
-         //    width: 2000,
-         //    height: 600,
          legend: 'none'
-         //  series: {5: {type: 'line'}}
-         //  curveType: 'function',
-         //  legend: { position: 'bottom' }
       };
       var chart = new google.visualization.LineChart(document.getElementById("chart"));
       google.visualization.events.addListener(chart, 'error', function (googleError) {
@@ -86,7 +81,6 @@
    </script>
 </head>
 <body>
-<?php //echo $qry . "<br />"; ?>
    <div id="master">
       <div id="content">
          <span>
