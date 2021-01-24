@@ -48,7 +48,7 @@
                if('<?php echo $per_a[$per][3]; ?>' == 'Y') {
                   newDate.setFullYear(newDate.getFullYear() + <?php echo $per_a[$per][4]; ?>);
                }
-            };
+            }
             $( "#dateTo" ).datepicker("option", "minDate", newDate);
             $( "#dateTo" ).datepicker("setDate", newDate);
          }
