@@ -180,10 +180,10 @@ LOCK TABLES `sensors` WRITE;
 INSERT INTO `sensors` (`id`, `name`, `serial`, `ip`, `desc`, `portable`, `active`)
 VALUES
 	(1,'EE01-Pharma','18967632','10.37.2.15','Salve 2c 3. korruse ravimiladu',0,1),
-	(2,'EE02-WHPharma','20960014','10.37.2.16','Salve 2c 1. korruse lao esisein',0,1),
-	(3,'EE03-WHBack','20960015','10.37.2.17','Salve 2c 1. korruse lao tagasein',0,1),
-	(4,'EE04-WHLabeling','20960047','10.37.2.18','Salve 2c 1. korruse kleepsuruum',0,1),
-	(5,'EE05-Pulsaar','20960050','10.37.2.19','Salve 2c Bepulsaar',0,1),
+	(2,'EE02-Z_Ladu-U','20960014','10.37.2.16','Salve 2c 1. korruse lao esisein',0,1),
+	(3,'EE03-Z_Ladu-D','20960015','10.37.2.17','Salve 2c 1. korruse lao tagasein',0,1),
+	(4,'EE04-Labeling','20960047','10.37.2.18','Salve 2c 1. korruse kleepsuruum',0,1),
+	(5,'EE05-D_Ladu','20960050','10.37.2.19','Salve 2c Bepulsaar',0,1),
 	(6,'EE06-Tartu',NULL,'10.37.2.20',NULL,0,0),
 	(7,'EE07-Portable','19260003','10.37.2.14','Ajutiselt Bepulsaaris',1,1);
 
