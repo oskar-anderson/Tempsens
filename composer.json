@@ -1,11 +1,16 @@
 {
-        "name": "ints99/tempsens",
-        "description": "tempsens app",
-        "type": "project",
-        "minimum-stability": "dev",
-        "require": {
-                "php": ">=7.2",
-                "stevenmaguire/oauth2-keycloak": "2.1",
-                "phpmailer/phpmailer": "^6.1"
+    "name": "sirowa/tempsens",
+    "description": "tempsens app",
+    "type": "project",
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=8.0",
+        "ext-soap": "*",
+        "ext-pdo": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "site"
         }
+    }
 }

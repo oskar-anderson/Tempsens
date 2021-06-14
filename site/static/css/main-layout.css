@@ -1,0 +1,173 @@
+:root {
+   --row_height: 32px;
+   --box-shadows-y-offset: 4px;
+   --main-color-1: hsl(122, 21%, 49%);
+   --color-green-ld-3: hsl(122, 34%, 52%);
+   --color-green-ll-3: hsl(124, 34%, 65%);
+
+   /* default starting values - will be changed in html element style */
+   --xpos: center;
+   --ypos: center;
+
+   --sirowa: #8c458f;
+   --light_grey_01: #f9f9f9;
+   --light_grey_02: #ebebeb;
+   --light_grey_03: #b9b9b9;
+   --grey: #b8b8b8;
+   --green_01: #6fa773;
+
+   --norm_link: var(--sirowa); /*  normal hyperlink */
+   --active_link: var(--sirowa); /*  active hyperlink */
+
+   /* #region fonts */
+   --ff-primary: "Roboto", sans-serif;
+   --ff-heading: "Playfair Display", serif;
+   /* #endregion */
+}
+
+/* ==========================
+            GENERAL
+   ========================== */
+.small {
+   font-size: 8pt;
+}
+
+.small2 {
+   font-size: 9pt;
+   font-weight: 500;
+}
+
+b {
+   font-weight: bold;
+}
+
+a:link, a:visited, a:hover, a:active {
+   font-weight: normal;
+   text-decoration: none;
+}
+
+a:link, a:visited {
+   color: var(--norm_link);
+}
+
+a:hover, a:active {
+   color: var(--active_link);
+}
+
+body {
+   font-family: var(--ff-primary);
+}
+
+td, th {
+   padding: 0.2rem 0.6rem;
+}
+
+
+.h1, .h2, .h3, .h4, .h5, .h6, h1, h2, h3, h4, h5, h6 {
+   margin-bottom: .5rem;
+   font-weight: 500;
+   line-height: 1.2;
+}
+
+.h2, h2 {
+   font-size: 2rem;
+}
+
+.ui-datepicker td {
+   border: 0;
+   padding: 0;
+}
+
+.hr-vertical {
+   background-color: gray;
+   height: 100%;
+   width: 2px;
+   margin-top: 0;
+   margin-bottom: 0;
+}
+
+th, .table-head {
+   background-color: var(--color-green-ll-3);
+   color: #fff;
+}
+
+
+/* Emoji -- works in VSCode, but not PHPStorm ): */
+.🎯 {
+   display: flex;
+   align-items: var(--ypos, center);
+   justify-content: var(--xpos, center);
+   width: 100%;
+   height: 100%;
+}
+
+/* button-shadow is unused */
+.button-shadow:hover, .button-shadow:active {
+   background-color: var(--color-green-ld-3);
+}
+
+.button-shadow:active {
+   box-shadow: 0 calc(var(--box-shadows-y-offset) - 2px) #666;
+   transform: translateY(calc(var(--box-shadows-y-offset) - 2px));
+}
+
+.button-shadow {
+    margin-bottom: var(--box-shadows-y-offset);
+    box-shadow: 0 var(--box-shadows-y-offset) grey;
+}
+
+.button:hover, .button:active {
+    filter: brightness(92%);
+}
+
+.button {
+   background: var(--color-green-ll-3);
+   justify-content: center;
+   color: #fff;
+   border: none;
+   padding: 12px 18px;
+   cursor: pointer;
+   outline: none;
+   user-select: none;
+   transition: 0.16s;
+}
+.button-secondary {
+    background: grey;
+}
+
+.button-danger {
+    background: #dc3545;
+}
+
+footer {
+   background-color: var(--sirowa);
+   padding: 15px 0px 15px 10px;
+   margin-top: 36px;
+   width: 100%;
+   font-size: 10px;
+   color: rgba(191, 191, 191, 1);
+   min-height: 50px;
+}
+
+ol, ul {
+    list-style: disc inside;
+}
+
+p {
+    margin-bottom: 0.8em;
+}
+
+code {
+    font-family: "Liberation Mono", "Consolas", monospace;
+    background-color: #e4e6e8;
+    color: #242729ff;
+}
+
+/* ==========================
+            PARTIALS
+   ========================== */
+.twoByTwo {
+    display: flex;
+    justify-content: space-between;
+}
+
