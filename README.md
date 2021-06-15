@@ -32,9 +32,21 @@ composer update
 
 ## patch notes
 
+
+### 0.1.0
+15.01.2020 by Indrek Hiie - Soap Data Collector 
+
+### 0.2.0
+27.02.2020 by Timm Soodla - initial GUI version
+### 0.3.0
+30.12.2020 by Indrek Hiie - moved to PDO MySQL driver, sensors now in DB, more modular code and some bugfixes applied
+
 ### 0.3.4
 
 ![Preview image](_documents/version_0.3.4.png)
+
+### 0.3.5 (didn't reach production)
+24.01.2021 - watchdog added
 
 ### 1.0.0
 

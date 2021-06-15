@@ -25,18 +25,6 @@ $errors = $htmlInjects->errors;
 ?>
 
 <!DOCTYPE HTML>
-<!--
-    Termsens rev. 0.3.5, 24.01.2020
-
-    Revison history:
-    ver 0.1.0, 15.01.2020 by Indrek Hiie - Soap Data Collector
-    ver 0.2.0, 27.02.2020 by Timm Soodla - initial GUI version
-    ver 0.3.0, 30.12.2020 by Indrek Hiie - moved to PDO MySQL driver, sensors now in DB, more modular code and some bugfixes applied
-    ver 0.3.5, 24.01.2021 - watchdog added
-    ver 0.4.0, xx.xx.2021 - Db and visual redesign
-
-    Thank you for reading my HTML sources. I can be reached at indrek.hiie¤mail.ee.
--->
 <html lang="en">
 <!--suppress HtmlRequiredTitleElement -->
 <head>
@@ -135,6 +123,7 @@ $errors = $htmlInjects->errors;
          </form>
          <div style="width: min(90%, 50em); display: grid; grid-template-columns: 5fr 2fr 5fr; margin-top: 2em;">
             <div>
+
                <div>
                   <input type="radio" onclick="handleRadioClick(this);" name="dateFromType" id="typeAbsolute"
                      <?php if ($dateFromType === 'absolute') { echo "checked"; }?>
@@ -220,7 +209,7 @@ $errors = $htmlInjects->errors;
                         Exported and imported data is semicolon delimited CSV.
                         It is worth noting that Excel reads files using the computer regional settings and will likely display semicolon delimited files incorrectly.
                         Excel uses delimiter from user PC <code>Control Panel\Clock and Region -> Region -> Additional settings -> List separator</code>
-                        (this can be changed from <code>,</code> to <code>;</code>). The exported data format itself is correct.
+                        (this should be changed from <code>,</code> to <code>;</code>). The exported data format itself is correct.
                      </p>
                   </div>
                   <p>
@@ -229,15 +218,14 @@ $errors = $htmlInjects->errors;
                      Order of columns can be changed.
                      Column separator is <code>;</code>.
                      Double separator <code>;;</code> skips in between column.
-                     Any empty values and errors are skipped.
+                     Any empty values and error values are skipped.
                      Allowed column values are: <code>date</code>, <code>temp</code>, <code>relHum</code>.
                   </p>
                   <p>
                      Sensors alarms will combine all continues alarms under one parent alarm.
-                     Parent alarm will show it starting time, duration, count of sub alarms and sub alarm deviation
-                     (largest offset from median) of temperature and relative humidity.
-                     Parent alarm duration are approximate, since sensors save data once when
-                     entering alarm state, but alarm exit time is saved on sensor regular data saving interval.
+                     Parent alarm will show starting time, duration, count of sub alarms and sub alarm deviation
+                     (largest offset from average allowed value) of temperature and relative humidity.
+                     Alarm duration are approximate depending on sensor reading interval.
                   </p>
                </div>
 
@@ -332,6 +320,7 @@ $errors = $htmlInjects->errors;
                </div>
 
                <div class="collapse zebra-2" id="<?php echo "collapseSensorInfoIdx_" . $i?>" style="border-top: 1px dotted black; padding: 0.4em 30px 0.4em 30px">
+
                   <div class="h3">Alerts</div>
                   <div style="margin-bottom: 1.4em">
                      <p>
@@ -372,6 +361,7 @@ $errors = $htmlInjects->errors;
                         </table>
                      <?php } ?>
                   </div>
+
                   <h3 class="h3">Actions</h3>
                   <div style="margin-bottom: 0.8em">
                      <div style="margin-bottom: 0.4em">
@@ -398,6 +388,7 @@ $errors = $htmlInjects->errors;
                         </div>
                      <?php } ?>
                   </div>
+
                   <h3 class="h3">Details</h3>
                   <form action="" method="post">
                      <div style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 0.4em 3em; padding-bottom: 0.8em">
@@ -412,6 +403,7 @@ $errors = $htmlInjects->errors;
                         </div>
                      </div>
                   </form>
+
                </div>
             <?php endforeach; ?>
          </div>
@@ -419,6 +411,7 @@ $errors = $htmlInjects->errors;
          <div style="margin-top: 2em;" class="h2">Graph</div>
          <div class="h4">Settings</div>
          <div style="display: grid; grid-template-columns: 6fr 6fr">
+
             <div>
                <table style="min-width: 320px; width: 75%">
                   <thead>
@@ -447,6 +440,7 @@ $errors = $htmlInjects->errors;
                   </tbody>
                </table>
             </div>
+
             <div style="display: flex; flex-direction:column; justify-content: space-between;">
                <div>
                   <div class="graphOptions">
@@ -479,11 +473,12 @@ $errors = $htmlInjects->errors;
                   <button id="ChartDrawButton" style="width: 9em" class="button">Draw</button>
                </div>
             </div>
+
          </div>
          <div style="margin-top: 2em;" class="h4">Result</div>
          <div style="height: 540px">
             <p id="chartErr"></p>
-            <div id="chartDiv" style="display: none">
+            <div id="chartDiv">
                <button id="saveImg" type="button" class="button">Save Image</button>
                <div id="chart" style="width: 100%; height: 500px;"></div>
                <div style="display: none" id="chartAsPictureDiv"></div>
@@ -497,12 +492,14 @@ $errors = $htmlInjects->errors;
    <div class="modal fade" id="JsonModal" tabindex="-1" role="dialog">
       <div class="modal-dialog" role="document">
          <div class="modal-content modal-dialog" role="document">
-            <div class="modal-header">
+            <div class="modal-header" style="display: block">
                <h5 class="modal-title">Confirm data</h5>
-               <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+               <span id="modalMsg"></span>
+               <button style="position: absolute; top: 16px; right: 16px;" type="button" class="close" data-dismiss="modal" aria-label="Close">
                   <span aria-hidden="true">&times;</span>
                </button>
             </div>
+            <span id="FileUploadState" data-state="null" style="display: none"></span>
             <div class="modal-body" style="height: 40em; overflow-y: auto">
                <pre id="csvDataDisplay">
 
@@ -526,29 +523,25 @@ $errors = $htmlInjects->errors;
 <script type="text/javascript">
 
    HandleCollapseSymbolChange();
-   FancyDatePicker();
-   document.getElementById('ChartDrawButton').onclick = SetCallbackForChart;
+   FancyDatePicker(['#dateTo', '#absoluteDateFrom']);
+   document.getElementById('ChartDrawButton').onclick = () => {
+       google.charts.load("current", { 'packages':["corechart", "line"]});
+       google.charts.setOnLoadCallback(drawChart);
+   };
    dayjs.extend(window.dayjs_plugin_customParseFormat);
-
    document.getElementById('saveImg').onclick = SaveChartImg;
-
-
-
-    $('.csvFile').change(function () {
-        let id = this.getAttribute('data-sensorId');
-        if (HandlePortableSensorDataCsvUpload(id)) {
-            $('#JsonModal').modal('show');
-        }
-    });
+   $('.csvFile').change( function () { HandlePortableSensorDataCsvUpload(this.getAttribute('data-sensorId'))});
 
 
    function HandlePortableSensorDataCsvUpload(id) {
        let reader = new FileReader();
        reader.onload = function (event) {
            let csv = event.target.result;
-           let arr;
+           let delimiter = ';';
+           let headers = document.getElementById('csvParseExpressionSensorId_' + id).value.split(delimiter);
+           let arr, skipCount;
            try {
-               arr = csvToArray(csv, ';', id);
+               [arr, skipCount] = csvToJsonArray(csv, delimiter, headers);
            } catch (e) {
                console.error(e);
                return false;
@@ -557,14 +550,34 @@ $errors = $htmlInjects->errors;
            document.getElementById('csvDataDisplay').style.display = 'block';
            document.getElementById('csvDataFormField').value = JSON.stringify(arr);
            document.getElementById('csvSensorId').value = id;
-
+           document.getElementById('modalMsg').innerText = `Total data rows count: ${arr.length + skipCount}, skipped ${skipCount}`;
+           $('#JsonModal').modal('show');
        }
 
        let csvFile = document.getElementById('csvFileSensorId_' + id);
        let input = csvFile.files[0];
-
        reader.readAsText(input);
-       return true;
+   }
+
+   document.getElementById('btnLoad').onclick = function () {
+       let resultTo = document.getElementById('submitDateTo');
+       resultTo.value = document.getElementById('dateTo').value;
+
+       let type = document.querySelector('input[name="dateFromType"]:checked').value;
+       let resultDateFrom = document.getElementById('submitDateFrom');
+       switch (type){
+           case 'absolute':
+               resultDateFrom.value = document.getElementById('absoluteDateFrom').value;
+               break;
+           case 'relative':
+               resultDateFrom.value = '-' + document.getElementById('relativeDateFrom').value;
+               break;
+           default:
+               console.error('Unknown type:', type);
+               break;
+       }
+
+       document.formJsSubmit.submit();
    }
 
    function getEOL() {
@@ -574,90 +587,66 @@ $errors = $htmlInjects->errors;
        return '\n'
    }
 
-   function csvToArray(csv, delimiter, id) {
-       let headersInput = document.getElementById('csvParseExpressionSensorId_' + id).value.split(delimiter);
-       if (headersInput.length < 3) { throw 'Header has less than 3 columns. Header: ' + headersInput; }
-       let headersResult = [];
-       ['date', 'temp', 'relHum'].forEach(function (allowed) {
-           let index = headersInput.indexOf(allowed);
-           if (index === -1) {
-               throw 'Missing field: ' + allowed
-           }
-           headersResult[index] = headersInput[index];
-       });
+   function csvToJsonArray(csv, delimiter, headers) {
+       let allowedHeaders = ['date', 'temp', 'relHum'];
+       if (! allowedHeaders.every(x => headers.includes(x))) {
+           throw `Missing field, fields [${allowedHeaders.join(',')}] must be defined in [${headers.join(',')}]!`;
+       }
        let eol = getEOL();
        // skip 1. row (the header)
        let rows = csv.slice(csv.indexOf(eol) + eol.length).split(eol);
-       if (rows.length !== 0) { rows.pop(); }
+       if (rows.length === 0) { throw 'No rows!'; }
+       rows.pop(); // remove newline
 
        let result = [];
+       let skipCount = 0;
+       let nRowNumber = 0;
        for (let row of rows) {
+           nRowNumber++;
            let obj = {};
            let values = row.split(delimiter);
-           if (values.length < 3) { throw 'Row has less than 3 columns. Row: ' + row; }
-           let willBeAdded = true;
-           for (let i = 0; i < headersResult.length; i++) {
-               let header = headersResult[i];
-               if (header === undefined) continue;
+           if (values.length !== headers.length) { throw `Row: ${nRowNumber}. Header and data column count mismatch!`; }
+           if (values.length < 3) { throw `Row: ${nRowNumber}. Row has less than 3 columns. Row value: ${row} parsed as [${values.join(',')}]!`; }
+           for (let i = 0; i < headers.length; i++) {
+               let header = headers[i];
                let value = values[i];
-               if (value === '' || value.substr(0, 5) === 'Error') {
-                   willBeAdded = false;
+
+               if (header === '') {
+                   continue;
+               }
+
+               if (value.substr(0, 5) === 'Error' || value === '') {
+                   skipCount++;
                    break;
                }
                switch (header) {
                    case 'date':
+                       // format from sensor
                        let date = dayjs(value, 'DD/MM/YYYY HH:mm:ss');
                        if (! date.isValid()) {
+                           // format from page export
                            date = dayjs(value, 'DD/MM/YYYY HH:mm');
                        }
                        if (! date.isValid()) {
-                           throw 'Invalid date format! Must be DD/MM/YYYY HH:mm:ss or DD/MM/YYYY HH:mm!'
+                           throw `Row: ${nRowNumber}, Invalid date format! Must be DD/MM/YYYY HH:mm:ss or DD/MM/YYYY HH:mm!`
                        }
                        obj[header] = date.format('DD-MM-YYYY HH:mm')
                        break;
                    case 'relHum':
                    case 'temp':
                        let fValue = parseFloat(value);
-                       if (isNaN(fValue)) throw 'Cannot parse number' + value;
+                       if (isNaN(fValue)) throw `Row: ${nRowNumber}. Cannot parse number ${value}`;
                        obj[header] = parseFloat(fValue.toFixed(1));
                        break;
                    default:
-                       throw 'Not implemented: ' + header;
+                       throw 'Unexpected header ' + header + '!';
+               }
+               if (i === headers.length - 1) {
+                   result.push(obj);
                }
            }
-           if (willBeAdded) {
-            result.push(obj);
-           }
        }
-       return result;
-   }
-
-
-    document.getElementById('btnLoad').onclick = function () {
-        let resultTo = document.getElementById('submitDateTo');
-        resultTo.value = document.getElementById('dateTo').value;
-
-        let type = document.querySelector('input[name="dateFromType"]:checked').value;
-        let resultDateFrom = document.getElementById('submitDateFrom');
-        switch (type){
-            case 'absolute':
-               resultDateFrom.value = document.getElementById('absoluteDateFrom').value;
-               break;
-            case 'relative':
-               resultDateFrom.value = '-' + document.getElementById('relativeDateFrom').value;
-               break;
-            default:
-               console.error('Unknown type:', type);
-               break;
-        }
-
-        document.formJsSubmit.submit();
-    }
-
-
-   function SetCallbackForChart() {
-       google.charts.load("current", { 'packages':["corechart", "line"]});
-       google.charts.setOnLoadCallback(drawChart);
+       return [result, skipCount];
    }
 
    function drawChart() {
@@ -666,62 +655,66 @@ $errors = $htmlInjects->errors;
        let chartDiv = document.getElementById('chartDiv');
        let data = new google.visualization.DataTable();
 
+       // let t0 = performance.now();
 
        let step = parseInt(document.getElementById('graphOptionsIntervalSelect').value);
        let strategy = document.getElementById('graphOptionsStrategySelect').value;
        // undefined value is ignored in graph
        let graphDefaultValue = document.getElementById('graphOptionsLoudNoValue').checked ? 0 : undefined;
 
-       // let t0 = performance.now();
-       let sensorSettings = GetDrawingSettings();
-       if (sensorSettings.length === 0) {
-           chartDiv.style.display = 'none';
-           chartErr.innerText = 'No sensor selected';
-           return;
-       }
-       chartDiv.style.display = 'block';
-       chartErr.innerText = '';
-
        let dataFromPHP = document.getElementById('data');
        let dateFrom = dataFromPHP.getAttribute('data-dateFrom');
        let dateTo = dataFromPHP.getAttribute('data-dateTo');
        dateFrom = dayjs(dateFrom, 'DD-MM-YYYY, HH:mm');
        dateTo = dayjs(dateTo, 'DD-MM-YYYY, HH:mm');
-       let sensors = JSON.parse(dataFromPHP.getAttribute('data-sensors'));
 
-       let xAxisTimes = []
-       let nextDate = dateFrom.clone();
-       for (let i = 0; nextDate < dateTo; i++) {
-           nextDate = dateFrom.add(step * i, 'minutes');
-           xAxisTimes.push(nextDate);
+       let sensors = [];
+       let sensorsTmp = JSON.parse(dataFromPHP.getAttribute('data-sensors'));
+       for (let sensor of sensorsTmp) {
+           sensors.push(new Sensor(
+               sensor.id,
+               sensor.name,
+               GetSensorReading(sensor.id),
+               sensor.maxTemp,
+               sensor.minTemp,
+               sensor.maxRelHum,
+               sensor.minRelHum,
+               GetDrawingSettings(sensor.id)
+           ));
+       }
+
+       if (false) {
+           // Google charts can handle it built in so this is actually unnecessary, but it does look nicer
+          if (sensors.map(x => x.sensorSettings).every(x => x === null)) {
+              chartDiv.style.display = 'none';
+              chartErr.innerText = 'No sensor selected';
+              return;
+          }
+          chartDiv.style.display = 'block';
+          chartErr.innerText = '';
        }
 
        let xAxisTimesToSensors = [];
-       for (let i = 0; i < xAxisTimes.length - 1; i++) {
-           let xAxisTime = xAxisTimes[i];
-           let tmp = {
-               'date': xAxisTime,
+       for (let i = 0; ; i++) {
+           let nextDate = dateFrom.add(step * i, 'minutes');
+           if (nextDate >= dateTo) break;
+           xAxisTimesToSensors.push({
+               'date': nextDate,
                'data': []
-           }
-           xAxisTimesToSensors.push(tmp)
+           });
        }
 
 
-       for (let sensorSetting of sensorSettings) {
-           let sensor = sensors.find(x => x.id === sensorSetting.id);
-           let oldTempRangeAvg = (sensor.maxTemp + sensor.minTemp) / 2;
-           let oldHumRangeAvg = (sensor.maxRelHum + sensor.minRelHum) / 2;
+       for (let sensor of sensors) {
+           let tempRangeAvg = (sensor.maxTemp + sensor.minTemp) / 2;
+           let humRangeAvg = (sensor.maxRelHum + sensor.minRelHum) / 2;
 
-           let temps = null;
-           let relHums = null;
-           if (sensorSetting.isTemp) {
-              temps = sensorSetting.sensorReadings.map(x => x.temp);
-           }
-           if (sensorSetting.isHum) {
-              relHums = sensorSetting.sensorReadings.map(x => x.relHum);
-           }
            let low = 0;
-           for (let i = 0; i < xAxisTimes.length - 1; i++) {
+           for (let i = 0; i < xAxisTimesToSensors.length - 1; i++) {
+               if (sensor.sensorSettings === null) {
+                   xAxisTimesToSensors[i].data.push(null);
+                   continue;
+               }
                let inbetween = {
                    'temps': null,
                    'hums': null
@@ -731,51 +724,51 @@ $errors = $htmlInjects->errors;
                    'relHum': null,
                };
 
-               let before = xAxisTimes[i];
-               let after = xAxisTimes[i + 1];
+               let before = xAxisTimesToSensors[i].date;
+               let after = xAxisTimesToSensors[i + 1].date;
 
-               let tmp = FilterSortedArrayValuesBetweenDates(sensorSetting.sensorReadings, before, after, low);
+               let tmp = FilterSortedArrayValuesBetweenDates(sensor.sensorReadings, before, after, low);
                let currentRows = tmp['result'];
                low = tmp['low'];
 
-               if (sensorSetting.isTemp) {
+               if (sensor.sensorSettings.isTemp) {
                    inbetween.temps = currentRows.map(x => x.temp);
                }
-               if (sensorSetting.isHum) {
+               if (sensor.sensorSettings.isRelHum) {
                    inbetween.hums = currentRows.map(x => x.relHum);
                }
 
 
                switch (strategy) {
                    case 'median':
-                       if (sensorSetting.isTemp) {
+                       if (sensor.sensorSettings.isTemp) {
                            let valOrUndefined = inbetween.temps[Math.floor(inbetween.temps.length / 2)];
                            sensorValue.temp = valOrUndefined === undefined ? graphDefaultValue : valOrUndefined;
                        }
-                       if (sensorSetting.isHum) {
+                       if (sensor.sensorSettings.isRelHum) {
                            let valOrUndefined = inbetween.hums[Math.floor(inbetween.hums.length / 2)];
                            sensorValue.relHum = valOrUndefined === undefined ? graphDefaultValue : valOrUndefined;
                        }
                        break;
                    case 'average':
-                       if (sensorSetting.isTemp) {
+                       if (sensor.sensorSettings.isTemp) {
                            sensorValue.temp = inbetween.temps.length === 0 ? graphDefaultValue : inbetween.temps.reduce((a, b) => a + b) / inbetween.temps.length;
                        }
-                       if (sensorSetting.isHum) {
+                       if (sensor.sensorSettings.isRelHum) {
                            sensorValue.relHum = inbetween.hums.length === 0 ? graphDefaultValue : inbetween.hums.reduce((a, b) => a + b) / inbetween.hums.length;
                        }
                        break;
                    case 'deviation':
-                       if (sensorSetting.isTemp) {
+                       if (sensor.sensorSettings.isTemp) {
                            sensorValue.temp = inbetween.temps.length === 0 ? graphDefaultValue :
                                inbetween.temps.sort(
-                                   (a,b) => Math.abs(a-oldTempRangeAvg) - Math.abs(b-oldTempRangeAvg)
+                                   (a,b) => Math.abs(a-tempRangeAvg) - Math.abs(b-tempRangeAvg)
                                )[inbetween.temps.length - 1];
                        }
-                       if (sensorSetting.isHum) {
+                       if (sensor.sensorSettings.isRelHum) {
                            sensorValue.relHum = inbetween.hums.length === 0 ? graphDefaultValue :
                                inbetween.hums.sort(
-                                   (a,b) => Math.abs(a-oldHumRangeAvg) - Math.abs(b-oldHumRangeAvg)
+                                   (a,b) => Math.abs(a-humRangeAvg) - Math.abs(b-humRangeAvg)
                                )[inbetween.hums.length - 1];
                        }
                        break;
@@ -786,15 +779,17 @@ $errors = $htmlInjects->errors;
                xAxisTimesToSensors[i].data.push(sensorValue);
            }
        }
+       xAxisTimesToSensors.pop();
 
        data.addColumn('string', 'date');
-       for (let sensorSetting of sensorSettings) {
-           if (sensorSetting.isTemp) {
-               data.addColumn('number', sensorSetting.name + ' temperature (℃)');
+       for (let sensor of sensors) {
+           if (sensor.sensorSettings === null) continue;
+           if (sensor.sensorSettings.isTemp) {
+               data.addColumn('number', sensor.name + ' temperature (℃)');
                data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
            }
-           if (sensorSetting.isHum) {
-               data.addColumn('number', sensorSetting.name + ' relative humidity (%)');
+           if (sensor.sensorSettings.isRelHum) {
+               data.addColumn('number', sensor.name + ' relative humidity (%)');
                data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
            }
        }
@@ -803,28 +798,24 @@ $errors = $htmlInjects->errors;
        let rows = [];
        for (let xAxisTime of xAxisTimesToSensors) {
            let row = [];
-           row.push(xAxisTime.date.add(step / 2, 'minutes').format('DD.MM'));
-           let rowCount = -1;
-           for (let i = 0; i < sensorSettings.length; i++) {
-               let sensorSetting = sensorSettings[i];
+           row.push(xAxisTime.date.add(step / 2, 'minutes').format('DD.MM'))
+           for (let i = 0; i < sensors.length; i++) {
+               let sensor = sensors[i];
+               if (sensor.sensorSettings === null) continue;
+               const addTooltipFunc = function (valueAndSymbol) {
+                   return  '<div style="height: 50px; width: 14em">' +
+                           '   <p><b>' + xAxisTime.date.format('HH:mm, DD.MM.YYYY') + '</b></p>' +
+                           '   <p style="margin-top: 6px">' + sensor.name + ': <b>' + valueAndSymbol + '</b></p>' +
+                           '</div>';
+               };
                let tmp = xAxisTime.data[i];
-               if (sensorSetting.isTemp) {
-                   rowCount++;
+               if (sensor.sensorSettings.isTemp) {
                    row.push(tmp.temp);
-                   row.push('' +
-                       '<div style="height: 50px; width: 14em">' +
-                       '   <p><b>' + xAxisTime.date.format('HH:mm, DD.MM.YYYY') + '</b></p>' +
-                       '   <p style="margin-top: 6px">' + sensorSetting.name + ': <b>' + tmp.temp + '℃</b></p>' +
-                       '</div>');
+                   row.push(addTooltipFunc(tmp.temp + '℃'));
                }
-               if (sensorSetting.isHum) {
-                   rowCount++;
+               if (sensor.sensorSettings.isRelHum) {
                    row.push(tmp.relHum);
-                   row.push('' +
-                       '<div style="height: 50px; width: 14em">' +
-                       '   <p><b>' + xAxisTime.date.format('HH:mm, DD.MM.YYYY') + '</b></p>' +
-                       '   <p style="margin-top: 6px">' + sensorSetting.name + ': <b>' + tmp.relHum + '%</b></p>' +
-                       '</div>');
+                   row.push(addTooltipFunc(tmp.relHum + '%'));
                }
            }
            rows.push(row);
@@ -832,13 +823,13 @@ $errors = $htmlInjects->errors;
        data.addRows(rows);
 
        let colors = [];
-       for (let i = 0; i < sensorSettings.length; i++) {
-           let sensorSetting = sensorSettings[i];
-           if (sensorSetting.isTemp) {
-               colors.push(sensorSetting.colorTemp);
+       for (let sensor of sensors) {
+           if (sensor.sensorSettings === null) continue;
+           if (sensor.sensorSettings.isTemp) {
+               colors.push(sensor.sensorSettings.colorTemp);
            }
-           if (sensorSetting.isHum) {
-               colors.push(sensorSetting.colorHum)
+           if (sensor.sensorSettings.isRelHum) {
+               colors.push(sensor.sensorSettings.colorRelHum)
            }
        }
 
@@ -846,7 +837,7 @@ $errors = $htmlInjects->errors;
            title: dateFrom.format('DD-MM-YYYY HH:mm') + ' - ' + dateTo.format('DD-MM-YYYY HH:mm'),
            fontSize: 13,
            vAxis: {
-               // is it possible to add a callback, I only found ticks
+               // is it possible to add a callback? I only found ticks, but they mess automatic zooming
                // ticks: [{v:16, f:'banana'}, {v:18, f:'apple'}, {v:20, f:'mango'}, {v:22, f:'orange'}, {v:24, f:'apricot'}]
                title: 'Temperature (℃) and Relative Humidity (%)',
            },
@@ -854,7 +845,6 @@ $errors = $htmlInjects->errors;
            colors: colors,
            legend: { position: 'right' },
        };
-
        let chart = new google.visualization.LineChart(chartEle);
 
        google.visualization.events.addListener(chart, 'ready', function() {
@@ -882,7 +872,7 @@ $errors = $htmlInjects->errors;
 
    function FilterSortedArrayValuesBetweenDates(sensorReadings, before, after, low) {
        if (false) {
-           // this does the same thing, but much slower duo to searching the entire array
+           // this is the readable version, but much slower duo to searching the entire array
            return sensorReadings.filter(x => before <= x.date && after > x.date);
        }
 
@@ -903,34 +893,23 @@ $errors = $htmlInjects->errors;
        };
    }
 
-   function GetDrawingSettings() {
+   function GetDrawingSettings(_sensorId) {
        let table = document.getElementById('sensorDrawingSettings');
-       let sensorSettings = [];
        for (let row of table.children) {
            let sensorId = row.querySelector('.sensorId').innerHTML;
-           let sensorName = row.querySelector('.sensorName').innerHTML;
+           if (sensorId !== _sensorId) continue;
            let colorTemp = row.querySelector('.colorSelectTemp').value;
-           let colorHum = row.querySelector('.colorSelectHum').value;
+           let colorRelHum = row.querySelector('.colorSelectHum').value;
            let isTemp = row.querySelector('.tempSelect').checked;
-           let isHum = row.querySelector('.relHumSelect').checked;
+           let isRelHum = row.querySelector('.relHumSelect').checked;
 
-
-           if (!isHum && !isTemp) {
-               continue;
+           if (!isRelHum && !isTemp) {
+               return null;
            }
-           let sensorReadings = GetSensorReading(sensorId);
 
-           sensorSettings.push({
-               'id': sensorId,
-               'name': sensorName,
-               'colorTemp': colorTemp,
-               'colorHum': colorHum,
-               'isTemp': isTemp,
-               'isHum': isHum,
-               'sensorReadings': sensorReadings
-           });
+           return new SensorSettings(colorTemp, colorRelHum, isTemp, isRelHum);
        }
-       return sensorSettings;
+       return null;
    }
 
    function GetSensorReading(sensorId) {
@@ -940,22 +919,50 @@ $errors = $htmlInjects->errors;
        let result = [];
        for (let i = 0; i < sensorReadings.length; i++) {
            let tmp = sensorReadings[i][1];
-           result.push({
-               'date': dayjs(tmp.date, 'DD/MM/YYYY HH:mm'),
-               'temp': parseFloat(tmp.temp),
-               'relHum': parseFloat(tmp.relHum)
-           });
+           result.push(new SensorReading(
+               dayjs(tmp.date, 'DD/MM/YYYY HH:mm'),
+               parseFloat(tmp.temp),
+               parseFloat(tmp.relHum)));
        }
        return result;
    }
 
-   function FancyDatePicker() {
-       $( "#dateTo" ).datepicker({
-           dateFormat: "dd-mm-yy"
-       });
-       $( "#absoluteDateFrom" ).datepicker({
-           dateFormat: "dd-mm-yy"
-       });
+   class SensorSettings {
+       constructor(colorTemp, colorRelHum, isTemp, isRelHum) {
+           this.colorTemp = colorTemp;
+           this.colorRelHum = colorRelHum;
+           this.isTemp = isTemp;
+           this.isRelHum = isRelHum;
+       }
+   }
+
+   class Sensor {
+       constructor(id, name, sensorReadings, maxTemp, minTemp, maxRelHum, minRelHum, sensorSettings) {
+           this.id = id;
+           this.name = name;
+           this.sensorReadings = sensorReadings;
+           this.maxTemp = maxTemp;
+           this.minTemp = minTemp;
+           this.maxRelHum = maxRelHum;
+           this.minRelHum = minRelHum;
+           this.sensorSettings = sensorSettings;
+       }
+   }
+
+   class SensorReading {
+       constructor(date, temp, relHum) {
+           this.date = date;
+           this.temp = temp;
+           this.relHum = relHum;
+       }
+   }
+
+   function FancyDatePicker(arr) {
+       for (let item of arr) {
+           $('' + item).datepicker({
+               dateFormat: "dd-mm-yy"
+           });
+       }
    }
 
    function handleRadioClick(dateFromType) {
@@ -965,17 +972,15 @@ $errors = $htmlInjects->errors;
       const relative = "relative";
       const absolute = "absolute";
       if (! dateFromType.value in [relative, absolute]) {
-         console.error("Something is wrong! Value: " + dateFromType.value)
+         console.error("Unexpected value: " + dateFromType.value)
          return;
       }
-       const noChange =
-           absoluteDateFromInput.disabled && dateFromType.value === relative ||
-           relativeDateFromInput.disabled && dateFromType.value === absolute;
-       if (noChange) {
-         return;
+      if (absoluteDateFromInput.disabled && dateFromType.value !== absolute ||
+          relativeDateFromInput.disabled && dateFromType.value !== relative) {
+          return;
       }
-      absoluteDateFromInput.disabled = dateFromType.value === relative;
-      relativeDateFromInput.disabled = dateFromType.value === absolute;
+      absoluteDateFromInput.disabled = dateFromType.value !== absolute;
+      relativeDateFromInput.disabled = dateFromType.value !== relative;
    }
 
    function HandleCollapseSymbolChange() {
