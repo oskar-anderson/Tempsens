@@ -9,7 +9,7 @@ class InputValidation
 
    public static function StringInputValidation(array &$errorMessages, string $input, int $maxLength, $name)
    {
-      $badChars = str_split(''); // '><|"\'\\/?:*'
+      $badChars = str_split(''); // '><|"\'\\/?:*\`'
       $isBadChars = sizeof(array_intersect(str_split($input), $badChars)) !== 0;
       $isEmpty = $input === '';
       $isTooBig = strlen($input) >= $maxLength;

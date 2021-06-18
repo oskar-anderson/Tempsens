@@ -54,11 +54,16 @@ class Programm {
                DateTime::createFromFormat('YmdHi', Helper::GetDateNow())->getTimestamp() -
                DateTime::createFromFormat('YmdHi', $lastReading->dateRecorded)->getTimestamp()
             ) / 60;
-            if ($sensor->readingIntervalMinutes - $minutesDiff < 0) {
+            if ($sensor->readingIntervalMinutes - $minutesDiff < 0 && !$sensor->isPortable) {
                $dateRecorded = 'DOWN @' . $lastDate . ' (' . $minutesDiff . ' min ago)';
                $col = 'red';
-            } else {
+            }
+            if ($sensor->readingIntervalMinutes - $minutesDiff >= 0 && !$sensor->isPortable) {
                $dateRecorded = 'UP @' . $lastDate;
+               $col = 'black';
+            }
+            if ($sensor->isPortable) {
+               $dateRecorded = 'Portable sensor';
                $col = 'black';
             }
          }
@@ -346,7 +351,9 @@ class Programm {
    function UploadReadings(array $sensors): bool  {
       $jsonDataInput = $_POST['jsonData'] ?? null;
       $sensorId = $_POST['csvSensorId'] ?? null;
-      if ($jsonDataInput === null || $sensorId === null) {
+      $auth = $_POST['csvAuth'] ?? null;
+
+      if ($jsonDataInput === null || $sensorId === null || $auth === null) {
          return false;
       }
       $sensor = null;
@@ -360,14 +367,17 @@ class Programm {
          return false;
       }
 
+      if ($auth !== Config::GetConfig()['webDbPassword']) {
+         array_push($this->errors, 'Not authorized!');
+         return false;
+      }
+
       $jsonDataInput = json_decode($jsonDataInput);
       if (sizeof($jsonDataInput) === 0) {
          return false;
       }
 
-      $pdo = DbHelper::GetDevPDO();
-      $pdo->beginTransaction();
-
+      $sensorReadings = [];
       $lastDateSensorReading = null;
       foreach ($jsonDataInput as $row) {
          $temp = $row->temp;
@@ -404,6 +414,32 @@ class Programm {
             $lastDateSensorReading = $sensorReading;
          }
 
+         array_push($sensorReadings, $sensorReading);
+      }
+
+      $dups = [];
+      $sensorReadingsDupCheckArr = (new DalSensorReading())->GetAllWhereSensorId($sensorId);
+      $sensorReadingsByDateRecorded = [];
+      foreach ($sensorReadingsDupCheckArr as $sensorReadingDb) {
+         $sensorReadingsByDateRecorded[$sensorReadingDb->dateRecorded] = true;
+      }
+      foreach ($sensorReadings as $sensorReadingNew) {
+         if (isset($sensorReadingsByDateRecorded[$sensorReadingNew->dateRecorded])) {
+            array_push($dups,
+               DateTime::createFromFormat('YmdHi', $sensorReadingNew->dateRecorded)
+                  ->format($this->pageOutputDateTimeFormat)
+            );
+         }
+      }
+
+      if (sizeof($dups) !== 0) {
+         array_push($this->errors, 'Duplicate entry dates: ' . join(', ', $dups));
+         return false;
+      }
+
+      $pdo = DbHelper::GetDevPDO();
+      $pdo->beginTransaction();
+      foreach ($sensorReadings as $sensorReading) {
          (new DalSensorReading())->Create($sensorReading, $pdo);
       }
       $pdo->commit();
