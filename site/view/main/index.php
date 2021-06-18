@@ -499,7 +499,6 @@ $errors = $htmlInjects->errors;
                   <span aria-hidden="true">&times;</span>
                </button>
             </div>
-            <span id="FileUploadState" data-state="null" style="display: none"></span>
             <div class="modal-body" style="height: 40em; overflow-y: auto">
                <pre id="csvDataDisplay">
 
@@ -509,7 +508,8 @@ $errors = $htmlInjects->errors;
                <div style="padding: .75rem; border-top: 1px solid #dee2e6;">
                   <input id="csvDataFormField" style="display: none" name="jsonData" value="">
                   <input id="csvSensorId" style="display: none" name="csvSensorId" value="">
-                  <button class="button button-secondary" type="button" data-dismiss="modal">Close</button>
+                  <span>Auth</span>
+                  <input type="password" name="csvAuth">
                   <button class="button" type="submit">Submit</button>
                </div>
             </form>
@@ -650,9 +650,7 @@ $errors = $htmlInjects->errors;
    }
 
    function drawChart() {
-       let chartErr = document.getElementById('chartErr');
        let chartEle = document.getElementById("chart");
-       let chartDiv = document.getElementById('chartDiv');
        let data = new google.visualization.DataTable();
 
        // let t0 = performance.now();
@@ -663,14 +661,11 @@ $errors = $htmlInjects->errors;
        let graphDefaultValue = document.getElementById('graphOptionsLoudNoValue').checked ? 0 : undefined;
 
        let dataFromPHP = document.getElementById('data');
-       let dateFrom = dataFromPHP.getAttribute('data-dateFrom');
-       let dateTo = dataFromPHP.getAttribute('data-dateTo');
-       dateFrom = dayjs(dateFrom, 'DD-MM-YYYY, HH:mm');
-       dateTo = dayjs(dateTo, 'DD-MM-YYYY, HH:mm');
+       let dateFrom = dayjs(dataFromPHP.getAttribute('data-dateFrom'), 'DD-MM-YYYY, HH:mm');
+       let dateTo = dayjs(dataFromPHP.getAttribute('data-dateTo'), 'DD-MM-YYYY, HH:mm');
 
        let sensors = [];
-       let sensorsTmp = JSON.parse(dataFromPHP.getAttribute('data-sensors'));
-       for (let sensor of sensorsTmp) {
+       for (let sensor of JSON.parse(dataFromPHP.getAttribute('data-sensors'))) {
            sensors.push(new Sensor(
                sensor.id,
                sensor.name,
@@ -683,9 +678,11 @@ $errors = $htmlInjects->errors;
            ));
        }
 
-       if (false) {
+       if (true) {
            // Google charts can handle it built in so this is actually unnecessary, but it does look nicer
-          if (sensors.map(x => x.sensorSettings).every(x => x === null)) {
+          let chartDiv = document.getElementById('chartDiv');
+          let chartErr = document.getElementById('chartErr');
+          if (sensors.map(x => x.sensorSettings).every(x => !x.isTemp && !x.isRelHum)) {
               chartDiv.style.display = 'none';
               chartErr.innerText = 'No sensor selected';
               return;
@@ -711,7 +708,7 @@ $errors = $htmlInjects->errors;
 
            let low = 0;
            for (let i = 0; i < xAxisTimesToSensors.length - 1; i++) {
-               if (sensor.sensorSettings === null) {
+               if (! sensor.sensorSettings.isTemp && ! sensor.sensorSettings.isRelHum) {
                    xAxisTimesToSensors[i].data.push(null);
                    continue;
                }
@@ -783,7 +780,6 @@ $errors = $htmlInjects->errors;
 
        data.addColumn('string', 'date');
        for (let sensor of sensors) {
-           if (sensor.sensorSettings === null) continue;
            if (sensor.sensorSettings.isTemp) {
                data.addColumn('number', sensor.name + ' temperature (℃)');
                data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
@@ -801,14 +797,13 @@ $errors = $htmlInjects->errors;
            row.push(xAxisTime.date.add(step / 2, 'minutes').format('DD.MM'))
            for (let i = 0; i < sensors.length; i++) {
                let sensor = sensors[i];
-               if (sensor.sensorSettings === null) continue;
                const addTooltipFunc = function (valueAndSymbol) {
-                   return  '<div style="height: 50px; width: 14em">' +
-                           '   <p><b>' + xAxisTime.date.format('HH:mm, DD.MM.YYYY') + '</b></p>' +
-                           '   <p style="margin-top: 6px">' + sensor.name + ': <b>' + valueAndSymbol + '</b></p>' +
-                           '</div>';
+                   return  `<div style="height: 50px; width: 14em">
+                              <p><b>${xAxisTime.date.format('HH:mm, DD.MM.YYYY')}</b></p>
+                              <p style="margin-top: 6px">${encodeURI(sensor.name)}: <b>${valueAndSymbol}</b></p>
+                           </div>`;
                };
-               let tmp = xAxisTime.data[i];
+               let tmp = xAxisTime.data[i] ?? null;
                if (sensor.sensorSettings.isTemp) {
                    row.push(tmp.temp);
                    row.push(addTooltipFunc(tmp.temp + '℃'));
@@ -824,7 +819,6 @@ $errors = $htmlInjects->errors;
 
        let colors = [];
        for (let sensor of sensors) {
-           if (sensor.sensorSettings === null) continue;
            if (sensor.sensorSettings.isTemp) {
                colors.push(sensor.sensorSettings.colorTemp);
            }
@@ -902,10 +896,6 @@ $errors = $htmlInjects->errors;
            let colorRelHum = row.querySelector('.colorSelectHum').value;
            let isTemp = row.querySelector('.tempSelect').checked;
            let isRelHum = row.querySelector('.relHumSelect').checked;
-
-           if (!isRelHum && !isTemp) {
-               return null;
-           }
 
            return new SensorSettings(colorTemp, colorRelHum, isTemp, isRelHum);
        }

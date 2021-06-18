@@ -141,6 +141,33 @@ class DalSensorReading
    }
 
    /**
+    *  @param string $sensorId
+    *  @return SensorReading[]
+    */
+   public function GetAllWhereSensorId(string $sensorId): array
+   {
+      $pdo = DbHelper::GetPDO();
+      $result = [];
+      $qry = "SELECT Id, " .
+         "SensorId, " .
+         "Temp, " .
+         "RelHum, " .
+         "DateRecorded " .
+         " " .
+         " FROM " . $this->GetName() .
+         " WHERE SensorId >= ? " .
+         " ORDER BY DateRecorded ASC";
+      $stmt = $pdo->prepare($qry);
+      $stmt->execute([$sensorId]);
+      while ($value = $stmt->fetch()) {
+         $value['DateAdded'] = null;
+         array_push($result, $this->Map($value));
+      }
+
+      return $result;
+   }
+
+   /**
     *  @param SensorReading $sensorReading
     *  @param PDO $pdo
     */

@@ -27,7 +27,7 @@ composer update
 | MinRelHum    | decimal(18,1)!|     |       DateAdded is null for not isPortable sensors                                                                                                        
 | MaxRelHum    | decimal(18,1)!|     |                                                                                                              
 | ReadingInterv| int!          |     |                                                                                                               
-+--------------+---------------+-----+
++--------------+---------------+-----+                                                                        
 ```                                                                                                           
 
 ## patch notes
@@ -57,7 +57,7 @@ Notes:
 * Removed unnecessary values sent by sensors from being saved to sensorReading
 * Removed scripts/alarms.php - Email sending didn't work
 * Removed confusing alerts(global vs sensor) and Max/min(total vs sensor)
-* Removed ambiguous sensor state .png balls
+* Removed ambiguous sensor state .png balls in v0.3.5
 * Removed unused Composer dependencies(php-jwt, Guzzle, oauth2-client, random_compaq, Phpmailer, http-message, getallHeaders, oauth-keycloak, Symfony)
 * Replaced Db generated int Ids with server-side 22 char base64 random generated ones
 * Added Db default data initialization script and migrations
@@ -86,3 +86,5 @@ I had a weird situation where selecting 1 more field (dateAdded) significantly s
 Change initializer.php to load data from real DB.
 
 Remove bash crud job (scripts/alarms.php) that will not work anymore - I don't think it ever did.
+
+Merge current document in _documents folder with the latest production documentation.
