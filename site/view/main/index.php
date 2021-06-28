@@ -6,8 +6,7 @@ use App\view\partial\FooterPartial;
 use App\view\partial\HeaderPartial;
 use App\view\partial\SensorCrudPartialCreateEdit;
 
-// type hinting trick
-$htmlInjects = (new IndexViewModel())->ReturnMe($htmlInjects);
+/* @var IndexViewModel $htmlInjects */
 
 $dateFromType = $htmlInjects->input->dateFromType;
 $dateFrom = $htmlInjects->input->dateFrom;

@@ -70,8 +70,4 @@ class IndexViewModel
       return $this;
    }
 
-   function ReturnMe(IndexViewModel $me): IndexViewModel {
-      return $me;
-   }
-
 }
