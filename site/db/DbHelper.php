@@ -7,52 +7,45 @@ require_once(__DIR__."/../../vendor/autoload.php");
 use App\db\dal\DalSensorReading;
 use App\db\dal\DalSensorReadingTmp;
 use App\db\dal\DalSensors;
+use App\db\dal\IDalBase;
 use App\util\Config as Config;
 use PDO;
 use PDOException;
-
+use App\Util\Console;
 
 class DbHelper {
 
    /**
-    *  @return TableHelper[]
+    *  @return IDalBase[]
     */
    private static function GetTrackedTables(): array
    {
       return [
-         new TableHelper((new DalSensors())->SqlCreateTableStmt(), (new DalSensors())->GetName()),
-         new TableHelper((new DalSensorReadingTmp())->SqlCreateTableStmt(), (new DalSensorReadingTmp())->GetName()),
-         new TableHelper((new DalSensorReading())->SqlCreateTableStmt(), (new DalSensorReading())->GetName())
+         new DalSensors(),
+         new DalSensorReadingTmp(),
+         new DalSensorReading()
       ];
    }
 
-   /**
-    *  @return string[]
-    */
-   private static function GetTableNames(): array
-   {
-      return array_map(function($x) { return $x->name; }, DbHelper::GetTrackedTables());
-   }
-
-
     public static function CreateTables() {
-       echo "creating tables..."  . "\n";
-       $stmts = array_map(function($x) {return $x->sqlStmt; }, DbHelper::GetTrackedTables());
+       $createTableStatements = array_map(fn(IDalBase $x) => $x->SqlCreateTableStmt(), DbHelper::GetTrackedTables());
        $pdo = DbHelper::GetDevPDO();
-       foreach ($stmts as $table) {
-          echo $table . "\n";
+       foreach ($createTableStatements as $i=>$table) {
+          Console::WriteLine($i + 1 . "/" . count($createTableStatements) . ": " . $table, true);
           $pdo->query($table);
        }
     }
 
    public static function DropTables() {
-      $tables = array_reverse(DbHelper::GetTableNames());
+      $tableNames = array_map(fn(IDalBase $x) => $x->GetName(), DbHelper::GetTrackedTables());
       $pdo = DbHelper::GetDevPDO();
-      foreach ($tables as $table) {
+      $pdo->query("SET FOREIGN_KEY_CHECKS = 0;");
+      foreach ($tableNames as $i=>$table) {
          $stmt = "DROP TABLE IF EXISTS " . $table . ";";
-         echo $stmt  . "\n";
-         $pdo->query($stmt);
+         Console::WriteLine($i + 1 . "/" . count($tableNames) . ": " . $stmt, true);
+         $pdo->query($stmt);      
       }
+      $pdo->query("SET FOREIGN_KEY_CHECKS = 1;");
    }
 
 
@@ -69,21 +62,14 @@ class DbHelper {
    public static function GetPdoByKey($configKey): PDO
    {
       $dbconf = Config::GetConfig()[$configKey];
+      Console::WriteLine("New PDO(connectUrl= {$dbconf['connectUrl']}, username=***, password=***)");
       try {
          $pdo = new PDO($dbconf['connectUrl'], $dbconf['username'], $dbconf['password']);
          $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
          return $pdo;
       } catch (PDOException $e) {
-         echo "FAILED (" . $e->getMessage() . ")\n";
+         Console::WriteLine("FAILED ({$e->getMessage()})", true);
          die();
       }
    }
-}
-
-class TableHelper {
-
-   function __construct(
-      public string $sqlStmt,
-      public string $name,
-   ) {}
 }

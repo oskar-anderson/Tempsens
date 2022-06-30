@@ -6,6 +6,7 @@ use App\db\dal\DalSensorReading;
 use App\db\dal\DalSensorReadingTmp;
 use App\db\dal\DalSensors;
 use App\db\DbHelper;
+use App\dto\IndexViewModelChildren\SensorReadingDTO;
 use App\model\SensorReading;
 use App\util\Base64;
 use App\util\Helper;
@@ -17,7 +18,7 @@ class SensorApi
 {
    public static function Save($serial, $temp, $relHum)
    {
-      $sensorId = (new DalSensorReading())->GetSensorBySerial((new DalSensors())->GetAll(), $serial);
+      $sensorId = SensorReading::GetSensorBySerial((new DalSensors())->GetAll(), $serial)->id;
       $reading = new SensorReading(
          id:Base64::GenerateId(),
          sensorId: $sensorId,

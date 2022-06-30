@@ -1,5 +1,23 @@
 # Tempsens
 
+## Installation
+
+### Generate dependencies:
+In root folder (Tempsens)
+```
+composer update
+```
+
+If the command throws error '`Root composer.json requires PHP extension ext-soap ...`' uncomment `extension=soap` attribute in the `php.ini` global PHP config file.
+
+### Create config.php file
+To prevent sensitive data being uploaded to remote (Github) a template file is used.
+`configTemplate.php` file is provided with empty keys.
+Create a copy of this file named `config.php` and set its key values.
+
+### Generate Database
+Go into your `php.ini` file and uncomment `extension=pdo_mysql`.
+
 ## Vendor dependencies
 
 Current dependencies:
@@ -11,6 +29,9 @@ composer update
 ```
 
 ## Database
+
+[Note] Disable word wrap to display table correctly (alt + z in VSCode). Viewing markdown files through Github is not an issue. 
+
 ```
 +------------------------------------+      +---------------------------------------------+                                                                                                              
 |               Sensors              |      |               SensorReading                 |                                                                                                              
@@ -23,12 +44,16 @@ composer update
 | Location     | string!       |     |      | DateAdded    | string?        |             |                                                                        
 | IsPortable   | bool!         |     |      +--------------+----------------+-------------+                                                                                                        
 | MinTemp      | decimal(18,1)!|     |                                                                                                              
-| MaxTemp      | decimal(18,1)!|     |       Date format is YYYYMMDDHHmm                                                                                                       
-| MinRelHum    | decimal(18,1)!|     |       DateAdded is null for not isPortable sensors                                                                                                        
+| MaxTemp      | decimal(18,1)!|     |                                                                                                                                         
+| MinRelHum    | decimal(18,1)!|     |                                                                                                                                                           
 | MaxRelHum    | decimal(18,1)!|     |                                                                                                              
 | ReadingInterv| int!          |     |                                                                                                               
 +--------------+---------------+-----+                                                                        
 ```                                                                                                           
+[Tip] To edit DB schema learn to use VSCode multiline editing shortcuts (alt + mouse_click; alt + ctrl + down/up arrow)
+
+Date format is YYYYMMDDHHmm. This makes ordering SensorReadings by date easy (eg 13:42, 13.03.2021 becomes 202103131342)                
+DateAdded is null for not isPortable sensors as this.
 
 ## patch notes
 

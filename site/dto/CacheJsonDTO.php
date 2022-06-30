@@ -7,6 +7,7 @@ use App\db\dal\DalSensorReading;
 use App\db\dal\DalSensorReadingTmp;
 use App\db\dal\DalSensors;
 use App\model\SensorReading;
+use Exception;
 
 require_once (__DIR__."/../../vendor/autoload.php");
 
@@ -23,7 +24,7 @@ class CacheJsonDTO
       $this->sensorReadings = $sensorReadings;
    }
 
-   public static function Recreate() {
+   public static function CreateEmpty() {
       $file = fopen(CacheJsonDTO::GetFilename(), 'w') or die('Cannot create file!');
       fwrite($file, '');
       fclose($file);
@@ -36,18 +37,25 @@ class CacheJsonDTO
       fclose($file);
    }
 
+   /**
+    * Create the cache with provided data if it does not exist
+    *
+    *  @return bool
+    */
+    public static function DoesFileExist(): bool {
+      return file_exists(CacheJsonDTO::GetFilename());
+   }
+
+   /**
+    * Read the cache file
+    *
+    *  @return CacheJsonDTO
+    *  @throws Exception
+    */
    public static function Read(): CacheJsonDTO {
-      if (! file_exists(CacheJsonDTO::GetFilename())) {
-         $sensors = (new DalSensors())->GetAll();
-         $lastReadings = [];
-         foreach ($sensors as $sensor) {
-            $lastReadings[$sensor->id] = (new DalSensorReading())->GetLastReading($sensor);
-         }
-         (new CacheJsonDTO($lastReadings))->Save();
-      }
       $file = file_get_contents(CacheJsonDTO::GetFilename());
       if ($file === false) {
-         die('Cannot read file!');
+         throw new Exception("File could not be read! Most likely file does not exist. Try calling CreateWithDataIfNotExist before this function.");
       }
       $json = json_decode($file);
       $sensorReadings = [];

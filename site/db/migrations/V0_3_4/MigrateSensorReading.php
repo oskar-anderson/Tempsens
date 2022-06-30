@@ -1,6 +1,6 @@
 <?php
 
-namespace App\db\migrations\v1;
+namespace App\db\migrations\V0_3_4;
 
 require_once(__DIR__."/../../../../vendor/autoload.php");
 
@@ -27,7 +27,7 @@ class MigrateSensorReading
       }
 
       while ($values = $res->fetch()) {
-         array_push($oldSensorReadings, new OldSensorReading(
+         array_push($oldSensorReadings, new SensorReadingV0_3_4(
                $values["id"],
                $values["passkey"],
                $values["device"],
@@ -68,5 +68,23 @@ class MigrateSensorReading
       }
 
       return [$result, $resultTmp];
+   }
+
+   /**
+    *  @param SensorReadingV0_3_4[] $old
+    *  @param SensorV0_3_4[] $sensors
+    */
+   public static function GetUp($old, $sensors) {
+      foreach ($old as $itemSensorReading) {
+         $sensorId = (new DalSensorReading())->GetSensorBySerial($sensors, $itemSensorReading->passkey);
+         $sensorReading = new SensorReading(
+            id: Base64::GenerateId(),
+            sensorId: $sensorId,
+            temp: floatval($itemSensorReading->temp),
+            relHum: floatval($itemSensorReading->relHum),
+            dateRecorded: $itemSensorReading->dactdate,
+            dateAdded: null);
+         array_push($result, $sensorReading);
+      }
    }
 }

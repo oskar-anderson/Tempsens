@@ -11,7 +11,7 @@ use App\model\SensorReading;
 use JetBrains\PhpStorm\Pure;
 use PDO;
 
-class DalSensorReading
+class DalSensorReading implements IDalBase
 {
    /**
     *  @return string
@@ -32,7 +32,7 @@ class DalSensorReading
          "DateRecorded VARCHAR(64) NOT NULL, " .
          "DateAdded VARCHAR(64), " .
          "CONSTRAINT " . DalSensorReading::GetName() ."FKSensor foreign key (SensorId) references " . (new DalSensors)->GetName() . "(Id)" .
-         " ); CREATE INDEX ".DalSensorReading::GetName()."idxDateRecorded ON ". DalSensorReading::GetName() ."(DateRecorded)";
+         " );";
       return $result;
    }
 
@@ -41,14 +41,13 @@ class DalSensorReading
     */
    public static function ResetCache(array $sensors): void
    {
-      CacheJsonDTO::Recreate();
+      CacheJsonDTO::CreateEmpty();
       $lastReadings = [];
       foreach ($sensors as $sensor) {
-         $lastReading = (new DalSensorReading())->GetLastReading($sensor);
+         $lastReading = (new DalSensorReading())->GetLastReading($sensor->id);
          $lastReadings[$sensor->id] = $lastReading;
       }
       (new CacheJsonDTO($lastReadings))->Save();
-
    }
 
    /**
@@ -58,27 +57,31 @@ class DalSensorReading
    {
       $cache = CacheJsonDTO::Read();
       $cache->sensorReadings[$sensorReading->sensorId] = $sensorReading;
-      (new CacheJsonDTO($cache->sensorReadings))->Save();
+      $cache->Save();
    }
 
    /**
     *  @param Sensor[] $sensors
     *  @return SensorReading[]
     */
-   public static function GetLastReadingsCacheIfNotExistUpdate(array $sensors): array
+   public static function GetLastReadingsFromCacheOrDatabase(array $sensors): array
    {
+      (new CacheJsonDTO(DalSensorReading::GetLastSensorReadings()))->Save();
       $cache = CacheJsonDTO::Read();
       $isDirty = false;
       $lastReadings = [];
       foreach ($sensors as $sensor) {
+         // check if cache has the last sensorReading of the sensor
          if (array_key_exists($sensor->id, $cache->sensorReadings)) {
             $lastReadings[$sensor->id] = $cache->sensorReadings[$sensor->id];
             continue;
          }
-         $lastReading = (new DalSensorReading())->GetLastReading($sensor);
+         // Do a DB query to get the sensors last reading
+         $lastReading = (new DalSensorReading())->GetLastReading($sensor->id);
          $lastReadings[$sensor->id] = $lastReading;
          $isDirty = true;
       }
+      // update cache if any data came from the DB
       if ($isDirty) {
          (new CacheJsonDTO($lastReadings))->Save();
       }
@@ -86,11 +89,20 @@ class DalSensorReading
       return $lastReadings;
    }
 
+   public function GetLastSensorReadings(): array {
+      $sensors = (new DalSensors())->GetAll();
+      $lastReadings = [];
+      foreach ($sensors as $sensor) {
+         $lastReadings[$sensor->id] = (new DalSensorReading())->GetLastReading($sensor->id);
+      }
+      return $lastReadings;
+   }
+
    /**
-    *  @param Sensor $sensor
+    *  @param string $sensorId
     *  @return SensorReading|null
     */
-   public function GetLastReading(Sensor $sensor): SensorReading|null
+   public function GetLastReading(string $sensorId): SensorReading|null
    {
       $pdo = DbHelper::GetPDO();
       $qry = "SELECT Id, " .
@@ -103,7 +115,7 @@ class DalSensorReading
          " WHERE SensorId = ? " .
          " ORDER BY DateRecorded DESC LIMIT 1;";
       $stmt = $pdo->prepare($qry);
-      $stmt->execute([$sensor->id]);
+      $stmt->execute([$sensorId]);
       $value = $stmt->fetch();
       if (!$value) {
          return null;
@@ -185,22 +197,6 @@ class DalSensorReading
       $stmt->execute([
          $sensorReading->id, $sensorReading->sensorId, $sensorReading->temp,
          $sensorReading->relHum, $sensorReading->dateRecorded, $sensorReading->dateAdded]);
-   }
-
-   /**
-    * @param Sensor[] $sensors
-    * @param string $serial
-    * @return string
-    */
-   public function GetSensorBySerial(array $sensors, string $serial): string
-   {
-      $arr = array_values(array_filter($sensors,
-         function ($obj) use ($serial) {
-            return $obj->serial == $serial;
-         }));
-      if (sizeof($arr) === 0) die('Sensor with serial:' . $serial . ' does not exist!');
-      if (sizeof($arr) > 1) die('Multiple sensors with serial:' . $serial);
-      return $arr[0]->id;
    }
 
    /**

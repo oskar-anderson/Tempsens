@@ -10,7 +10,7 @@ use JetBrains\PhpStorm\Pure;
 use PDO;
 
 
-class DalSensors
+class DalSensors implements IDalBase
 {
    /**
     *  @return string
