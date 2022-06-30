@@ -12,7 +12,7 @@ use App\model\SensorReadingTmp;
 use JetBrains\PhpStorm\Pure;
 use PDO;
 
-class DalSensorReadingTmp
+class DalSensorReadingTmp implements IDalBase
 {
    /**
     *  @return string

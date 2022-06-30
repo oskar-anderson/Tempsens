@@ -41,7 +41,7 @@ class Programm {
       array_push($this->debugs,'GetSensors and handle input: ' . microtime(true) - $before);
       $before = microtime(true);
 
-      $lastReadingsData = DalSensorReading::GetLastReadingsCacheIfNotExistUpdate($sensors);
+      $lastReadingsData = DalSensorReading::GetLastReadingsFromCacheOrDatabase($sensors);
       $lastReadingsView = [];
       foreach ($sensors as  $sensor) {
          $lastReading = $lastReadingsData[$sensor->id];

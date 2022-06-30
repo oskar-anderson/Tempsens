@@ -8,132 +8,132 @@ require_once(__DIR__."/../../vendor/autoload.php");
 use App\db\dal\DalSensorReading;
 use App\db\dal\DalSensorReadingTmp;
 use App\db\dal\DalSensors;
-use App\db\migrations\v1\MigrateSensorReading;
+use App\db\migrations\V0_3_4\MigrateSensorReading;
+use App\db\migrations\V0_3_4\SensorReadingV0_3_4;
+use App\db\migrations\V0_3_4\SensorV0_3_4;
+use App\db\migrations\V1_0_0\SensorV1_0_0;
+use App\db\migrations\V1_0_0\SensorReadingV1_0_0;
 use App\model\Sensor;
+use App\model\SensorReading;
 use PDO;
 use PDOException;
+use App\Util\Console;
 
-Initializer::Initialize('tempsens20210530');
+
+// Initializer::Initialize('tempsens20210530');
+
 
 // Script class to generate initial database, call from command line
 class Initializer
 {
    public static function Initialize(string $name) {
-      try {
-         $pdo = new PDO('mysql:host=localhost', 'root', '');
-         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-      } catch (PDOException $e) {
-         die("FAILED (" . $e->getMessage() . ")\n");
-      }
-      echo "New PDO mysql:host=localhost \n";
-      $stmt = "CREATE DATABASE IF NOT EXISTS " . $name . ";";
-      echo $stmt . "\n";
-      $pdo->exec($stmt);
+      Console::WriteLine();
+      $pdo = DbHelper::GetPdoByKey('db_local_dev');
+      $dropStatement = "DROP DATABASE IF EXISTS {$name};";
+      Console::WriteLine($dropStatement, true);
+      $pdo->exec($dropStatement);
+      $createStatement = "CREATE DATABASE IF NOT EXISTS {$name};";
+      Console::WriteLine($createStatement, true);
+      $pdo->exec($createStatement);
 
-      DbHelper::DropTables();
+      Console::WriteLine("Creating tables...", true);
       DbHelper::CreateTables();
-      Initializer::InitializeData();
-
+      // Console::WriteLine("Initialisizing data...", true);
+      // Initializer::InitializeData();
    }
 
    public static function InitializeData() {
-      $sensors = [
-         new Sensor(
-            id:"00000001x0000x00000001",
-            name: "EE01-Pharma",
-            serial: "18967632",
-            model: "T3510",
-            ip: "http://10.37.2.15",
-            location: "Salve 2c 3. korruse ravimiladu",
-            isPortable: false,
-            minTemp: 15, maxTemp: 25,
-            minRelHum: 20, maxRelHum: 60,
-            readingIntervalMinutes: 15,
-         ),
-         new Sensor(
-            id:"00000001x0000x00000002",
-            name:"EE02-Z_Ladu-U",
-            serial: "20960014",
-            model: "T3510",
-            ip: "http://10.37.2.16",
-            location: "Salve 2c 1. korruse lao keskel ülal",
-            isPortable: false,
-            minTemp: 15, maxTemp: 25,
-            minRelHum: 20, maxRelHum: 60,
-            readingIntervalMinutes: 15,
-         ),
-         new Sensor(
-            id:"00000001x0000x00000003",
-            name:"EE03-Z_Ladu-D",
-            serial: "20960015",
-            model: "T3510",
-            ip: "http://10.37.2.17",
-            location: "Salve 2c 1. korruse lao tagasein",
-            isPortable: false,
-            minTemp: 15, maxTemp: 25,
-            minRelHum: 20, maxRelHum: 60,
-            readingIntervalMinutes: 15,
-         ),
-         new Sensor(
-            id:"00000001x0000x00000004",
-            name:"EE04-Labeling",
-            serial: "20960047",
-            model: "T3510",
-            ip: "http://10.37.2.18",
-            location: "Salve 2c 1. korruse kleepsuruum",
-            isPortable: false,
-            minTemp: 15, maxTemp: 25,
-            minRelHum: 20, maxRelHum: 60,
-            readingIntervalMinutes: 15,
-         ),
-         new Sensor(
-            id:"00000001x0000x00000005",
-            name:"EE05-D_Ladu",
-            serial:"20960050",
-            model:"T3510",
-            ip:"http://10.37.2.19",
-            location: "Salve 2c Bepulsaar",
-            isPortable: false,
-            minTemp: 15, maxTemp: 25,
-            minRelHum: 20, maxRelHum: 60,
-            readingIntervalMinutes: 15,
-         ),
-         new Sensor(
-            id:"00000001x0000x00000006",
-            name:"EE07-Portable",
-            serial: "19260003",
-            model: "M1140",
-            ip: "http://10.37.2.14",
-            location: "Liikumises",
-            isPortable: true,
-            minTemp: 0, maxTemp: 100,
-            minRelHum: 0, maxRelHum: 100,
-            readingIntervalMinutes: 30,
-         ),
-      ];
+      $file = fopen("backupCSV/202104201605-V1_0_0/sensors.csv","r");
+      $sensors = [];
+      for($i = 0; ! feof($file); $i++)
+      {
+         $line = fgetcsv($file, separator: ";");
+         if ($i === 0) continue; // skip first line
 
-      $sensorReadings = MigrateSensorReading::GetUpSensorReading(DbHelper::GetPdoByKey("db_local_dev"), $sensors);
+         $id = $line[0];
+         $name = $line[1];
+         $serial = $line[2];
+         $model = $line[3];
+         $ip = $line[4];
+         $location = $line[5];
+         $isPortable = $line[6];
+         $minTemp = $line[7];
+         $maxTemp = $line[8];
+         $minRelHum = $line[9];
+         $maxRelHum = $line[10];
+         $readingIntervalMinutes = $line[11];
+         $sensor_V1_0_0 = new SensorV1_0_0(
+            $id, 
+            $name, 
+            $serial, 
+            $model, 
+            $ip, 
+            $location, 
+            $isPortable, 
+            $minTemp,
+            $maxTemp, 
+            $minRelHum, 
+            $maxRelHum, 
+            $readingIntervalMinutes
+         );
+         array_push($sensors, $sensor_V1_0_0);
+      }
+      
+      fclose($file);
 
+      $file = fopen("backupCSV/202104201605-V0_3_4/sensor-readings.csv","r");
+      $sensorReadings = [];
+      for($i = 0; ! feof($file); $i++)
+      {
+         $line = fgetcsv($file, separator: ";");
+         if ($i === 0) continue; // skip first line
+
+         $id = $line[0];
+         $passKey = $line[1];
+         $device = $line[2];
+         $temp = $line[3];
+         $relHum = $line[4];
+         $compQuant = $line[5];
+         $pressure = $line[6];
+         $alarms = $line[7];
+         $compType = $line[8];
+         $tempU = $line[9];
+         $pressureU = $line[10];
+         $timer = $line[11];
+         $dactdate = $line[12];
+         $sensorReadingV0_3_4 = new SensorReadingV0_3_4(
+            $id, 
+            $passKey, 
+            $device, 
+            $temp, 
+            $relHum, 
+            $compQuant, 
+            $pressure, 
+            $alarms, 
+            $compType, 
+            $tempU, 
+            $pressureU, 
+            $timer,
+            $dactdate
+         );
+         $sensor = SensorReading::GetSensorBySerial($sensors, $passKey);
+         array_push($sensorReadings, $sensorReadingV0_3_4->GetUp($sensor->id, $sensor->portable));
+      }
+      fclose($file);
+      
       $pdo = DbHelper::GetDevPDO();
       $pdo->beginTransaction();
 
-      echo "Adding data sensors" . "\n";
       foreach ($sensors as $sensor) {
          (new DalSensors())->Create($sensor, $pdo);
       }
 
-      echo "Adding data sensorReadings" . "\n";
-      foreach ($sensorReadings[0] as $sensorReading) {
-         (new DalSensorReading())->Create($sensorReading, $pdo);
-      }
-      foreach ($sensorReadings[1] as $sensorReading) {
-         (new DalSensorReadingTmp())->Create($sensorReading, $pdo);
+      foreach ($sensorReadings as $sensorReadingV1_0_0) {
+         (new DalSensorReading())->Create($sensorReadingV1_0_0, $pdo);
       }
 
       $pdo->commit();
 
-      DalSensorReading::GetLastReadingsCacheIfNotExistUpdate($sensors);
-
-
+      DalSensorReading::GetLastReadingsFromCacheOrDatabase($sensors);
    }
 }

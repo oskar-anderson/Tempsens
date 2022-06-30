@@ -20,4 +20,20 @@ class SensorReading
       $this->dateRecorded = $dateRecorded;
       $this->dateAdded = $dateAdded;
    }
+
+   /**
+    * @param Sensor[] $sensors
+    * @param string $serial
+    * @return Sensor
+    */
+    public static function GetSensorBySerial(array $sensors, string $serial): Sensor
+    {
+       $arr = array_values(array_filter($sensors,
+          function ($obj) use ($serial) {
+             return $obj->serial == $serial;
+          }));
+       if (sizeof($arr) === 0) die('Sensor with serial:' . $serial . ' does not exist!');
+       if (sizeof($arr) > 1) die('Multiple sensors with serial:' . $serial);
+       return $arr[0];
+    }
 }
