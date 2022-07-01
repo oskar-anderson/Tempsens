@@ -20,14 +20,15 @@ class SensorReadingV0_3_4 {
       public string $tempU,
       public string $pressureU,
       public int $timer,
-      public ?string $dactdate,
+      public ?string $dactdate
    ) {}
 
 
    /**
     *  @return SensorReadingV1_0_0
     */
-    public function GetUp($sensorId, $isPortable) {
+    public function GetUp(string $sensorId, bool $isPortable): SensorReadingV1_0_0
+    {
       // $sensorId = SensorReadingV0_3_4::GetSensorIdBySerial($sensors, $this->passkey);
       $sensorReading = new SensorReadingV1_0_0(
          id: Base64::GenerateId(),

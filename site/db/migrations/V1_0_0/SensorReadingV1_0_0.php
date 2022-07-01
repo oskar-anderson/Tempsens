@@ -2,6 +2,8 @@
 
 namespace App\db\migrations\V1_0_0;
 
+use App\model\SensorReading;
+
 class SensorReadingV1_0_0 {
 
     // PHP 8: Constructor property promotion - pretty nice
@@ -13,4 +15,16 @@ class SensorReadingV1_0_0 {
         public string $dateRecorded, 
         public ?string $dateAdded)
     { }
+
+   public function MapToModel(): SensorReading
+   {
+      return new SensorReading(
+         $this->id,
+         $this->sensorId,
+         $this->temp,
+         $this->relHum,
+         $this->dateRecorded,
+         $this->dateAdded
+      );
+   }
 }

@@ -2,6 +2,8 @@
 
 namespace App\db\migrations\V1_0_0;
 
+use App\model\Sensor;
+
 class SensorV1_0_0 {
 
     // PHP 8: Constructor property promotion - pretty nice
@@ -20,4 +22,22 @@ class SensorV1_0_0 {
         public int $readingIntervalMinutes
         )
     { }
+
+   public function MapToModel(): Sensor
+   {
+      return new Sensor(
+         $this->id,
+         $this->name,
+         $this->serial,
+         $this->model,
+         $this->ip,
+         $this->location,
+         $this->isPortable,
+         $this->minTemp,
+         $this->maxTemp,
+         $this->minRelHum,
+         $this->maxRelHum,
+         $this->readingIntervalMinutes
+       );
+   }
 }
