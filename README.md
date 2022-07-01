@@ -113,3 +113,31 @@ Change initializer.php to load data from real DB.
 Remove bash crud job (scripts/alarms.php) that will not work anymore - I don't think it ever did.
 
 Merge current document in _documents folder with the latest production documentation.
+
+
+## Notes
+
+Good:
+* Project structure
+
+Bad:
+* PHP
+  * Types and type hinting tricks
+    * Assoc array vs indexed array
+    * Using PHPDoc for array init: @return Sensor[]
+  * echo wrapping Console::Writeline()
+  * no namespaces for builtin functions
+  * too many parenthesis: (new DalSensors())->GetAll();
+  * Feels like an 8-year-old language
+  * python list comprehension > C# Linq > Java Streams > PHP array_map()
+
+Confusing:
+* PHP
+  * echo (syntax and manual newline)
+  * array_push(myArr, 7) vs myArr[7]
+  * array creation: array() vs []
+  * PHP manual user notes
+* Routing (.htaccess vs index.php)
+* PHP and JS data transfer (REST vs echo into JS var)
+* PHP vs JS for site rendering
+* Cookies - ended making a cache.json file

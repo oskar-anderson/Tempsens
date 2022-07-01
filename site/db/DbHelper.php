@@ -62,7 +62,7 @@ class DbHelper {
    public static function GetPdoByKey($configKey): PDO
    {
       $dbconf = Config::GetConfig()[$configKey];
-      Console::WriteLine("New PDO(connectUrl= {$dbconf['connectUrl']}, username=***, password=***)");
+      // Console::WriteLine("New PDO(connectUrl= {$dbconf['connectUrl']}, username=***, password=***)");
       try {
          $pdo = new PDO($dbconf['connectUrl'], $dbconf['username'], $dbconf['password']);
          $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

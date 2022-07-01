@@ -34,5 +34,14 @@ class Sensor
     $this->maxRelHum = $maxRelHum;
     $this->readingIntervalMinutes = $readingIntervalMinutes;
    }
+
+   /**
+    * Type hinting trick
+    *  @return array<Sensor>
+    */
+   public static function NewArray(): array
+   {
+      return [];
+   }
 }
 

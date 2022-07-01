@@ -36,4 +36,13 @@ class SensorReading
        if (sizeof($arr) > 1) die('Multiple sensors with serial:' . $serial);
        return $arr[0];
     }
+
+   /**
+    * Type hinting trick
+    *  @return SensorReading[]
+    */
+   public static function NewArray(): array
+   {
+      return [];
+   }
 }

@@ -47,7 +47,7 @@ class CacheJsonDTO
    }
 
    /**
-    * Read the cache file
+    * Read the cache file. Use DoesFileExist() before reading file to prevent Exception.
     *
     *  @return CacheJsonDTO
     *  @throws Exception

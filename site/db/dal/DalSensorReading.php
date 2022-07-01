@@ -55,6 +55,9 @@ class DalSensorReading implements IDalBase
     */
    public static function SetLastReadingsCache(SensorReading $sensorReading): void
    {
+      if (! CacheJsonDTO::DoesFileExist()) {
+         (new CacheJsonDTO((new DalSensorReading())->GetLastSensorReadings()))->Save();
+      }
       $cache = CacheJsonDTO::Read();
       $cache->sensorReadings[$sensorReading->sensorId] = $sensorReading;
       $cache->Save();
@@ -66,7 +69,9 @@ class DalSensorReading implements IDalBase
     */
    public static function GetLastReadingsFromCacheOrDatabase(array $sensors): array
    {
-      (new CacheJsonDTO(DalSensorReading::GetLastSensorReadings()))->Save();
+      if (! CacheJsonDTO::DoesFileExist()) {
+         (new CacheJsonDTO((new DalSensorReading())->GetLastSensorReadings()))->Save();
+      }
       $cache = CacheJsonDTO::Read();
       $isDirty = false;
       $lastReadings = [];
@@ -89,6 +94,10 @@ class DalSensorReading implements IDalBase
       return $lastReadings;
    }
 
+   /**
+    * Get assoc array of sensor id and sensor's last SensorReading? (SensorReading|null)[]
+    * @return array<SensorReading|null>
+    */
    public function GetLastSensorReadings(): array {
       $sensors = (new DalSensors())->GetAll();
       $lastReadings = [];

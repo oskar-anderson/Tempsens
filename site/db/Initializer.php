@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpArrayPushWithOneElementInspection */
 
 
 namespace App\db;
@@ -20,8 +20,8 @@ use PDOException;
 use App\Util\Console;
 
 
-// Initializer::Initialize('tempsens20210530');
-
+Initializer::Initialize('tempsens20210530');
+// Initializer::InitializeData();
 
 // Script class to generate initial database, call from command line
 class Initializer
@@ -38,30 +38,32 @@ class Initializer
 
       Console::WriteLine("Creating tables...", true);
       DbHelper::CreateTables();
-      // Console::WriteLine("Initialisizing data...", true);
-      // Initializer::InitializeData();
+      Console::WriteLine("Initialisizing data...", true);
+      Initializer::InitializeData();
+      Console::WriteLine("All good!", true);
    }
 
    public static function InitializeData() {
+      // $csv = array_map('str_getcsv', file('backupCSV/202104201605-V1_0_0/sensorsV1_0_0.csv'));
       $file = fopen("backupCSV/202104201605-V1_0_0/sensors.csv","r");
-      $sensors = [];
-      for($i = 0; ! feof($file); $i++)
+      $sensors = Sensor::NewArray();
+      for($i = 0; $line = fgetcsv($file, separator: ";"); $i++)
       {
-         $line = fgetcsv($file, separator: ";");
+         // var_dump($line);
          if ($i === 0) continue; // skip first line
 
-         $id = $line[0];
-         $name = $line[1];
-         $serial = $line[2];
-         $model = $line[3];
-         $ip = $line[4];
-         $location = $line[5];
-         $isPortable = $line[6];
-         $minTemp = $line[7];
-         $maxTemp = $line[8];
-         $minRelHum = $line[9];
-         $maxRelHum = $line[10];
-         $readingIntervalMinutes = $line[11];
+         $id = (string) $line[0];
+         $name = (string) $line[1];
+         $serial = (string) $line[2];
+         $model = (string) $line[3];
+         $ip = (string) $line[4];
+         $location = (string) $line[5];
+         $isPortable = boolval($line[6]);
+         $minTemp = floatval($line[7]);
+         $maxTemp = floatval($line[8]);
+         $minRelHum = floatval($line[9]);
+         $maxRelHum = floatval($line[10]);
+         $readingIntervalMinutes = intval($line[11]);
          $sensor_V1_0_0 = new SensorV1_0_0(
             $id, 
             $name, 
@@ -76,31 +78,31 @@ class Initializer
             $maxRelHum, 
             $readingIntervalMinutes
          );
-         array_push($sensors, $sensor_V1_0_0);
+         array_push($sensors, $sensor_V1_0_0->MapToModel());
       }
       
       fclose($file);
 
       $file = fopen("backupCSV/202104201605-V0_3_4/sensor-readings.csv","r");
-      $sensorReadings = [];
-      for($i = 0; ! feof($file); $i++)
+      $sensorReadings = SensorReading::NewArray();
+      for($i = 0; $line = fgetcsv($file, separator: ";"); $i++)
       {
-         $line = fgetcsv($file, separator: ";");
+         // var_dump($line);
          if ($i === 0) continue; // skip first line
 
-         $id = $line[0];
-         $passKey = $line[1];
-         $device = $line[2];
-         $temp = $line[3];
-         $relHum = $line[4];
-         $compQuant = $line[5];
-         $pressure = $line[6];
-         $alarms = $line[7];
-         $compType = $line[8];
-         $tempU = $line[9];
-         $pressureU = $line[10];
-         $timer = $line[11];
-         $dactdate = $line[12];
+         $id = (string) $line[0];
+         $passKey = (string) $line[1];
+         $device = (string) $line[2];
+         $temp = floatval($line[3]);
+         $relHum = floatval($line[4]);
+         $compQuant = floatval($line[5]);
+         $pressure = floatval($line[6]);
+         $alarms = (string) $line[7];
+         $compType = (string) $line[8];
+         $tempU = (string) $line[9];
+         $pressureU = (string) $line[10];
+         $timer = intval($line[11]);
+         $dactdate = (string) $line[12];
          $sensorReadingV0_3_4 = new SensorReadingV0_3_4(
             $id, 
             $passKey, 
@@ -117,19 +119,21 @@ class Initializer
             $dactdate
          );
          $sensor = SensorReading::GetSensorBySerial($sensors, $passKey);
-         array_push($sensorReadings, $sensorReadingV0_3_4->GetUp($sensor->id, $sensor->portable));
+         array_push($sensorReadings, $sensorReadingV0_3_4->GetUp($sensor->id, $sensor->isPortable)->MapToModel());
       }
       fclose($file);
       
       $pdo = DbHelper::GetDevPDO();
       $pdo->beginTransaction();
 
+      Console::WriteLine('Transaction adding sensors: ' . sizeof($sensors), true);
       foreach ($sensors as $sensor) {
          (new DalSensors())->Create($sensor, $pdo);
       }
 
-      foreach ($sensorReadings as $sensorReadingV1_0_0) {
-         (new DalSensorReading())->Create($sensorReadingV1_0_0, $pdo);
+      Console::WriteLine('Transaction adding sensorReadings: ' . sizeof($sensorReadings), true);
+      foreach ($sensorReadings as $sensorReading) {
+         (new DalSensorReading())->Create($sensorReading, $pdo);
       }
 
       $pdo->commit();
