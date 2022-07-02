@@ -5,7 +5,6 @@ namespace App\view\partial;
 
 require_once(__DIR__."/../../../vendor/autoload.php");
 
-use App\dto\SensorCrudBadCreateValues;
 use App\model\Sensor;
 
 class SensorCrudPartialCreateEdit
@@ -63,35 +62,29 @@ class SensorCrudPartialCreateEdit
          </div>
       EOT;
 
+
       $idAppend = 'newSensor';
-      $cb = '';
+      $id = '';
+      $name = '';
+      $serial = '';
+      $model = '';
+      $ip = '';
+      $location = '';
+      $isPortableCheck = '';
+      $minTemp = '';
+      $maxTemp = '';
+      $minRelHum = '';
+      $maxRelHum = '';
+      $readingIntervalMinutes = '';
       if ($sensor !== null) {
          $idAppend = $sensor->id;
-         $cb = $sensor->isPortable ? 'checked' : '';
-      }
-
-
-      if ($sensor === null) {
-         $id = '';
-         $name = '';
-         $serial = '';
-         $model = '';
-         $ip = '';
-         $location = '';
-         $isPortableCheck = '';
-         $minTemp = '';
-         $maxTemp = '';
-         $minRelHum = '';
-         $maxRelHum = '';
-         $readingIntervalMinutes = '';
-      } else {
          $id = htmlspecialchars($sensor->id);
          $name = htmlspecialchars($sensor->name);
          $serial = htmlspecialchars($sensor->serial);
          $model = htmlspecialchars($sensor->model);
          $ip = htmlspecialchars($sensor->ip);
          $location = htmlspecialchars($sensor->location);
-         $isPortableCheck = $cb;
+         $isPortableCheck = $sensor->isPortable ? 'checked' : $isPortableCheck;;
          $minTemp = htmlspecialchars($sensor->minTemp);
          $maxTemp = htmlspecialchars($sensor->maxTemp);
          $minRelHum = htmlspecialchars($sensor->minRelHum);

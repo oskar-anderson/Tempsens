@@ -58,7 +58,7 @@ class Initializer
          $model = (string) $line[3];
          $ip = (string) $line[4];
          $location = (string) $line[5];
-         $isPortable = boolval($line[6]);
+         $isPortable = $line[6] != "false"; // don't use boolval
          $minTemp = floatval($line[7]);
          $maxTemp = floatval($line[8]);
          $minRelHum = floatval($line[9]);

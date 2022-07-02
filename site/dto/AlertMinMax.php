@@ -112,7 +112,7 @@ class AlertMinMax
             / 60 <= $sensor->readingIntervalMinutes;
          $isPartOfChainBreak = sizeof($outOfBoundsChain) > 1 && ! $isPartOfSameChain;
          $isNotPartOfChain = sizeof($outOfBoundsChain) == 0 && ! $isPartOfSameChain;
-         $state = ["", "isPartOfSameChain", "isPartOfChainBreak", "isNotPartOfChain"][(int) $isPartOfSameChain * 1 + (int) $isPartOfChainBreak * 2 + (int) $isNotPartOfChain * 3];
+         $state = ["", "isPartOfSameChain", "isPartOfChainBreak", "", "isNotPartOfChain"][(int) $isPartOfSameChain * 1 + (int) $isPartOfChainBreak * 2 + (int) $isNotPartOfChain * 4];
          if (sizeof($outOfBoundsChain) == 1) die("Program logic error! Chain cannot contain singular element!");  // sanity check
          $isLast = $i === sizeof($rawOutOfBounds) - 2;
          switch ($state) {

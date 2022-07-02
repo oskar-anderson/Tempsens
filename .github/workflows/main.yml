@@ -1,0 +1,40 @@
+name: Update Footer
+
+# Run workflow on every push to the master branch
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  modify-footer:
+    # use ubuntu-latest image to run steps on
+    runs-on: ubuntu-latest
+    # https://stackoverflow.com/questions/70374602/getting-error-while-pushing-changes-to-my-own-public-repo-through-github-actions
+
+    steps:
+      # uses GitHub's checkout action to checkout code form the master branch
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal access token.
+          fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
+
+      - name: Update footer content
+        # git_latest_tag_version=$(git tag --sort=committerdate | tail -1)  # returns emtpy string if no git tags are found
+        run: |
+          git_hash=$(git --no-pager log -1 --oneline --format="%H")
+          git_hash_8=${git_hash:0:8}
+          git_commit_msg=$(git log -1 --pretty=%B)
+          git_commit_date=$(git --no-pager log -1 --pretty='format:%cd' --date=format:'%Y-%m-%dT%H:%M:%S')
+          python3 ./dev_tools.py --hash "$git_hash_8" --commit-msg "$git_commit_msg" --commit-date "$git_commit_date"
+
+
+      - name: Commit files
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -m "[Bot] Update footer" -a
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
