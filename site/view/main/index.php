@@ -2,8 +2,6 @@
 /** @noinspection DuplicatedCode */
 
 use App\dto\IndexViewModel;
-use App\view\partial\FooterPartial;
-use App\view\partial\HeaderPartial;
 use App\view\partial\SensorCrudPartialCreateEdit;
 
 /* @var IndexViewModel $htmlInjects */
@@ -25,9 +23,27 @@ $errors = $htmlInjects->errors;
 
 <!DOCTYPE HTML>
 <html lang="en">
-<!--suppress HtmlRequiredTitleElement -->
 <head>
-   <?php echo HeaderPartial::GetHtml('Sensor'); ?>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-width, initial-scale=1.0">
+    <meta name="robots" content="index,nofollow" />
+    <meta name="keywords" content="Sensors" />
+    <meta name="description" content="Sensors" />
+    <base href="http://localhost/myApps/Tempsens/site/">
+    <title>Sensor</title>
+
+    <link rel="icon" href="static/gfx/favicon3.png" type="image/png" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="static/css/reset.css" />
+    <link rel="stylesheet" type="text/css" media="screen" href="static/css/main-layout.css" />
+
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script type="text/javascript" src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
    <style>
        .dateFromOption {
            display: grid;
@@ -224,12 +240,12 @@ $errors = $htmlInjects->errors;
                      Sensors alarms will combine all continues alarms under one parent alarm.
                      Parent alarm will show starting time, duration, count of sub alarms and sub alarm deviation
                      (largest offset from average allowed value) of temperature and relative humidity.
-                     Alarm duration are approximate depending on sensor reading interval.
+                     Alarm duration is approximate depending on sensor reading interval.
                   </p>
                </div>
 
 
-               <div style="margin-bottom: 1em">
+               <div style="margin-bottom: 1em; background: var(--light_grey_02);">
                   <div style="display: grid; grid-auto-rows: auto; grid-template-columns: 30px 10em; width: min-content;"
                        class="collapse-and-change-icon" data-toggle="collapse" data-target="#collapseSensorCreate" aria-expanded="false">
                      <div style="padding-left: 4px" type="button">
@@ -279,17 +295,12 @@ $errors = $htmlInjects->errors;
                         <i class="bi bi-caret-right"></i>
                      </span>
                      <?php
-                        $temps = array_map(function ($obj) {
-                           return $obj->temp;
-                        }, $sensorReadingsBySensorId[$sensor->id]);
+                        $temps = array_map(fn($obj) => $obj->temp, $sensorReadingsBySensorId[$sensor->id]);
                         $tempAvg = sizeof($temps) === 0 ? 'NULL' : number_format(array_sum($temps) / sizeof($temps), 1);
                         $tempMax = sizeof($temps) === 0 ? 'NULL' : number_format(max($temps), 1);
                         $tempMix = sizeof($temps) === 0 ? 'NULL' : number_format(min($temps), 1);
 
-                        $hums = array_map(function ($obj) {
-                           return $obj->relHum;
-                        }, $sensorReadingsBySensorId[$sensor->id]);
-                        $t = $sensorReadingsBySensorId[$sensor->id];
+                        $hums = array_map(fn ($obj) => $obj->relHum, $sensorReadingsBySensorId[$sensor->id]);
                         $humAvg = sizeof($hums) === 0 ? 'NULL' : number_format(array_sum($hums) / sizeof($hums), 1);
                         $humMax = sizeof($hums) === 0 ? 'NULL' : number_format(max($hums), 1);
                         $humMix = sizeof($hums) === 0 ? 'NULL' : number_format(min($hums), 1);
@@ -379,10 +390,10 @@ $errors = $htmlInjects->errors;
                               <input type="text" id="csvParseExpressionSensorId_<?php echo $sensor->id;?>" value="date;temp;relHum">
                            </div>
                            <div>
-                              <label class="button">
+                              <div class="button">
                                  <span>Upload</span>
                                  <input style="display: none" type="file" id="csvFileSensorId_<?php echo $sensor->id;?>" data-sensorId="<?php echo $sensor->id;?>" class="csvFile" accept=".csv">
-                              </label>
+                              </div>
                            </div>
                         </div>
                      <?php } ?>
@@ -522,20 +533,20 @@ $errors = $htmlInjects->errors;
 
 <script type="text/javascript">
 
-   HandleCollapseSymbolChange();
-   FancyDatePicker(['#dateTo', '#absoluteDateFrom']);
-   document.getElementById('ChartDrawButton').onclick = () => {
-       google.charts.load("current", { 'packages':["corechart", "line"]});
-       google.charts.setOnLoadCallback(drawChart);
-   };
    dayjs.extend(window.dayjs_plugin_customParseFormat);
-   document.getElementById('saveImg').onclick = SaveChartImg;
-   $('.csvFile').change( function () { HandlePortableSensorDataCsvUpload(this.getAttribute('data-sensorId'))});
 
    main();
 
    async function main() {
-       document.querySelector(".footer").innerHTML = await fetch("./../view/partial/FooterPartial.html").then(x => x.text());
+       document.querySelector(".footer").innerHTML = await fetch("view/partial/FooterPartial.html").then(x => x.text());
+       document.getElementById('saveImg').onclick = SaveChartImg;
+       $('.csvFile').change( function () { HandlePortableSensorDataCsvUpload(this.getAttribute('data-sensorId'))});
+       HandleCollapseSymbolChange();
+       FancyDatePicker(['#dateTo', '#absoluteDateFrom']);
+       document.getElementById('ChartDrawButton').onclick = () => {
+           google.charts.load("current", { 'packages':["corechart", "line"]});
+           google.charts.setOnLoadCallback(drawChart);
+       };
    }
 
    function HandlePortableSensorDataCsvUpload(id) {
@@ -620,7 +631,7 @@ $errors = $htmlInjects->errors;
                    continue;
                }
 
-               if (value.substr(0, 5) === 'Error' || value === '') {
+               if (value.slice(0, 5) === 'Error' || value === '') {
                    skipCount++;
                    break;
                }
@@ -687,7 +698,7 @@ $errors = $htmlInjects->errors;
            // Google charts can handle it built in so this is actually unnecessary, but it does look nicer
           let chartDiv = document.getElementById('chartDiv');
           let chartErr = document.getElementById('chartErr');
-          if (sensors.map(x => x.sensorSettings).every(x => !x.isTemp && !x.isRelHum)) {
+          if (sensors.every(x => !x.sensorSettings.isTemp && !x.sensorSettings.isRelHum)) {
               chartDiv.style.display = 'none';
               chartErr.innerText = 'No sensor selected';
               return;
@@ -696,6 +707,13 @@ $errors = $htmlInjects->errors;
           chartErr.innerText = '';
        }
 
+       /* Example of xAxisTimesToSensors.
+            [
+                { date; [{temp, relHum}, {temp, relHum} {temp, relHum}] },
+                { 9:15; [{24.1, 15}, {24.5, 15.7} {24.8, 16.7}] },
+                { 9:30; [{21.6, 14.3}, {22, 15.1} {22.4, 15.7}] }
+            ]
+        */
        let xAxisTimesToSensors = [];
        for (let i = 0; ; i++) {
            let nextDate = dateFrom.add(step * i, 'minutes');
@@ -706,83 +724,74 @@ $errors = $htmlInjects->errors;
            });
        }
 
-
+       // Make sure temp operations always come before relHum operations.
+       // They are done multiple times in different places.
+       // Perhaps this design can be improved.
        for (let sensor of sensors) {
            let tempRangeAvg = (sensor.maxTemp + sensor.minTemp) / 2;
            let humRangeAvg = (sensor.maxRelHum + sensor.minRelHum) / 2;
 
            let low = 0;
            for (let i = 0; i < xAxisTimesToSensors.length - 1; i++) {
-               if (! sensor.sensorSettings.isTemp && ! sensor.sensorSettings.isRelHum) {
-                   xAxisTimesToSensors[i].data.push(null);
-                   continue;
-               }
-               let inbetween = {
-                   'temps': null,
-                   'hums': null
-               }
-               let sensorValue = {
+               let sensorDataBetweenDates = {
                    'temp': null,
                    'relHum': null,
                };
+               if (! sensor.sensorSettings.isTemp && ! sensor.sensorSettings.isRelHum) {
+                   // This is an optimization.
+                   // This value should never be used, but it makes 2d array creation easier as the data is accessed by index.
+                   xAxisTimesToSensors[i].data.push(sensorDataBetweenDates);
+                   continue;
+               }
 
                let before = xAxisTimesToSensors[i].date;
                let after = xAxisTimesToSensors[i + 1].date;
 
                let tmp = FilterSortedArrayValuesBetweenDates(sensor.sensorReadings, before, after, low);
-               let currentRows = tmp['result'];
-               low = tmp['low'];
+               let currentRows = tmp.result,
+               low = tmp.low;  // IDE says 'Unused local variable'. Why??? it will be used in the next loop.
+
+               let doStrategy = function(strategy, arr, graphDefaultValue, sensorRangeAvg) {
+                   let getMedianValue = function(arr, graphDefaultValue) {
+                       let valOrUndefined = arr[Math.floor(arr.length / 2)];
+                       return valOrUndefined === undefined ? graphDefaultValue : valOrUndefined;
+                   }
+                   let getAverageValue = function (arr, graphDefaultValue) {
+                       return arr.length === 0 ? graphDefaultValue : arr.reduce((a, b) => a + b) / arr.length;
+                   }
+                   let getDeviationValue = function (arr, graphDefaultValue, sensorRangeAvg) {
+                       return arr.length === 0 ? graphDefaultValue :
+                           arr.sort(
+                               (a,b) => Math.abs(a-sensorRangeAvg) - Math.abs(b-sensorRangeAvg)
+                           )[arr.length - 1]
+                   }
+                   switch (strategy) {
+                       case 'median':
+                           return getMedianValue(arr, graphDefaultValue);
+                       case 'average':
+                           return getAverageValue(arr, graphDefaultValue);
+                       case 'deviation':
+                           return getDeviationValue(arr, graphDefaultValue, sensorRangeAvg);
+                       default:
+                           console.error('Unknown value!');
+                           return;
+                   }
+               }
 
                if (sensor.sensorSettings.isTemp) {
-                   inbetween.temps = currentRows.map(x => x.temp);
+                   sensorDataBetweenDates.temp = doStrategy(strategy, currentRows.map(x => x.temp), graphDefaultValue, tempRangeAvg);
                }
                if (sensor.sensorSettings.isRelHum) {
-                   inbetween.hums = currentRows.map(x => x.relHum);
+                   sensorDataBetweenDates.relHum = doStrategy(strategy, currentRows.map(x => x.relHum), graphDefaultValue, humRangeAvg);
                }
 
-
-               switch (strategy) {
-                   case 'median':
-                       if (sensor.sensorSettings.isTemp) {
-                           let valOrUndefined = inbetween.temps[Math.floor(inbetween.temps.length / 2)];
-                           sensorValue.temp = valOrUndefined === undefined ? graphDefaultValue : valOrUndefined;
-                       }
-                       if (sensor.sensorSettings.isRelHum) {
-                           let valOrUndefined = inbetween.hums[Math.floor(inbetween.hums.length / 2)];
-                           sensorValue.relHum = valOrUndefined === undefined ? graphDefaultValue : valOrUndefined;
-                       }
-                       break;
-                   case 'average':
-                       if (sensor.sensorSettings.isTemp) {
-                           sensorValue.temp = inbetween.temps.length === 0 ? graphDefaultValue : inbetween.temps.reduce((a, b) => a + b) / inbetween.temps.length;
-                       }
-                       if (sensor.sensorSettings.isRelHum) {
-                           sensorValue.relHum = inbetween.hums.length === 0 ? graphDefaultValue : inbetween.hums.reduce((a, b) => a + b) / inbetween.hums.length;
-                       }
-                       break;
-                   case 'deviation':
-                       if (sensor.sensorSettings.isTemp) {
-                           sensorValue.temp = inbetween.temps.length === 0 ? graphDefaultValue :
-                               inbetween.temps.sort(
-                                   (a,b) => Math.abs(a-tempRangeAvg) - Math.abs(b-tempRangeAvg)
-                               )[inbetween.temps.length - 1];
-                       }
-                       if (sensor.sensorSettings.isRelHum) {
-                           sensorValue.relHum = inbetween.hums.length === 0 ? graphDefaultValue :
-                               inbetween.hums.sort(
-                                   (a,b) => Math.abs(a-humRangeAvg) - Math.abs(b-humRangeAvg)
-                               )[inbetween.hums.length - 1];
-                       }
-                       break;
-                   default:
-                       console.error('Unknown value!');
-                       return;
-               }
-               xAxisTimesToSensors[i].data.push(sensorValue);
+               xAxisTimesToSensors[i].data.push(sensorDataBetweenDates);
            }
        }
+       // We needed one extra date for data manipulation. The last data is empty
        xAxisTimesToSensors.pop();
 
+       // add header columns
        data.addColumn('string', 'date');
        for (let sensor of sensors) {
            if (sensor.sensorSettings.isTemp) {
@@ -795,27 +804,27 @@ $errors = $htmlInjects->errors;
            }
        }
 
-
+       // add data columns
        let rows = [];
        for (let xAxisTime of xAxisTimesToSensors) {
            let row = [];
            row.push(xAxisTime.date.add(step / 2, 'minutes').format('DD.MM'))
-           for (let i = 0; i < sensors.length; i++) {
-               let sensor = sensors[i];
+           for (let y = 0; y < sensors.length; y++) {
+               let sensor = sensors[y];
                const addTooltipFunc = function (valueAndSymbol) {
                    return  `<div style="height: 50px; width: 14em">
                               <p><b>${xAxisTime.date.format('HH:mm, DD.MM.YYYY')}</b></p>
                               <p style="margin-top: 6px">${encodeURI(sensor.name)}: <b>${valueAndSymbol}</b></p>
                            </div>`;
                };
-               let tmp = xAxisTime.data[i] ?? null;
+               let cell = xAxisTime.data[y];
                if (sensor.sensorSettings.isTemp) {
-                   row.push(tmp.temp);
-                   row.push(addTooltipFunc(tmp.temp + '℃'));
+                   row.push(cell.temp);
+                   row.push(addTooltipFunc(cell.temp + '℃'));
                }
                if (sensor.sensorSettings.isRelHum) {
-                   row.push(tmp.relHum);
-                   row.push(addTooltipFunc(tmp.relHum + '%'));
+                   row.push(cell.relHum);
+                   row.push(addTooltipFunc(cell.relHum + '%'));
                }
            }
            rows.push(row);
@@ -870,10 +879,8 @@ $errors = $htmlInjects->errors;
    }
 
    function FilterSortedArrayValuesBetweenDates(sensorReadings, before, after, low) {
-       if (false) {
-           // this is the readable version, but much slower duo to searching the entire array
-           return sensorReadings.filter(x => before <= x.date && after > x.date);
-       }
+       // this would be more readable, but much slower duo to searching the entire array
+       // sensorReadings.filter(x => before <= x.date && after > x.date);
 
        let result = [];
        while (low < sensorReadings.length) {

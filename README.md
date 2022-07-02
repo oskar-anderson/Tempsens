@@ -105,10 +105,11 @@ by: Karl Oskar Anderson
 ## Future
 
 ### Todo
-Test SensorReading sql performance in non localhost environment. 
+* Test SensorReading sql performance in non localhost environment. 
 I had a weird situation where selecting 1 more field (dateAdded) significantly slows down query even if the field is always empty/null. 
 
-Change initializer.php to load data from real DB.
+* Change Initializer.php to load data from real DB. 
+* Make Initializer.php impossible trigger from website.
 
 Remove bash crud job (scripts/alarms.php) that will not work anymore - I don't think it ever did.
 
@@ -119,17 +120,35 @@ Merge current document in _documents folder with the latest production documenta
 
 Good:
 * Project structure
+* Discrete multiple sensor data to one timeline
+* Prioritize important info, collapse less important
+* Taking feedback and implementing requested features
+* No duplicate code
+* MVC structure
+* Simple single auth, no users
 
 Bad:
-* PHP
+* PHP:
   * Types and type hinting tricks
     * Assoc array vs indexed array
     * Using PHPDoc for array init: @return Sensor[]
-  * echo wrapping Console::Writeline()
-  * no namespaces for builtin functions
-  * too many parenthesis: (new DalSensors())->GetAll();
-  * Feels like an 8-year-old language
-  * python list comprehension > C# Linq > Java Streams > PHP array_map()
+  * No namespaces for builtin functions
+  * No builtin writeLine for console scrips.
+  * Too many parenthesis: (new DalSensors())->GetAll();
+  * Feels like people last used the language 8 year ago
+  * boolval('false'); // true
+  * Python list comprehension > C# Linq > Java Streams > PHP array_map()
+* Could not get a server running
+* Database: 
+  * auto_increment vs GUID
+  * DROP * Tables; failed to because of FK constraints
+  * Performance
+  * Backup
+* HTML/JS:
+  * Forms (invisible form vs pure dynamic JS form submit)
+  * Input file display none trick
+* Cron jobs
+
 
 Confusing:
 * PHP
@@ -137,7 +156,10 @@ Confusing:
   * array_push(myArr, 7) vs myArr[7]
   * array creation: array() vs []
   * PHP manual user notes
-* Routing (.htaccess vs index.php)
-* PHP and JS data transfer (REST vs echo into JS var)
+* Routing (.htaccess vs main index.php routing vs HTML base)
+* PHP and JS data transfer (REST vs echo into HTML or JS))
 * PHP vs JS for site rendering
 * Cookies - ended making a cache.json file
+* HTML details and summary vs Bootstrap collapse
+* New page vs model or collapsable
+* Database joins vs PHP Assoc array
