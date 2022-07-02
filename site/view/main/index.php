@@ -485,8 +485,9 @@ $errors = $htmlInjects->errors;
          </div>
       </div>
    </div>
-   <?php echo FooterPartial::GetHtml() ?>
-
+   <footer class="footer">
+       Javascript failed!
+   </footer>
    <!-- Modal -->
    <div class="modal fade" id="JsonModal" tabindex="-1" role="dialog">
       <div class="modal-dialog" role="document">
@@ -531,6 +532,11 @@ $errors = $htmlInjects->errors;
    document.getElementById('saveImg').onclick = SaveChartImg;
    $('.csvFile').change( function () { HandlePortableSensorDataCsvUpload(this.getAttribute('data-sensorId'))});
 
+   main();
+
+   async function main() {
+       document.querySelector(".footer").innerHTML = await fetch("./../view/partial/FooterPartial.html").then(x => x.text());
+   }
 
    function HandlePortableSensorDataCsvUpload(id) {
        let reader = new FileReader();
