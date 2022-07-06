@@ -29,14 +29,14 @@ $errors = $htmlInjects->errors;
     <meta name="robots" content="index,nofollow" />
     <meta name="keywords" content="Sensors" />
     <meta name="description" content="Sensors" />
-    <base href="http://localhost/myApps/Tempsens/site/">
+    <base href="http://localhost/myApps/Tempsens/site/" />
     <title>Sensor</title>
 
     <link rel="icon" href="static/gfx/favicon3.png" type="image/png" />
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" />
 
     <link rel="stylesheet" type="text/css" media="screen" href="static/css/reset.css" />
     <link rel="stylesheet" type="text/css" media="screen" href="static/css/main-layout.css" />
@@ -131,11 +131,22 @@ $errors = $htmlInjects->errors;
 
    </div>
    <div>
-      <div class="🎯" style="height: auto">
-         <form name="formJsSubmit" action="" method="get" style="display: none">
-            <input id="submitDateFrom" name="From" value="">
-            <input id="submitDateTo" name="To" value="">
-         </form>
+      <div>
+         <?php if (sizeof($errors) !== 0) { ?>
+             <div class="alert alert-danger alert-dismissible fade show" style="margin-bottom: 2em" role="alert">
+                 <h4>Errors:</h4>
+                 <ol>
+                    <?php foreach ($errors as $error) { ?>
+                        <li><?php echo $error; ?></li>
+                    <?php } ?>
+                 </ol>
+                 <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span>&times;</span></button>
+             </div>
+         <?php } ?>
+
+         <div class="🎯">
+
+
          <div style="width: min(90%, 50em); display: grid; grid-template-columns: 5fr 2fr 5fr; margin-top: 2em;">
             <div>
 
@@ -185,6 +196,7 @@ $errors = $htmlInjects->errors;
 
 
          </div>
+         </div>
       </div>
       <div style="margin-top: 3em; margin-left: clamp(2%, 6%, 10%); margin-right: clamp(2%, 6%, 10%);">
          <div style="margin-bottom: 1em">
@@ -196,16 +208,6 @@ $errors = $htmlInjects->errors;
                      <i style="font-size: 0.55em" class="bi bi-question-circle"></i>
                   </span>
                </span>
-               <?php if (sizeof($errors) !== 0) { ?>
-                  <div class="alert alert-danger" style="margin-bottom: 2em" role="alert">
-                     <h4>Errors:</h4>
-                     <ol>
-                     <?php foreach ($errors as $error) { ?>
-                        <li><?php echo $error; ?></li>
-                     <?php } ?>
-                     </ol>
-                  </div>
-               <?php } ?>
             </div>
 
             <div class="collapse" id="collapseHelp">
@@ -253,7 +255,7 @@ $errors = $htmlInjects->errors;
                      </div>
                      <div>Create new sensor</div>
                   </div>
-                  <form action="" method="post" style="padding: 0.4em 30px 0.4em 30px; margin-top: 1.2em" class="collapse" id="collapseSensorCreate">
+                  <form action="" method="post" autocomplete="off" style="padding: 0.4em 30px 0.4em 30px; margin-top: 1.2em" class="collapse" id="collapseSensorCreate">
                      <div style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 0.4em 3em; padding-bottom: 0.8em">
                         <?php echo SensorCrudPartialCreateEdit::GetHtml($sensorCrud->createBadValues->sensor ?? null) ?>
                      </div>
@@ -329,91 +331,113 @@ $errors = $htmlInjects->errors;
                      <div><?php echo $humMax ?></div>
                </div>
 
-               <div class="collapse zebra-2" id="<?php echo "collapseSensorInfoIdx_" . $i?>" style="border-top: 1px dotted black; padding: 0.4em 30px 0.4em 30px">
+               <div class="collapse zebra-2" id="<?php echo "collapseSensorInfoIdx_" . $i?>" style="border-top: 1px dotted black; padding: 0.4em 20px">
+                   <nav>
+                       <div class="nav nav-tabs">
+                           <button class="nav-link active button" data-toggle="tab" data-target="#nav-alerts-<?php echo $i?>">Alerts</button>
+                           <button class="nav-link button" data-toggle="tab" data-target="#nav-details-<?php echo $i?>">Details</button>
+                           <button class="nav-link button" data-toggle="tab" data-target="#nav-general-<?php echo $i?>">General</button>
+                           <button class="nav-link button" data-toggle="tab" data-target="#nav-export-<?php echo $i?>">Export</button>
+                           <button class="nav-link button" data-toggle="tab" data-target="#nav-import-<?php echo $i?>">Import</button>
+                       </div>
+                   </nav>
+                   <div class="tab-content">
 
-                  <div class="h3">Alerts</div>
-                  <div style="margin-bottom: 1.4em">
-                     <p>
-                        <?php
-                        if (sizeof($sensorReadingOutOfBounds[$sensor->id]) === 0) {
-                           echo 'All good';
-                        }?>
-                     </p>
-                     <?php if (sizeof($sensorReadingOutOfBounds[$sensor->id]) !== 0) { ?>
-                        <table style="background: var(--light_grey_03)">
-                           <thead class="collapse-and-change-icon" data-toggle="collapse" data-target="<?php echo "#collapseSensorAlertsIdx_" . $i?>" aria-expanded="false">
-                              <tr>
-                                 <th type="button">
-                                    <i class="bi bi-caret-right"></i>
-                                 </th>
-                                 <th>Timestamp</th>
-                                 <th>Duration (min)</th>
-                                 <th>Readings count</th>
-                                 <th>Deviation Temp (℃)</th>
-                                 <th>Deviation Hum (%)</th>
-                              </tr>
-                           </thead>
-                           <tbody class="collapse" id="<?php echo "collapseSensorAlertsIdx_" . $i?>">
-                        <?php
-                           $arr = $sensorReadingOutOfBounds[$sensor->id];
-                           foreach ($arr as $j => $item) {
-                              ?>
-                              <tr>
-                                 <td><?php echo $j + 1?></td>
-                                 <td><?php echo $item->beforeDate?></td>
-                                 <td><?php echo $item->duration?></td>
-                                 <td><?php echo $item->count?></td>
-                                 <td><?php echo $item->temp?></td>
-                                 <td><?php echo $item->hum?></td>
-                              </tr>
-                           <?php } ?>
-                           </tbody>
-                        </table>
-                     <?php } ?>
-                  </div>
-
-                  <h3 class="h3">Actions</h3>
-                  <div style="margin-bottom: 0.8em">
-                     <div style="margin-bottom: 0.4em">
-                        <span>Sensor interface:</span>
-                        <a href="<?php echo htmlspecialchars($sensor->ip) ?>" target="_blank"><?php echo htmlspecialchars($sensor->ip) ?></a>
-                     </div>
-                     <button style="margin-bottom: 0.4em" class="button"
-                             data-filename='<?php echo htmlspecialchars($sensor->name . '_' . $dateFrom . '_' . $dateTo . '.csv'); ?>'
-                             data-sensorId='<?php echo $sensor->id;?>'
-                             onclick="ExportCSV(this)">Export
-                     </button>
-                     <?php if ($sensor->isPortable) { ?>
-                        <div>
-                           <div>
-                              <span>Upload column order</span>
-                              <input type="text" id="csvParseExpressionSensorId_<?php echo $sensor->id;?>" value="date;temp;relHum">
+                       <!--  ALERTS  -->
+                       <div class="tab-pane active" id="nav-alerts-<?php echo $i?>" role="tabpanel">
+                           <h3 class="h3">Alerts</h3>
+                           <div style="margin-bottom: 1.4em">
+                               <p>Number of alerts: <?php echo sizeof($sensorReadingOutOfBounds[$sensor->id]); ?></p>
+                              <?php if (sizeof($sensorReadingOutOfBounds[$sensor->id]) !== 0) { ?>
+                                  <table style="background: var(--light_grey_03)">
+                                      <thead>
+                                      <tr>
+                                          <th>#</th>
+                                          <th>Timestamp</th>
+                                          <th>Duration (min)</th>
+                                          <th>Readings count</th>
+                                          <th>Deviation Temp (℃)</th>
+                                          <th>Deviation Hum (%)</th>
+                                      </tr>
+                                      </thead>
+                                      <tbody>
+                                      <?php
+                                      $arr = $sensorReadingOutOfBounds[$sensor->id];
+                                      foreach ($arr as $j => $item) { ?>
+                                          <tr>
+                                              <td><?php echo $j + 1?></td>
+                                              <td><?php echo $item->beforeDate?></td>
+                                              <td><?php echo $item->duration?></td>
+                                              <td><?php echo $item->count?></td>
+                                              <td><?php echo $item->temp?></td>
+                                              <td><?php echo $item->hum?></td>
+                                          </tr>
+                                      <?php } ?>
+                                      </tbody>
+                                  </table>
+                              <?php } ?>
                            </div>
-                           <div>
-                              <div class="button">
-                                 <span>Upload</span>
-                                 <input style="display: none" type="file" id="csvFileSensorId_<?php echo $sensor->id;?>" data-sensorId="<?php echo $sensor->id;?>" class="csvFile" accept=".csv">
-                              </div>
+
+                       </div>
+
+                       <!--  DETAILS  -->
+                       <div class="tab-pane" id="nav-details-<?php echo $i?>" role="tabpanel">
+                           <h3 class="h3">Details</h3>
+                           <form action="" method="post">
+                               <div style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 0.4em 3em; padding-bottom: 0.8em">
+                                  <?php echo SensorCrudPartialCreateEdit::GetHtml($sensor) ?>
+                               </div>
+                               <div style="padding-top: 0.4em">
+                                   <div>
+                                       <span>Auth</span>
+                                       <input type="password" name="auth">
+                                       <button class="button" type="submit" name="formType" value="edit">Save</button>
+                                       <button class="button button-danger" type="submit" name="formType" value="delete">Delete</button>
+                                   </div>
+                               </div>
+                           </form>
+                       </div>
+
+                       <!--  GENERAL  -->
+                       <div class="tab-pane" id="nav-general-<?php echo $i?>" role="tabpanel">
+                           <h3 class="h3">General</h3>
+                           <div style="margin-bottom: 0.4em">
+                               <span>Sensor interface:</span>
+                               <a href="<?php echo htmlspecialchars($sensor->ip) ?>" target="_blank"><?php echo htmlspecialchars($sensor->ip) ?></a>
                            </div>
-                        </div>
-                     <?php } ?>
-                  </div>
+                       </div>
 
-                  <h3 class="h3">Details</h3>
-                  <form action="" method="post">
-                     <div style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 0.4em 3em; padding-bottom: 0.8em">
-                        <?php echo SensorCrudPartialCreateEdit::GetHtml($sensor) ?>
-                     </div>
-                     <div style="padding-top: 0.4em">
-                        <div>
-                           <span>Auth</span>
-                           <input type="password" name="auth">
-                           <button class="button" type="submit" name="formType" value="edit">Save</button>
-                           <button class="button button-danger" type="submit" name="formType" value="delete">Delete</button>
-                        </div>
-                     </div>
-                  </form>
+                       <!--  EXPORT -->
+                       <div class="tab-pane" id="nav-export-<?php echo $i?>" role="tabpanel">
+                           <h3 class="h3">Export</h3>
+                           <button style="margin-bottom: 0.4em" class="button"
+                                   data-filename='<?php echo htmlspecialchars($sensor->name . '_' . $dateFrom . '_' . $dateTo . '.csv'); ?>'
+                                   data-sensorId='<?php echo $sensor->id;?>'
+                                   onclick="ExportCSV(this)">Export
+                           </button>
+                       </div>
 
+                       <!--  IMPORT  -->
+                       <div class="tab-pane" id="nav-import-<?php echo $i?>" role="tabpanel">
+                           <h3 class="h3">Import</h3>
+                           <div style="margin-bottom: 0.8em">
+                              <?php if ($sensor->isPortable) { ?>
+
+                                  <div>
+                                      <div>
+                                          <span>Upload column order</span>
+                                          <input type="text" id="csvParseExpressionSensorId_<?php echo $sensor->id;?>" value="date;temp;relHum">
+                                      </div>
+                                      <div>
+                                          <button type="button" class="button csvFile" data-sensorId="<?php echo $sensor->id;?>">Upload</button>
+                                      </div>
+                                  </div>
+                              <?php } else { ?>
+                                  <p>Sensor is not portable! Cannot import!</p>
+                              <?php } ?>
+                           </div>
+                       </div>
+                   </div>
                </div>
             <?php endforeach; ?>
          </div>
@@ -487,9 +511,9 @@ $errors = $htmlInjects->errors;
          </div>
          <div style="margin-top: 2em;" class="h4">Result</div>
          <div style="height: 540px">
-            <p id="chartErr"></p>
-            <div id="chartDiv">
-               <button id="saveImg" type="button" class="button">Save Image</button>
+            <p id="chartErr">No sensor selected</p>
+            <div id="chartDiv" style="display: none">
+               <button id="saveImgBtn" type="button" class="button">Save Image</button>
                <div id="chart" style="width: 100%; height: 500px;"></div>
                <div style="display: none" id="chartAsPictureDiv"></div>
             </div>
@@ -504,7 +528,7 @@ $errors = $htmlInjects->errors;
       <div class="modal-dialog" role="document">
          <div class="modal-content modal-dialog" role="document">
             <div class="modal-header" style="display: block">
-               <h5 class="modal-title">Confirm data</h5>
+               <h5 class="modal-title">Confirm data?</h5>
                <span id="modalMsg"></span>
                <button style="position: absolute; top: 16px; right: 16px;" type="button" class="close" data-dismiss="modal" aria-label="Close">
                   <span aria-hidden="true">&times;</span>
@@ -535,21 +559,10 @@ $errors = $htmlInjects->errors;
 
    dayjs.extend(window.dayjs_plugin_customParseFormat);
 
-   main();
 
-   async function main() {
-       document.querySelector(".footer").innerHTML = await fetch("view/partial/FooterPartial.html").then(x => x.text());
-       document.getElementById('saveImg').onclick = SaveChartImg;
-       $('.csvFile').change( function () { HandlePortableSensorDataCsvUpload(this.getAttribute('data-sensorId'))});
-       HandleCollapseSymbolChange();
-       FancyDatePicker(['#dateTo', '#absoluteDateFrom']);
-       document.getElementById('ChartDrawButton').onclick = () => {
-           google.charts.load("current", { 'packages':["corechart", "line"]});
-           google.charts.setOnLoadCallback(drawChart);
-       };
-   }
-
-   function HandlePortableSensorDataCsvUpload(id) {
+   function TriggerPortableSensorDataCsvUpload(csvFileUploadBtn) {
+       console.log(csvFileUploadBtn);
+       let id = csvFileUploadBtn.getAttribute('data-sensorId');
        let reader = new FileReader();
        reader.onload = function (event) {
            let csv = event.target.result;
@@ -569,31 +582,60 @@ $errors = $htmlInjects->errors;
            document.getElementById('modalMsg').innerText = `Total data rows count: ${arr.length + skipCount}, skipped ${skipCount}`;
            $('#JsonModal').modal('show');
        }
+       let input = document.createElement('input');
+       input.type = 'file';
+       input.accept = '.csv';
 
-       let csvFile = document.getElementById('csvFileSensorId_' + id);
-       let input = csvFile.files[0];
-       reader.readAsText(input);
+
+       input.addEventListener("change", () => {
+           reader.readAsText(input.files[0]);
+       })
+       input.click();
    }
 
-   document.getElementById('btnLoad').onclick = function () {
-       let resultTo = document.getElementById('submitDateTo');
-       resultTo.value = document.getElementById('dateTo').value;
+
+   function LoadButtonEvent() {
+       let dateTo = document.getElementById('dateTo').value;
 
        let type = document.querySelector('input[name="dateFromType"]:checked').value;
-       let resultDateFrom = document.getElementById('submitDateFrom');
+       let dateFrom = "";
        switch (type){
            case 'absolute':
-               resultDateFrom.value = document.getElementById('absoluteDateFrom').value;
+               dateFrom = document.getElementById('absoluteDateFrom').value;
                break;
            case 'relative':
-               resultDateFrom.value = '-' + document.getElementById('relativeDateFrom').value;
+               dateFrom = '-' + document.getElementById('relativeDateFrom').value;
                break;
            default:
                console.error('Unknown type:', type);
                break;
        }
+       post("", { "From": dateFrom, "To": dateTo }, "get");
+   }
 
-       document.formJsSubmit.submit();
+
+   /**
+    * sends a request to the specified url from a form. this will change the window location.
+    * Taken from Rakesh Pai, https://stackoverflow.com/questions/133925/javascript-post-request-like-a-form-submit?rq=1
+    * @param {string} path the path to send the post request to
+    * @param {object} params the parameters to add to the url
+    * @param {string} [method=post] the method to use on the form
+    */
+   function post(path, params, method='post') {
+       const form = document.createElement('form');
+       form.method = method;
+       form.action = path;
+
+       for (const key in params) {
+           const hiddenField = document.createElement('input');
+           hiddenField.type = 'hidden';
+           hiddenField.name = key;
+           hiddenField.value = params[key];
+
+           form.appendChild(hiddenField);
+       }
+       document.body.appendChild(form)
+       form.submit();
    }
 
    function getEOL() {
@@ -748,8 +790,8 @@ $errors = $htmlInjects->errors;
                let after = xAxisTimesToSensors[i + 1].date;
 
                let tmp = FilterSortedArrayValuesBetweenDates(sensor.sensorReadings, before, after, low);
-               let currentRows = tmp.result,
-               low = tmp.low;  // IDE says 'Unused local variable'. Why??? it will be used in the next loop.
+               let currentRows = tmp.result;
+               low = tmp.low;
 
                let doStrategy = function(strategy, arr, graphDefaultValue, sensorRangeAvg) {
                    let getMedianValue = function(arr, graphDefaultValue) {
@@ -856,7 +898,7 @@ $errors = $htmlInjects->errors;
        let chart = new google.visualization.LineChart(chartEle);
 
        google.visualization.events.addListener(chart, 'ready', function() {
-           document.getElementById('chartAsPictureDiv').innerHTML = '<img id="chartAsPictureImg" src="' + chart.getImageURI() + '">';
+           document.getElementById('chartAsPictureDiv').innerHTML = `<img id="chartAsPictureImg" src="${chart.getImageURI()}">`;
        })
 
        chart.draw(data, options);
@@ -872,7 +914,7 @@ $errors = $htmlInjects->errors;
 
    function ExportBase(encodedUri, filename) {
        let link = document.createElement("a");
-       document.body.appendChild(link); // for FF
+       // document.body.appendChild(link); // for FF
        link.setAttribute("href", encodedUri);
        link.setAttribute("download", filename)
        link.click();
@@ -1013,6 +1055,22 @@ $errors = $htmlInjects->errors;
    }
 
 
+   async function main() {
+       fetch("view/partial/FooterPartial.html").then(x => x.text().then(res => document.querySelector(".footer").innerHTML = res));
+       document.querySelector('#saveImgBtn').onclick = SaveChartImg;
+       // $('.csvFileUploadBtn').change(() => { console.log(this.getAttribute('data-sensorId')); TriggerPortableSensorDataCsvUpload(this) });
+       // $('.csvFile').on("click", () => { console.log(this)});
+       document.querySelectorAll('.csvFile').forEach(x => x.onclick = () => TriggerPortableSensorDataCsvUpload(x));
+       document.querySelector('#btnLoad').onclick = LoadButtonEvent;
+       ['#dateTo', '#absoluteDateFrom'].forEach(item => $(item).datepicker({dateFormat: "dd-mm-yy"}));
+       // we need dates to be in this format for GET request
+       document.querySelector('#ChartDrawButton').onclick = () => {
+           google.charts.load("current", { 'packages':["corechart", "line"]});
+           google.charts.setOnLoadCallback(drawChart);
+       };
+   }
+
+   main();
 
 </script>
 </html>
