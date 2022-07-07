@@ -129,6 +129,12 @@ $errors = $htmlInjects->errors;
 
 </head>
 <body style="min-height: 100vh; min-width: 900px; margin:0; display: grid; grid-template-rows: 1fr auto">
+
+<!--
+PHP variables for use in JS.
+Echoing PHP variables straight to JS variables was problematic in terms of variables not being interpreted as strings.
+If you can do better, go ahead.
+-->
 <div id="data" style="display:none;"
      data-dateFrom="<?php echo $dateFrom . ', 00:00' ?>"
      data-dateTo="<?php echo $dateTo . ', 23:59' ?>"
@@ -223,26 +229,26 @@ $errors = $htmlInjects->errors;
 
          <div class="collapse" id="collapseHelp">
             <div style="margin-bottom: 1em;">
-               <div style="margin: 0.6em 0">
-                  <p>
-                     Click on sensor to:
-                  </p>
-                  <ul style="margin-bottom: 6px">
-                     <li>Show alarm info</li>
-                     <li>Export data</li>
-                     <li>Upload data (only for portable sensors)</li>
-                     <li>Edit sensor fields (requires password, will not affect sensor's own configuration)</li>
-                  </ul>
-                  <p>
-                     Exported and imported data is semicolon delimited CSV.
-                     It is worth noting that Excel reads files using the computer regional settings and will
-                     likely display semicolon delimited files incorrectly.
-                     Excel uses delimiter from user PC <code>Control Panel\Clock and Region -> Region ->
-                        Additional settings -> List separator</code>
-                     (this should be changed from <code>,</code> to <code>;</code>). The exported data format
-                     itself is correct.
-                  </p>
-               </div>
+
+               <p>
+                  Click on sensor to:
+               </p>
+               <ul style="margin-bottom: 12px">
+                  <li>Show alert info</li>
+                  <li>Export data</li>
+                  <li>Upload data (only for portable sensors)</li>
+                  <li>Edit sensor fields (requires password, will not affect sensor's own configuration)</li>
+               </ul>
+               <p>
+                  Exported and imported data is semicolon delimited CSV.
+                  It is worth noting that Excel reads files using the computer regional settings and will
+                  likely display semicolon delimited files incorrectly.
+                  Excel uses delimiter from user PC
+                  <code>Control Panel\Clock and Region -> Region -> Additional settings -> List separator</code>
+                  (this should be changed from <code>,</code> to <code>;</code>). The exported data format
+                  itself is correct.
+               </p>
+
                <p>
                   For portable sensors reading data can be added to database by parsing CSV files.
                   Look for upload option under the specific portable sensor.
@@ -760,7 +766,7 @@ $errors = $htmlInjects->errors;
       return [result, skipCount];
    }
 
-   function drawChart() {
+   function drawChart(sensors, dateFrom, dateTo) {
       let chartEle = document.getElementById("chart");
       let data = new google.visualization.DataTable();
 
@@ -771,23 +777,6 @@ $errors = $htmlInjects->errors;
       // undefined value is ignored in graph
       let graphDefaultValue = document.getElementById('graphOptionsLoudNoValue').checked ? 0 : undefined;
 
-      let dataFromPHP = document.getElementById('data');
-      let dateFrom = dayjs(dataFromPHP.getAttribute('data-dateFrom'), 'DD-MM-YYYY, HH:mm');
-      let dateTo = dayjs(dataFromPHP.getAttribute('data-dateTo'), 'DD-MM-YYYY, HH:mm');
-
-      let sensors = [];
-      for (let sensor of JSON.parse(dataFromPHP.getAttribute('data-sensors'))) {
-         sensors.push(new Sensor(
-            sensor.id,
-            sensor.name,
-            GetSensorReading(sensor.id),
-            sensor.maxTemp,
-            sensor.minTemp,
-            sensor.maxRelHum,
-            sensor.minRelHum,
-            GetDrawingSettings(sensor.id)
-         ));
-      }
 
       if (true) {
          // Google charts can handle it built in so this is actually unnecessary, but it does look nicer
@@ -959,15 +948,15 @@ $errors = $htmlInjects->errors;
 
    function SaveChartImg() {
       let base64 = document.getElementById('chartAsPictureImg').src;
-      let dateFrom = document.getElementById('data').getAttribute('data-dateFrom');
-      let dateTo = document.getElementById('data').getAttribute('data-dateTo');
+      let dateFrom = GetPhpInputDateFrom().format("DD-MM-YYYY");
+      let dateTo = GetPhpInputDateTo().format("DD-MM-YYYY");
       let fileName = 'tempsens ' + dateFrom + '-' + dateTo;
       ExportBase(base64, fileName)
    }
 
    function ExportBase(encodedUri, filename) {
       let link = document.createElement("a");
-      // document.body.appendChild(link); // for FF
+      // document.body.appendChild(link); // This might be needed in some browsers, currently not needed.
       link.setAttribute("href", encodedUri);
       link.setAttribute("download", filename)
       link.click();
@@ -1074,11 +1063,15 @@ $errors = $htmlInjects->errors;
    }
 
    function HandleCollapseSymbolChange() {
-      $('.collapse-and-change-icon').click(function () {
-         let targetElement = document.querySelector(this.getAttribute("data-target"))
-         if (!targetElement.className.includes("collapsing")) {
-            $(this).find('i').toggleClass('bi bi-caret-down bi bi-caret-right');
+      document.querySelectorAll('.collapse-and-change-icon').forEach(x => x.onclick = () => {
+         let targetElement = document.querySelector(x.getAttribute("data-target"))
+         if (targetElement.classList.contains("collapsing")) {
+            // prevents the icon from going out of sync from the collapse state by multiple rapid clicks
+            return;
          }
+         // $(x.find('i')).toggleClass('bi bi-caret-down bi bi-caret-right');
+         x.querySelector('i').classList.toggle('bi-caret-down');
+         x.querySelector('i').classList.toggle('bi-caret-right');
       });
    }
 
@@ -1100,6 +1093,31 @@ $errors = $htmlInjects->errors;
       ExportBase(encodedUri, filename)
    }
 
+   function GetPhpInputDateTo() {
+      return dayjs(document.querySelector("#data").getAttribute("data-dateTo"), 'DD-MM-YYYY, HH:mm');
+   }
+
+   function GetPhpInputDateFrom() {
+      return dayjs(document.querySelector("#data").getAttribute("data-dateFrom"), 'DD-MM-YYYY, HH:mm');
+   }
+
+   function GetPhpInputSensor() {
+      let sensorJson = document.querySelector("#data").getAttribute("data-sensors");
+      let sensors = [];
+      for (let sensor of JSON.parse(sensorJson)) {
+         sensors.push(new Sensor(
+            sensor.id,
+            sensor.name,
+            GetSensorReading(sensor.id),
+            sensor.maxTemp,
+            sensor.minTemp,
+            sensor.maxRelHum,
+            sensor.minRelHum,
+            GetDrawingSettings(sensor.id)
+         ));
+      }
+      return sensors;
+   }
 
    async function main() {
       fetch("view/partial/FooterPartial.html").then(x => x.text().then(res => document.querySelector(".footer").innerHTML = res));
@@ -1112,8 +1130,9 @@ $errors = $htmlInjects->errors;
       // we need dates to be in this format for GET request
       document.querySelector('#ChartDrawButton').onclick = () => {
          google.charts.load("current", {'packages': ["corechart", "line"]});
-         google.charts.setOnLoadCallback(drawChart);
+         google.charts.setOnLoadCallback(() => drawChart(GetPhpInputSensor(), GetPhpInputDateFrom(), GetPhpInputDateTo()));
       };
+      HandleCollapseSymbolChange()
    }
 
    main();
