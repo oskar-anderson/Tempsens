@@ -135,13 +135,7 @@ PHP variables for use in JS.
 Echoing PHP variables straight to JS variables was problematic in terms of variables not being interpreted as strings.
 If you can do better, go ahead.
 -->
-<div id="data" style="display:none;"
-     data-dateFrom="<?php echo $dateFrom . ', 00:00' ?>"
-     data-dateTo="<?php echo $dateTo . ', 23:59' ?>"
-     data-sensors='<?php echo json_encode($sensors, JSON_HEX_APOS | JSON_HEX_QUOT); ?>'
->
 
-</div>
 <div>
    <div>
       <?php if (sizeof($errors) !== 0) { ?>
@@ -312,10 +306,6 @@ If you can do better, go ahead.
          </div>
          <?php
          foreach ($sensors as $i => $sensor):?>
-
-            <div style="display: none" id="SensorReadingOf<?php echo htmlspecialchars($sensor->id); ?>"
-                 data-sensorReading="<?php echo htmlspecialchars(json_encode($sensorReadingsBySensorId[$sensor->id])); ?>">
-            </div>
 
             <div class="🎯 collapse-and-change-icon zebra-1" style="display: grid; grid-auto-rows: auto;
                            grid-template-columns: 30px 5fr 6fr 2fr 2fr 2fr 2fr 2fr 2fr 2fr;
@@ -998,21 +988,6 @@ If you can do better, go ahead.
       return null;
    }
 
-   function GetSensorReading(sensorId) {
-      let sensorReadings = Object.entries(JSON.parse(
-         document.getElementById('SensorReadingOf' + sensorId).getAttribute("data-sensorReading")
-      ));
-      let result = [];
-      for (let i = 0; i < sensorReadings.length; i++) {
-         let tmp = sensorReadings[i][1];
-         result.push(new SensorReading(
-            dayjs(tmp.date, 'DD/MM/YYYY HH:mm'),
-            parseFloat(tmp.temp),
-            parseFloat(tmp.relHum)));
-      }
-      return result;
-   }
-
    class SensorSettings {
       constructor(colorTemp, colorRelHum, isTemp, isRelHum) {
          this.colorTemp = colorTemp;
@@ -1079,7 +1054,7 @@ If you can do better, go ahead.
    function ExportCSV(ctx) {
       let sensorId = ctx.getAttribute("data-sensorId");
       let filename = ctx.getAttribute("data-filename");
-      let sensorReadings = GetSensorReading(sensorId);
+      let sensorReadings = GetPhpInputSensorReading(sensorId);
       let data = [];
       data.push(['Timestamp', 'Temperature (*C)', 'Relative Humidity (%)'])
       for (let sensorReading of sensorReadings) {
@@ -1093,22 +1068,61 @@ If you can do better, go ahead.
       ExportBase(encodedUri, filename)
    }
 
+   // this function exists to test PHP to JS text parsing and naughty strings
+   // you should probably use GetPhpInputSensors()
+   // callable from browser debugger tab
+   function GetPhpInputSensorsTest() {
+
+      /*  // incapable of parsing \u0022 = " What is even the point of JSON_HEX_QUOT
+      let sensors = JSON.parse('<php echo json_encode($sensors, JSON_HEX_APOS); ?>');
+      */
+      return JSON.parse('<?php echo str_replace("\\\"", "\\\\\"", json_encode($sensors, JSON_HEX_APOS)); ?>');
+   }
+
+   function GetPhpInputSensorReading(sensorId) {
+      return GetPhpInputSensorReadingsAll().find(x => x.key === sensorId).value;
+   }
+
+   function GetPhpInputSensorReadingsAll() {
+      // very important to use single quotes, because JSON text is surrounded by double quotes causing JS syntax error
+      // single quotes need to be escaped PHP side by JSON_HEX_APOS
+      let sensorReadingsById = JSON.parse('<?php echo str_replace("\\\"", "\\\\\"", json_encode($sensorReadingsBySensorId, JSON_HEX_APOS)); ?>');
+
+      let result = [];
+      for (let [id, sensorReadings] of Object.entries(sensorReadingsById)) {
+         let newSensorReadings = [];
+         for (let sensorReading of sensorReadings) {
+            newSensorReadings.push(new SensorReading(
+               dayjs(sensorReading.date, 'DD/MM/YYYY HH:mm'),
+               parseFloat(sensorReading.temp),
+               parseFloat(sensorReading.relHum)));
+         }
+         result.push(
+            {
+               key: id,
+               value: newSensorReadings
+            });
+      }
+
+      return result;
+   }
+
    function GetPhpInputDateTo() {
-      return dayjs(document.querySelector("#data").getAttribute("data-dateTo"), 'DD-MM-YYYY, HH:mm');
+      return dayjs('<?php echo $dateTo . ', 23:59' ?>', 'DD-MM-YYYY, HH:mm');
    }
 
    function GetPhpInputDateFrom() {
-      return dayjs(document.querySelector("#data").getAttribute("data-dateFrom"), 'DD-MM-YYYY, HH:mm');
+      return dayjs('<?php echo $dateFrom . ', 00:00' ?>', 'DD-MM-YYYY, HH:mm');
    }
 
-   function GetPhpInputSensor() {
-      let sensorJson = document.querySelector("#data").getAttribute("data-sensors");
+   function GetPhpInputSensors() {
+      let sensorsOld = JSON.parse('<?php echo str_replace("\\\"", "\\\\\"", json_encode($sensors, JSON_HEX_APOS)); ?>');
       let sensors = [];
-      for (let sensor of JSON.parse(sensorJson)) {
+      for (let sensor of sensorsOld) {
          sensors.push(new Sensor(
             sensor.id,
             sensor.name,
-            GetSensorReading(sensor.id),
+            GetPhpInputSensorReading(sensor.id),
             sensor.maxTemp,
             sensor.minTemp,
             sensor.maxRelHum,
@@ -1130,7 +1144,7 @@ If you can do better, go ahead.
       // we need dates to be in this format for GET request
       document.querySelector('#ChartDrawButton').onclick = () => {
          google.charts.load("current", {'packages': ["corechart", "line"]});
-         google.charts.setOnLoadCallback(() => drawChart(GetPhpInputSensor(), GetPhpInputDateFrom(), GetPhpInputDateTo()));
+         google.charts.setOnLoadCallback(() => drawChart(GetPhpInputSensors(), GetPhpInputDateFrom(), GetPhpInputDateTo()));
       };
       HandleCollapseSymbolChange()
    }

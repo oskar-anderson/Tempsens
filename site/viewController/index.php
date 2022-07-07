@@ -90,14 +90,9 @@ class Programm {
 
       $sensorReadingsBySensorId = [];
       foreach ($sensors as $sensor) {
-         $sensorReadingsOfSensor = array_filter($sensorReadings, function ($obj) use ($sensor) {
+         $sensorReadingsOfSensor = array_values(array_filter($sensorReadings, function ($obj) use ($sensor) {
             return ($obj->sensorId === $sensor->id);
-         });
-         foreach ($sensorReadingsOfSensor as $sensorReading) {
-            if (! DateTime::createFromFormat('YmdHi', $sensorReading->dateRecorded)) {
-               echo $sensorReading->dateRecorded;
-            }
-         }
+         }));
          $sensorReadingsBySensorId[$sensor->id] = array_map(function ($x) {
             return new SensorReadingDTO(
                date: DateTime::createFromFormat('YmdHi', $x->dateRecorded)->format($this->pageOutputDateTimeFormat),
