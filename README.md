@@ -163,3 +163,5 @@ Confusing:
 * HTML details and summary vs Bootstrap collapse
 * New page vs model or collapsable
 * Database joins vs PHP Assoc array
+* array_values: `'{"00000001x0000x00000001":[{"date":"01\/12\/202`
+* no array_values: `'{"00000001x0000x00000001":{"4":{"date":"01\/12\/202`

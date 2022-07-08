@@ -6,7 +6,8 @@
     "require": {
         "php": ">=8.0",
         "ext-soap": "*",
-        "ext-pdo": "*"
+        "ext-pdo": "*",
+        "ext-ctype": "*"
     },
     "autoload": {
         "psr-4": {
