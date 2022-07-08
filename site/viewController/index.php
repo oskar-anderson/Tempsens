@@ -90,9 +90,7 @@ class Programm {
 
       $sensorReadingsBySensorId = [];
       foreach ($sensors as $sensor) {
-         $sensorReadingsOfSensor = array_values(array_filter($sensorReadings, function ($obj) use ($sensor) {
-            return ($obj->sensorId === $sensor->id);
-         }));
+         $sensorReadingsOfSensor = array_values(array_filter($sensorReadings, fn($x) => $x->sensorId === $sensor->id));
          $sensorReadingsBySensorId[$sensor->id] = array_map(function ($x) {
             return new SensorReadingDTO(
                date: DateTime::createFromFormat('YmdHi', $x->dateRecorded)->format($this->pageOutputDateTimeFormat),
@@ -107,26 +105,21 @@ class Programm {
 
       $sensorAlertsMinMax = [];
       foreach ($sensors as $sensor) {
-         $rawOutOfBounds = array_values(array_filter($sensorReadingsBySensorId[$sensor->id], function($obj) use ($sensor) {
-            return ($obj->temp < $sensor->minTemp || $obj->temp > $sensor->maxTemp ||
-               $obj->relHum < $sensor->minRelHum || $obj->relHum > $sensor->maxRelHum);
-         }));
+         $rawOutOfBounds = array_values(array_filter($sensorReadingsBySensorId[$sensor->id], fn($x) =>
+            $x->temp < $sensor->minTemp || $x->temp > $sensor->maxTemp ||
+            $x->relHum < $sensor->minRelHum || $x->relHum > $sensor->maxRelHum
+         ));
          $sensorAlertsMinMax[$sensor->id] = AlertMinMax::Get($sensor, $this->pageOutputDateTimeFormat, $rawOutOfBounds);
       }
 
       array_push($this->debugs,'Combine sensor alerts: ' . microtime(true) - $before);
       $before = microtime(true);
 
-      $goodColors = ['#7F0AAC', '#178152', '#D4D335', '#ED9800', '#F91F2E'];
       $colors = [];
       for ($i = 0; $i < sizeof($sensors) * 2; $i++) {
-         if ($i >= sizeof($goodColors)) {
-            mt_srand($i * 13 + 1);    // feel free to experiment with the seed
-            $val = '#' . str_pad(dechex(mt_rand(0x000000, 0xFFFFFF)), 6, '0', STR_PAD_RIGHT);
-            array_push($colors, $val);
-         } else {
-            array_push($colors, $goodColors[$i]);
-         }
+         mt_srand($i * 13 + 1);    // feel free to experiment with the seed
+         $val = '#' . str_pad(dechex(mt_rand(0x000000, 0xFFFFFF)), 6, '0', STR_PAD_RIGHT);
+         array_push($colors, $val);
       }
 
       $htmlInjects = (new IndexViewModel())
@@ -139,10 +132,10 @@ class Programm {
          ->SetErrors($this->errors)
          ->SetDefault();
 
-      $this->Render(__DIR__ . "/../view/main/index.php", $htmlInjects);
+      Helper::Render(__DIR__ . "/../view/main/index.php", $htmlInjects);
 
       foreach ($this->debugs as $debug) {
-         $this->DebugToConsole($debug);
+         Helper::DebugToConsole($debug, true);
       }
    }
 
@@ -150,33 +143,23 @@ class Programm {
    function HandleInput(array &$sensors): HandleInputModel
    {
       $dateTo = (new DateTime())->format('d-m-Y');
-      if (true) {
-         $input = '';
-         $input = ($input === '' && isset($_GET['To'])) ? $_GET['To'] : $input;
-         $input = ($input === '' && isset($_POST['To'])) ? $_POST['To'] : $input;
-         if (InputValidation::isDateFormat__d_m_Y($input)) {
-            $dateTo = DateTime::createFromFormat('d-m-Y', $input)->format('d-m-Y');
-         }
+      $inputDateTo = $_GET['To'] ?? '';
+      if (InputValidation::isDateFormat__d_m_Y($inputDateTo)) {
+         $dateTo = DateTime::createFromFormat('d-m-Y', $inputDateTo)->format('d-m-Y');
       }
 
+
+      $dateFrom = DateTime::createFromFormat('d-m-Y', $dateTo)->modify("-91 day")->format('d-m-Y');
       $dateFromType = 'relative';
-      if (true) {
-         $input = '';
-         $input = $input === '' && isset($_GET['From']) ? $_GET['From'] : $input;
-         $input = $input === '' && isset($_POST['From']) ? $_POST['From'] : $input;
 
-         $dateFrom = DateTime::createFromFormat('d-m-Y', $dateTo)->modify("-91 day")->format('d-m-Y');
-         if (strlen($input) !== 0 && $input[0] === '-') {
-            $val = substr($input, 1);
-            if (is_numeric($val)) {
-               $dateFrom = DateTime::createFromFormat('d-m-Y', $dateTo)->modify("-" . intval($val) . "day")->format('d-m-Y');
-            }
-         }
-         else if (InputValidation::isDateFormat__d_m_Y($input)) {
-            $dateFrom = DateTime::createFromFormat('d-m-Y', $input)->format('d-m-Y');
-            $dateFromType = 'absolute';
-         }
+      $inputDateFrom = $_GET['From'] ?? '';
+      if (strlen($inputDateFrom) > 0 && $inputDateFrom[0] === '-' && is_numeric(substr($inputDateFrom, 1))) {
+         $dateFrom = DateTime::createFromFormat('d-m-Y', $dateTo)->modify($inputDateFrom . "day")->format('d-m-Y');
+      } else if (InputValidation::isDateFormat__d_m_Y($inputDateFrom)) {
+         $dateFrom = DateTime::createFromFormat('d-m-Y', $inputDateFrom)->format('d-m-Y');
+         $dateFromType = 'absolute';
       }
+
 
       $selectOptionsRelativeDateFrom = $this->HandleSelectOptionsRelativeDateFrom($dateFrom, $dateTo);
       $sensorCrud = $this->HandleSensorCrud($sensors);
@@ -191,10 +174,7 @@ class Programm {
       $search = DateTime::createFromFormat('d-m-Y', $dateTo)
          ->diff(DateTime::createFromFormat('d-m-Y', $dateFrom))
          ->days;
-      $arr = array_map(function ($obj) {
-         return $obj->value;
-      }, Period::GetPeriods());
-      $daysBefore = $this->IntArrGetClosest($search, $arr);
+      $daysBefore = $this->IntArrGetClosest($search, array_map(fn($x) => $x->value, Period::GetPeriods()));
 
       $selectOptionsRelativeDateFrom = [];
       $periods = Period::GetPeriods();
@@ -230,9 +210,7 @@ class Programm {
             break;
          case 'edit':
          case 'delete':
-            $idValid = in_array($id, array_map(function ($x) {
-               return $x->id;
-            }, $sensors));
+            $idValid = in_array($id, array_map(fn($x) => $x->id, $sensors));
             break;
          default:
             return new SensorCrudBadCreateValues(null, '');
@@ -448,16 +426,6 @@ class Programm {
       return true;
    }
 
-   function DebugToConsole($data)
-   {
-      // Buffering to solve problems frameworks, like header() in this and not a solid return.
-      ob_start();
-
-      $output = 'console.log(' . json_encode($data) . ');';
-      $output = '<script type=text/javascript>' . $output . '</script>';
-      echo $output;
-   }
-
    function IntArrGetClosest(int $needle, array $arr) : int|null {
       $search = null;
       foreach ($arr as $item) {
@@ -466,10 +434,5 @@ class Programm {
          }
       }
       return $search;
-   }
-
-   /** @noinspection PhpUnusedParameterInspection */
-   function Render($fileName, $htmlInjects) {
-      require($fileName);
    }
 }

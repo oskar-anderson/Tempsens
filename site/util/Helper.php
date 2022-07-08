@@ -14,4 +14,37 @@ class Helper
       $now = date("YmdHi");
       return $now;
    }
+
+   /**
+    * Provide universal echo for putting PHP variables inside HTML and JS.
+    * Replaces single quotes with \u0027.
+    * Call like this in JS or HTML'_<_?php echo SafeEchoReturn($yourValue) ?>'
+    * @param mixed $value Value that will be JSON serialized
+    * @return string String that needs to be wrapped in single quotes.
+    */
+   public static function EchoJson(mixed $value): string {
+      $unsafeJson = json_encode($value, JSON_HEX_APOS);
+      if (gettype($value) === "string") {
+         $unsafeJson = substr($unsafeJson, 1, strlen($unsafeJson) - 2);
+      }
+      return $unsafeJson;
+      //$unsafeJson = str_replace("\\", "\\\\", $unsafeJson); // replace
+      // return str_replace("\\\\\"", "\\\\\\\"", $unsafeJson);
+   }
+
+   public static function DebugToConsole(mixed $data, bool $withScriptTag): void
+   {
+      // Buffering to solve problems frameworks, like header() in this and not a solid return.
+      // ob_start();
+
+      $output = 'console.log(' . json_encode($data) . ');';
+      $output = $withScriptTag? '<script type=text/javascript>' . $output . '</script>' : $output;
+      echo $output;
+   }
+
+
+   /** @noinspection PhpUnusedParameterInspection */
+   public static function Render($fileName, $model) {
+      require($fileName);
+   }
 }

@@ -2,22 +2,23 @@
 /** @noinspection DuplicatedCode */
 
 use App\dto\IndexViewModel;
+use App\util\Helper;
 use App\view\partial\SensorCrudPartialCreateEdit;
 
-/* @var IndexViewModel $htmlInjects */
+/* @var IndexViewModel $model */
 
-$dateFromType = $htmlInjects->input->dateFromType;
-$dateFrom = $htmlInjects->input->dateFrom;
-$dateTo = $htmlInjects->input->dateTo;
-$sensorCrud = $htmlInjects->input->sensorCrud;
-$selectOptionsRelativeDateFrom = $htmlInjects->input->selectOptionsRelativeDateFrom;
+$dateFromType = $model->input->dateFromType;
+$dateFrom = $model->input->dateFrom;
+$dateTo = $model->input->dateTo;
+$sensorCrud = $model->input->sensorCrud;
+$selectOptionsRelativeDateFrom = $model->input->selectOptionsRelativeDateFrom;
 
-$sensors = $htmlInjects->sensors;
-$lastReadingsView = $htmlInjects->lastReadingsView;
-$sensorReadingOutOfBounds = $htmlInjects->sensorAlertsMinMax;
-$sensorReadingsBySensorId = $htmlInjects->sensorReadingsBySensorId;
-$colors = $htmlInjects->colors;
-$errors = $htmlInjects->errors;
+$sensors = $model->sensors;
+$lastReadingsView = $model->lastReadingsView;
+$sensorReadingOutOfBounds = $model->sensorAlertsMinMax;
+$sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
+$colors = $model->colors;
+$errors = $model->errors;
 
 ?>
 
@@ -34,10 +35,8 @@ $errors = $htmlInjects->errors;
 
    <link rel="icon" href="static/gfx/favicon3.png" type="image/png"/>
 
-   <link rel="stylesheet" type="text/css"
-         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css"/>
-   <link rel="stylesheet" type="text/css"
-         href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"/>
+   <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css"/>
+   <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"/>
    <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
 
    <link rel="stylesheet" type="text/css" media="screen" href="static/css/reset.css"/>
@@ -45,8 +44,7 @@ $errors = $htmlInjects->errors;
 
    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
    <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-   <script type="text/javascript"
-           src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+   <script type="text/javascript" src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
    <style>
       .dateFromOption {
          display: grid;
@@ -67,12 +65,11 @@ $errors = $htmlInjects->errors;
          color: white;
       }
 
-      .zebra-1, .zebra-2, .zebra-3 {
+      .zebra-overview, .zebra-graph-settings {
          background: var(--light_grey_02);
       }
 
-      /* Why zebra-1 and zebra-2 need different steps (2n vs 2n-1)??? */
-      .zebra-1:nth-of-type(2n), .zebra-2:nth-of-type(2n - 1), .zebra-3:nth-of-type(2n) {
+      .zebra-overview:nth-of-type(4n), .zebra-overview:nth-of-type(4n - 3), .zebra-graph-settings:nth-of-type(2n) {
          background: var(--light_grey_01);
       }
 
@@ -129,12 +126,6 @@ $errors = $htmlInjects->errors;
 
 </head>
 <body style="min-height: 100vh; min-width: 900px; margin:0; display: grid; grid-template-rows: 1fr auto">
-
-<!--
-PHP variables for use in JS.
-Echoing PHP variables straight to JS variables was problematic in terms of variables not being interpreted as strings.
-If you can do better, go ahead.
--->
 
 <div>
    <div>
@@ -307,7 +298,7 @@ If you can do better, go ahead.
          <?php
          foreach ($sensors as $i => $sensor):?>
 
-            <div class="🎯 collapse-and-change-icon zebra-1" style="display: grid; grid-auto-rows: auto;
+            <div class="🎯 collapse-and-change-icon zebra-overview" style="display: grid; grid-auto-rows: auto;
                            grid-template-columns: 30px 5fr 6fr 2fr 2fr 2fr 2fr 2fr 2fr 2fr;
                            --ypos: center; --xpos: start;" data-toggle="collapse"
                  data-target="<?php echo "#collapseSensorInfoIdx_" . $i ?>" aria-expanded="false">
@@ -350,7 +341,7 @@ If you can do better, go ahead.
                <div><?php echo $humMax ?></div>
             </div>
 
-            <div class="collapse zebra-2" id="<?php echo "collapseSensorInfoIdx_" . $i ?>"
+            <div class="collapse zebra-overview" id="<?php echo "collapseSensorInfoIdx_" . $i ?>"
                  style="border-top: 1px dotted black; padding: 0.4em 20px">
                <nav>
                   <div class="nav nav-tabs">
@@ -444,10 +435,9 @@ If you can do better, go ahead.
                   <!--  EXPORT -->
                   <div class="tab-pane" id="nav-export-<?php echo $i ?>" role="tabpanel">
                      <h3 class="h3">Export</h3>
-                     <button style="margin-bottom: 0.4em" class="button"
+                     <button style="margin-bottom: 0.4em" class="js-export-btn button"
                              data-filename='<?php echo htmlspecialchars($sensor->name . '_' . $dateFrom . '_' . $dateTo . '.csv'); ?>'
-                             data-sensorId='<?php echo $sensor->id; ?>'
-                             onclick="ExportCSV(this)">Export
+                             data-sensorId='<?php echo $sensor->id; ?>'>Export
                      </button>
                   </div>
 
@@ -500,7 +490,7 @@ If you can do better, go ahead.
                <?php
                foreach ($sensors as $i => $sensor):
                   ?>
-                  <tr class="zebra-3">
+                  <tr class="zebra-graph-settings">
                      <td style="display: none" class="sensorId"><?php echo $sensor->id ?></td>
                      <td class="sensorName"><?php echo htmlspecialchars($sensor->name) ?></td>
                      <td style="display: flex">
@@ -578,19 +568,14 @@ If you can do better, go ahead.
             </button>
          </div>
          <div class="modal-body" style="height: 40em; overflow-y: auto">
-               <pre id="csvDataDisplay">
-
-               </pre>
+               <pre id="csvDataDisplay"></pre>
          </div>
-         <form action="" method="post">
-            <div style="padding: .75rem; border-top: 1px solid #dee2e6;">
-               <input id="csvDataFormField" style="display: none" name="jsonData" value="">
-               <input id="csvSensorId" style="display: none" name="csvSensorId" value="">
-               <span>Auth</span>
-               <input type="password" name="csvAuth">
-               <button class="button" type="submit">Submit</button>
-            </div>
-         </form>
+
+         <div style="padding: .75rem; border-top: 1px solid #dee2e6;">
+            <label for="import-form-password-input">Auth</label>
+            <input id="import-form-password-input" type="password">
+            <button id="import-form-submit-btn" class="button">Submit</button>
+         </div>
       </div>
    </div>
 </div>
@@ -604,7 +589,6 @@ If you can do better, go ahead.
 
 
    function TriggerPortableSensorDataCsvUpload(csvFileUploadBtn) {
-      console.log(csvFileUploadBtn);
       let id = csvFileUploadBtn.getAttribute('data-sensorId');
       let reader = new FileReader();
       reader.onload = function (event) {
@@ -618,11 +602,21 @@ If you can do better, go ahead.
             console.error(e);
             return false;
          }
+         document.getElementById('modalMsg').innerText = `Total data rows count: ${arr.length + skipCount}, skipped ${skipCount}`;
          document.getElementById('csvDataDisplay').innerText = JSON.stringify(arr, null, 2);
          document.getElementById('csvDataDisplay').style.display = 'block';
-         document.getElementById('csvDataFormField').value = JSON.stringify(arr);
-         document.getElementById('csvSensorId').value = id;
-         document.getElementById('modalMsg').innerText = `Total data rows count: ${arr.length + skipCount}, skipped ${skipCount}`;
+         document.querySelector('#import-form-submit-btn').onclick = () => {
+            let pass = document.getElementById('import-form-password-input').value;
+            // prevents browser remember password prompt.
+            // How does it know that the input is connected with the post request ???
+            document.getElementById('import-form-password-input').remove();
+            post("", {
+               "jsonData": JSON.stringify(arr),
+               "csvSensorId": id,
+               "csvAuth": pass
+               }, "post"
+            );
+         }
          $('#JsonModal').modal('show');
       }
       let input = document.createElement('input');
@@ -756,7 +750,7 @@ If you can do better, go ahead.
       return [result, skipCount];
    }
 
-   function drawChart(sensors, dateFrom, dateTo) {
+   function drawChart(indexModel, dateFrom, dateTo) {
       let chartEle = document.getElementById("chart");
       let data = new google.visualization.DataTable();
 
@@ -767,7 +761,7 @@ If you can do better, go ahead.
       // undefined value is ignored in graph
       let graphDefaultValue = document.getElementById('graphOptionsLoudNoValue').checked ? 0 : undefined;
 
-
+      let sensors = indexModel.GetSensorsWithSettings()
       if (true) {
          // Google charts can handle it built in so this is actually unnecessary, but it does look nicer
          let chartDiv = document.getElementById('chartDiv');
@@ -936,10 +930,8 @@ If you can do better, go ahead.
       chart.draw(data, options);
    }
 
-   function SaveChartImg() {
+   function SaveChartImg(dateFrom, dateTo) {
       let base64 = document.getElementById('chartAsPictureImg').src;
-      let dateFrom = GetPhpInputDateFrom().format("DD-MM-YYYY");
-      let dateTo = GetPhpInputDateTo().format("DD-MM-YYYY");
       let fileName = 'tempsens ' + dateFrom + '-' + dateTo;
       ExportBase(base64, fileName)
    }
@@ -1051,10 +1043,7 @@ If you can do better, go ahead.
    }
 
 
-   function ExportCSV(ctx) {
-      let sensorId = ctx.getAttribute("data-sensorId");
-      let filename = ctx.getAttribute("data-filename");
-      let sensorReadings = GetPhpInputSensorReading(sensorId);
+   function ExportCSV(filename, sensorReadings) {
       let data = [];
       data.push(['Timestamp', 'Temperature (*C)', 'Relative Humidity (%)'])
       for (let sensorReading of sensorReadings) {
@@ -1068,83 +1057,91 @@ If you can do better, go ahead.
       ExportBase(encodedUri, filename)
    }
 
-   // this function exists to test PHP to JS text parsing and naughty strings
-   // you should probably use GetPhpInputSensors()
-   // callable from browser debugger tab
-   function GetPhpInputSensorsTest() {
 
-      /*  // incapable of parsing \u0022 = " What is even the point of JSON_HEX_QUOT
-      let sensors = JSON.parse('<php echo json_encode($sensors, JSON_HEX_APOS); ?>');
-      */
-      return JSON.parse('<?php echo str_replace("\\\"", "\\\\\"", json_encode($sensors, JSON_HEX_APOS)); ?>');
-   }
+   class IndexModel {
+      dateTo = dayjs('<?php echo $dateTo . ', 23:59' ?>', 'DD-MM-YYYY, HH:mm');
+      dateFrom = dayjs('<?php echo $dateFrom . ', 00:00' ?>', 'DD-MM-YYYY, HH:mm');
+      sensorReadingsMap = [];
+      sensorsWithoutSettings = [];
 
-   function GetPhpInputSensorReading(sensorId) {
-      return GetPhpInputSensorReadingsAll().find(x => x.key === sensorId).value;
-   }
+      constructor() {
+         let sensorReadingsById = JSON.parse('<?php echo Helper::EchoJson($sensorReadingsBySensorId); ?>');
 
-   function GetPhpInputSensorReadingsAll() {
-      // very important to use single quotes, because JSON text is surrounded by double quotes causing JS syntax error
-      // single quotes need to be escaped PHP side by JSON_HEX_APOS
-      let sensorReadingsById = JSON.parse('<?php echo str_replace("\\\"", "\\\\\"", json_encode($sensorReadingsBySensorId, JSON_HEX_APOS)); ?>');
-
-      let result = [];
-      for (let [id, sensorReadings] of Object.entries(sensorReadingsById)) {
-         let newSensorReadings = [];
-         for (let sensorReading of sensorReadings) {
-            newSensorReadings.push(new SensorReading(
-               dayjs(sensorReading.date, 'DD/MM/YYYY HH:mm'),
-               parseFloat(sensorReading.temp),
-               parseFloat(sensorReading.relHum)));
+         let sensorReadingsMap = [];
+         for (let [id, sensorReadings] of Object.entries(sensorReadingsById)) {
+            let newSensorReadings = [];
+            for (let sensorReading of sensorReadings) {
+               newSensorReadings.push(new SensorReading(
+                  dayjs(sensorReading.date, 'DD/MM/YYYY HH:mm'),
+                  parseFloat(sensorReading.temp),
+                  parseFloat(sensorReading.relHum)));
+            }
+            sensorReadingsMap.push(
+               {
+                  key: id,
+                  value: newSensorReadings
+               });
          }
-         result.push(
-            {
-               key: id,
-               value: newSensorReadings
-            });
+         let sensorsOld = JSON.parse('<?php echo Helper::EchoJson($sensors); ?>');
+         let sensors = [];
+         for (let sensor of sensorsOld) {
+            sensors.push(new Sensor(
+               sensor.id,
+               sensor.name,
+               sensorReadingsMap.find(x => x.key === sensor.id).value,
+               sensor.maxTemp,
+               sensor.minTemp,
+               sensor.maxRelHum,
+               sensor.minRelHum,
+               null
+            ));
+         }
+         this.sensorsWithoutSettings = sensors;
+         this.sensorReadingsMap = sensorReadingsMap;
       }
 
-      return result;
-   }
-
-   function GetPhpInputDateTo() {
-      return dayjs('<?php echo $dateTo . ', 23:59' ?>', 'DD-MM-YYYY, HH:mm');
-   }
-
-   function GetPhpInputDateFrom() {
-      return dayjs('<?php echo $dateFrom . ', 00:00' ?>', 'DD-MM-YYYY, HH:mm');
-   }
-
-   function GetPhpInputSensors() {
-      let sensorsOld = JSON.parse('<?php echo str_replace("\\\"", "\\\\\"", json_encode($sensors, JSON_HEX_APOS)); ?>');
-      let sensors = [];
-      for (let sensor of sensorsOld) {
-         sensors.push(new Sensor(
-            sensor.id,
-            sensor.name,
-            GetPhpInputSensorReading(sensor.id),
-            sensor.maxTemp,
-            sensor.minTemp,
-            sensor.maxRelHum,
-            sensor.minRelHum,
-            GetDrawingSettings(sensor.id)
-         ));
+      GetSensorsWithSettings() {
+         let sensors = [];
+         for (let sensor of this.sensorsWithoutSettings) {
+            sensors.push(new Sensor(
+               sensor.id,
+               sensor.name,
+               this.sensorReadingsMap.find(x => x.key === sensor.id).value,
+               sensor.maxTemp,
+               sensor.minTemp,
+               sensor.maxRelHum,
+               sensor.maxRelHum,
+               GetDrawingSettings(sensor.id)
+            ));
+         }
+         return sensors;
       }
-      return sensors;
    }
 
    async function main() {
+      let indexModel = new IndexModel();
       fetch("view/partial/FooterPartial.html").then(x => x.text().then(res => document.querySelector(".footer").innerHTML = res));
-      document.querySelector('#saveImgBtn').onclick = SaveChartImg;
-      // $('.csvFileUploadBtn').change(() => { console.log(this.getAttribute('data-sensorId')); TriggerPortableSensorDataCsvUpload(this) });
-      // $('.csvFile').on("click", () => { console.log(this)});
+      document.querySelector('#saveImgBtn').onclick = () => SaveChartImg(
+         indexModel.dateFrom.format("DD-MM-YYYY"),
+         indexModel.dateTo.format("DD-MM-YYYY")
+      );
       document.querySelectorAll('.csvFile').forEach(x => x.onclick = () => TriggerPortableSensorDataCsvUpload(x));
+      document.querySelectorAll('.js-export-btn').forEach(x => x.onclick = () =>
+         ExportCSV(
+            x.getAttribute("data-filename"),
+            indexModel.sensorReadingsMap.find(y => y.key === x.getAttribute("data-sensorId")).value
+         )
+      );
       document.querySelector('#btnLoad').onclick = LoadButtonEvent;
-      ['#dateTo', '#absoluteDateFrom'].forEach(item => $(item).datepicker({dateFormat: "dd-mm-yy"}));
       // we need dates to be in this format for GET request
+      ['#dateTo', '#absoluteDateFrom'].forEach(item => $(item).datepicker({dateFormat: "dd-mm-yy"}));
       document.querySelector('#ChartDrawButton').onclick = () => {
          google.charts.load("current", {'packages': ["corechart", "line"]});
-         google.charts.setOnLoadCallback(() => drawChart(GetPhpInputSensors(), GetPhpInputDateFrom(), GetPhpInputDateTo()));
+         google.charts.setOnLoadCallback(() => drawChart(
+            indexModel,
+            indexModel.dateFrom,
+            indexModel.dateTo
+         ));
       };
       HandleCollapseSymbolChange()
    }
