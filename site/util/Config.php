@@ -15,12 +15,15 @@ class Config
       echo "dir: " . __DIR__ ."<br>";
       echo "__FILE__: " . __FILE__."<br>";
       if (file_exists(__DIR__.'/../../.env')) {
-         echo "file_exists(__DIR__.'/../../.env'):" . true ."<br>";
+         echo "file_exists(__DIR__.'/../../.env'): 1 <br>";
+         $dotenv = Dotenv::createImmutable(dirname(__DIR__, 2));
+         $dotenv->load();
+         echo "dotenv OK <br>";
       } else {
-         echo "file_exists(__DIR__.'/../../.env'):" . false ."<br>";
+         echo "file_exists(__DIR__.'/../../.env'): 0 <br>";
+         echo "dotenv Not loaded<br>";
       }
-      $dotenv = Dotenv::createUnsafeImmutable(dirname(__DIR__, 2));
-      $dotenv->load();
+
       echo "in Config end<br>";
    }
 
