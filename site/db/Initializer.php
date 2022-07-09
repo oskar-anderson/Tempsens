@@ -28,7 +28,7 @@ class Initializer
 {
    public static function Initialize(string $name) {
       Console::WriteLine();
-      $pdo = DbHelper::GetPdoByKey('db_local_dev');
+      $pdo = DbHelper::GetPDO();
       $dropStatement = "DROP DATABASE IF EXISTS {$name};";
       Console::WriteLine($dropStatement, true);
       $pdo->exec($dropStatement);
@@ -123,7 +123,7 @@ class Initializer
       }
       fclose($file);
       
-      $pdo = DbHelper::GetDevPDO();
+      $pdo = DbHelper::GetPDO();
       $pdo->beginTransaction();
 
       Console::WriteLine('Transaction adding sensors: ' . sizeof($sensors), true);

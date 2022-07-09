@@ -29,7 +29,7 @@ class DbHelper {
 
     public static function CreateTables() {
        $createTableStatements = array_map(fn(IDalBase $x) => $x->SqlCreateTableStmt(), DbHelper::GetTrackedTables());
-       $pdo = DbHelper::GetDevPDO();
+       $pdo = DbHelper::GetPDO();
        foreach ($createTableStatements as $i=>$table) {
           Console::WriteLine($i + 1 . "/" . count($createTableStatements) . ": " . $table, true);
           $pdo->query($table);
@@ -38,12 +38,12 @@ class DbHelper {
 
    public static function DropTables() {
       $tableNames = array_map(fn(IDalBase $x) => $x->GetName(), DbHelper::GetTrackedTables());
-      $pdo = DbHelper::GetDevPDO();
+      $pdo = DbHelper::GetPDO();
       $pdo->query("SET FOREIGN_KEY_CHECKS = 0;");
       foreach ($tableNames as $i=>$table) {
          $stmt = "DROP TABLE IF EXISTS " . $table . ";";
          Console::WriteLine($i + 1 . "/" . count($tableNames) . ": " . $stmt, true);
-         $pdo->query($stmt);      
+         $pdo->query($stmt);
       }
       $pdo->query("SET FOREIGN_KEY_CHECKS = 1;");
    }
@@ -51,20 +51,16 @@ class DbHelper {
 
    public static function GetPDO(): PDO
    {
-      return DbHelper::GetPdoByKey(Config::GetConfig()['db_active']);
+      // todo
+      $config = new Config();
+      return DbHelper::GetPdoByKey($config->GetConnectUrl(), $config->GetUsername(), $config->GetPassword());
    }
 
-   public static function GetDevPDO(): PDO
+   public static function GetPdoByKey(string $url, string $username, string $password): PDO
    {
-      return DbHelper::GetPdoByKey('db_local_dev');
-   }
-
-   public static function GetPdoByKey($configKey): PDO
-   {
-      $dbconf = Config::GetConfig()[$configKey];
       // Console::WriteLine("New PDO(connectUrl= {$dbconf['connectUrl']}, username=***, password=***)");
       try {
-         $pdo = new PDO($dbconf['connectUrl'], $dbconf['username'], $dbconf['password']);
+         $pdo = new PDO($url, $username, $password);
          $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
          return $pdo;
       } catch (PDOException $e) {

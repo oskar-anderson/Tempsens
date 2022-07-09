@@ -21,7 +21,7 @@ Go into your `php.ini` file and uncomment `extension=pdo_mysql`.
 ## Vendor dependencies
 
 Current dependencies:
-* autoloader(No dependencies)
+* phpdotenv - read secret environment variables into global PHP variable $_ENV.
 
 Update dependencies from composer.json
 ```
