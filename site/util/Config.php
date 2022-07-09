@@ -11,7 +11,9 @@ class Config
    public function __construct()
    {
       echo "in Config start<br>";
-      echo "path: " . dirname(__DIR__, 2)."<br>";
+      echo "parent path: " . dirname(__DIR__, 2)."<br>";
+      echo "path: " . dirname(__DIR__)."<br>";
+      echo "__FILE__: " . __FILE__."<br>";
       $dotenv = Dotenv::createUnsafeImmutable(dirname(__DIR__, 2));
       $dotenv->load();
       echo "in Config end<br>";
