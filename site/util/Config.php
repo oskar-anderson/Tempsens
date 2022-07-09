@@ -10,9 +10,10 @@ class Config
 {
    public function __construct()
    {
-
+      echo "in Config start<br>";
       $dotenv = Dotenv::createImmutable(__DIR__."/../../");
       $dotenv->load();
+      echo "in Config end<br>";
    }
 
    public static function GetConfig(): array
@@ -51,5 +52,10 @@ class Config
    {
       // Console::WriteLine("GetPassword:" . $_ENV['db_local_dev_password']);
       return $_ENV["db_local_dev_password"];
+   }
+
+   public static function EchoTest(): string
+   {
+      return "In EchoTest<br>";
    }
 }
