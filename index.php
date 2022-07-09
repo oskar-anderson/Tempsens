@@ -12,6 +12,8 @@ if ($line == 1) {
    echo "GetUsername: " . (new Config())->GetUsername() . '<br>';
 } elseif ($line == 3) {
    echo "getenv: " . getenv("test") . '<br>';
+} elseif ($line == 4) {
+   echo "(new Config())->GetUsername(): " . Config::EchoTest() . '<br>';
 }
 
 
