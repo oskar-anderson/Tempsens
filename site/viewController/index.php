@@ -238,7 +238,7 @@ class Programm {
          return new SensorCrudBadCreateValues(null, '');
       }
 
-      if ($auth !== Config::GetConfig()['webDbPassword']) {
+      if ($auth !== (new Config())->GetWebDbPassword()) {
          array_push($this->errors, 'Not authorized to ' . $formType . '!');
          return new SensorCrudBadCreateValues(null, '');
       }
@@ -345,7 +345,7 @@ class Programm {
          return false;
       }
 
-      if ($auth !== Config::GetConfig()['webDbPassword']) {
+      if ($auth !== (new Config())->GetWebDbPassword()) {
          array_push($this->errors, 'Not authorized!');
          return false;
       }
@@ -415,7 +415,7 @@ class Programm {
          return false;
       }
 
-      $pdo = DbHelper::GetDevPDO();
+      $pdo = DbHelper::GetPDO();
       $pdo->beginTransaction();
       foreach ($sensorReadings as $sensorReading) {
          (new DalSensorReading())->Create($sensorReading, $pdo);

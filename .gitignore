@@ -1,9 +1,9 @@
+.vscode
 .idea
 .DS_Store
 vendor
-old
 config.php
-i2.php
 .editorconfig
 Cache.json
 **/backupCSV/
+.env
