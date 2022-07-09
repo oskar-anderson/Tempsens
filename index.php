@@ -5,7 +5,7 @@ require 'vendor/autoload.php';
 use \App\util\Config;
 
 $line = $_GET['line'];
-echo "test 2<br>";
+echo "test 3<br>";
 if ($line == 1) {
    echo "GetConnectUrl: " . (new Config())->GetConnectUrl() . '<br>';
 } elseif ($line == 2) {
