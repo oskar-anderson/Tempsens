@@ -5,10 +5,10 @@ require 'vendor/autoload.php';
 use \App\util\Config;
 
 $line = $_GET['line'];
-echo "parent path: " . dirname(__DIR__, 2)."<br>";
-echo "path: " . dirname(__DIR__)."<br>";
+echo "dir path: " . dirname(__DIR__, 2)."<br>";
+echo "dir: " . __DIR__ . "<br>";
 echo "__FILE__: " . __FILE__."<br>";
-echo "test 3<br>";
+echo "test 4<br>";
 if ($line == 1) {
    echo "GetConnectUrl: " . (new Config())->GetConnectUrl() . '<br>';
 } elseif ($line == 2) {
