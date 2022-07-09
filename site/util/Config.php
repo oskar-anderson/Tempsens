@@ -38,7 +38,7 @@ class Config
    public function GetConnectUrl(): string
    {
       // Console::WriteLine("GetConnectUrl:" . $_ENV['db_local_dev_connectUrl']);
-      return $_ENV['db_local_dev_connectUrl'];
+      return $_SERVER['db_local_dev_connectUrl'];
    }
 
    public function GetUsername(): string
