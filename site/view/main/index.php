@@ -30,17 +30,17 @@ $errors = $model->errors;
    <meta name="robots" content="index,nofollow"/>
    <meta name="keywords" content="Sensors"/>
    <meta name="description" content="Sensors"/>
-   <base href="http://localhost/myApps/Tempsens/site/"/>
-   <title>Sensor</title>
 
-   <link rel="icon" href="static/gfx/favicon3.png" type="image/png"/>
+   <title>Sensor</title>
+   <!-- IDE might complain about links not resolving, but they are resolved relative to the viewController dir not the view dir -->
+   <link rel="icon" href="../static/gfx/favicon3.png" type="image/png"/>
 
    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css"/>
    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"/>
    <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
 
-   <link rel="stylesheet" type="text/css" media="screen" href="static/css/reset.css"/>
-   <link rel="stylesheet" type="text/css" media="screen" href="static/css/main-layout.css"/>
+   <link rel="stylesheet" type="text/css" media="screen" href="../static/css/reset.css"/>
+   <link rel="stylesheet" type="text/css" media="screen" href="../static/css/main-layout.css"/>
 
    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
    <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
@@ -1120,7 +1120,7 @@ $errors = $model->errors;
 
    async function main() {
       let indexModel = new IndexModel();
-      fetch("view/partial/FooterPartial.html").then(x => x.text().then(res => document.querySelector(".footer").innerHTML = res));
+      fetch("../view/partial/FooterPartial.html").then(x => x.text().then(res => document.querySelector(".footer").innerHTML = res));
       document.querySelector('#saveImgBtn').onclick = () => SaveChartImg(
          indexModel.dateFrom.format("DD-MM-YYYY"),
          indexModel.dateTo.format("DD-MM-YYYY")

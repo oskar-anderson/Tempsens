@@ -15,7 +15,6 @@ class Config
          $dotenv = Dotenv::createImmutable(dirname(__DIR__, 2));
          $dotenv->load();
       }
-      Console::DebugToConsole(".env file exists: " . json_encode($environmentFileExists), true);
    }
 
    public static function GetConfig(): array

@@ -51,7 +51,6 @@ class DbHelper {
 
    public static function GetPDO(): PDO
    {
-      // todo
       $config = new Config();
       return DbHelper::GetPdoByKey($config->GetConnectUrl(), $config->GetUsername(), $config->GetPassword());
    }
@@ -64,8 +63,8 @@ class DbHelper {
          $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
          return $pdo;
       } catch (PDOException $e) {
-         Console::WriteLine("FAILED ({$e->getMessage()})", true);
-         die();
+         Console::WriteLine("GetPdoByKey FAILED ({$e->getMessage()})", true);
+         throw $e;
       }
    }
 }
