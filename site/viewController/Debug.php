@@ -11,13 +11,14 @@ use App\db\DbHelper;
 use App\model\SensorReading;
 use DateTime;
 
-(new Debug())->main();
+// (new Debug())->main();
 
 class Debug
 {
    public array $debugs = [];
 
-   function main() {
+   function main(): void
+   {
 
 
       $from = '202006010000';

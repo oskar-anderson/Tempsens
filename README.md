@@ -1,34 +1,83 @@
 # Tempsens
 
-## Installation
+## Demo
+[Live demo on Heroku](https://tempsens-testing.herokuapp.com/site/viewController/index.php?From=-91&To=01-04-2021)
 
-### Generate dependencies:
-In root folder (Tempsens)
-```
-composer update
-```
+NB! Database size is limited to 5MB, so displayed data is not accurate.
+
+## Local installation
+Guide for setting the project up locally using XAMPP, assuming the project is located at `C:\xampp\htdocs\myApps\Tempsens`.
+
+### Dependencies
+
+#### Current dependencies:
+* [phpdotenv](https://github.com/vlucas/phpdotenv) - Loads environment variables from `.env` to `getenv()`, `$_ENV` and `$_SERVER` automagically.
+
+#### Generate dependencies
+Run `composer update` in root folder.
 
 If the command throws error '`Root composer.json requires PHP extension ext-soap ...`' uncomment `extension=soap` attribute in the `php.ini` global PHP config file.
 
-### Create config.php file
+### Create `.env` file
 To prevent sensitive data being uploaded to remote (Github) a template file is used.
-`configTemplate.php` file is provided with empty keys.
-Create a copy of this file named `config.php` and set its key values.
+`.env_template` file is provided with empty keys.
+Create a copy of this file named `.env` and set its key values.
 
-### Generate Database
+### Allow database access
 Go into your `php.ini` file and uncomment `extension=pdo_mysql`.
 
-## Vendor dependencies
+## Local testing
 
-Current dependencies:
-* phpdotenv - read secret environment variables into global PHP variable $_ENV.
+### Test web upload:
+Sample CSV data files are available on request to test portable sensor's sensor readings import functionality. 
+Request `backupCSV/portable` folder.
 
-Update dependencies from composer.json
+### Sample data for Database
+Script `site/db/Initializer.php` generates new database tables and imports data from local CSV files.
+Modify the script to fit your needs then run `php Initializer.php` to execute the script.
+
+Sample CSV data files are available on request. 
+Create directory `site/db/backupCSV` and place the data there.
+
+### SOAP API
+You can test sensor's SOAP insert API requests locally using your prefered API testing tool, I used Postman.
+
+Send a `POST` request to URL `http://localhost:80/myApps/Tempsens/site/Soapmethods.php` with request body:
+
 ```
-composer update
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+   <soap:Body>
+      <InsertTx5xxSample xmlns="http://cometsystem.cz/schemas/soapTx5xx_v2.xsd">
+         <passKey>20960050</passKey>
+         <device>4145</device>
+         <temp>1.4</temp>
+         <relHum>91.9</relHum>
+         <compQuant>0.3</compQuant>
+         <pressure>-9999</pressure>
+         <alarms>hi,no,no,no</alarms>
+         <compType>Dew point</compType>
+         <tempU>C</tempU>
+         <pressureU>n/a</pressureU>
+         <timer>60</timer>
+      </InsertTx5xxSample>
+   </soap:Body>
+</soap:Envelope>
 ```
-
-## Database
+Expected response:
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns1="http://localhost" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+    <SOAP-ENV:Body>
+        <ns1:InsertTx5xxSampleResponse>
+            <return xsi:nil="true"/>
+        </ns1:InsertTx5xxSampleResponse>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+```
+## Database Schema
 
 [Note] Disable word wrap to display table correctly (alt + z in VSCode). Viewing markdown files through Github is not an issue. 
 
@@ -53,9 +102,9 @@ composer update
 [Tip] To edit DB schema learn to use VSCode multiline editing shortcuts (alt + mouse_click; alt + ctrl + down/up arrow)
 
 Date format is YYYYMMDDHHmm. This makes ordering SensorReadings by date easy (eg 13:42, 13.03.2021 becomes 202103131342)                
-DateAdded is null for not isPortable sensors as this.
+DateAdded is null for not isPortable sensors.
 
-## patch notes
+## Patch notes
 
 
 ### 0.1.0
@@ -66,16 +115,16 @@ DateAdded is null for not isPortable sensors as this.
 ### 0.3.0
 30.12.2020 by Indrek Hiie - moved to PDO MySQL driver, sensors now in DB, more modular code and some bugfixes applied
 
-### 0.3.4
+### 0.3.4 (was used in production)
 
-![Preview image](_documents/version_0.3.4.png)
+[Preview image](_documents/version_0.3.4.png)
 
 ### 0.3.5 (didn't reach production)
 24.01.2021 - watchdog added
 
 ### 1.0.0
 
-![Preview image](_documents/version_1.0.0.png)
+[Preview image](_documents/version_1.0.0.png)
 
 Notes:
 * Remade database (removed: alarms, emails, emails_to_sensor, parms, portable and queue. Redesigned sensor and sensorReading)
@@ -95,73 +144,21 @@ Notes:
 * Added option to export graph as screenshot
 * Added option to upload CSV data to portable sensors
 * Restructured code
-* Separated views and controllers
+* Separated views and controllers, following MVC design
 * Added partial views
 * Created favicon
 * Used new PHP 8.0 and below features (function parameter and return types, named arguments, constructor property promotion)
 
 by: Karl Oskar Anderson
 
-## Future
+## Production setup notes
+Configure the registered SOAP API path both on sensors and `site/SoapMethods.php`
 
-### Todo
+Merge current document in _documents folder with the latest production documentation
+
+
+## Todo
+
+Todo notes:
 * Test SensorReading sql performance in non localhost environment. 
 I had a weird situation where selecting 1 more field (dateAdded) significantly slows down query even if the field is always empty/null. 
-
-* Change Initializer.php to load data from real DB. 
-* Make Initializer.php impossible trigger from website.
-
-Remove bash crud job (scripts/alarms.php) that will not work anymore - I don't think it ever did.
-
-Merge current document in _documents folder with the latest production documentation.
-
-
-## Notes
-
-Good:
-* Project structure
-* Discrete multiple sensor data to one timeline
-* Prioritize important info, collapse less important
-* Taking feedback and implementing requested features
-* No duplicate code
-* MVC structure
-* Simple single auth, no users
-
-Bad:
-* PHP:
-  * Types and type hinting tricks
-    * Assoc array vs indexed array
-    * Using PHPDoc for array init: @return Sensor[]
-  * No namespaces for builtin functions
-  * No builtin writeLine for console scrips.
-  * Too many parenthesis: (new DalSensors())->GetAll();
-  * Feels like people last used the language 8 year ago
-  * boolval('false'); // true
-  * Python list comprehension > C# Linq > Java Streams > PHP array_map()
-* Could not get a server running
-* Database: 
-  * auto_increment vs GUID
-  * DROP * Tables; failed to because of FK constraints
-  * Performance
-  * Backup
-* HTML/JS:
-  * Forms (invisible form vs pure dynamic JS form submit)
-  * Input file display none trick
-* Cron jobs
-
-
-Confusing:
-* PHP
-  * echo (syntax and manual newline)
-  * array_push(myArr, 7) vs myArr[7]
-  * array creation: array() vs []
-  * PHP manual user notes
-* Routing (.htaccess vs main index.php routing vs HTML base)
-* PHP and JS data transfer (REST vs echo into HTML or JS))
-* PHP vs JS for site rendering
-* Cookies - ended making a cache.json file
-* HTML details and summary vs Bootstrap collapse
-* New page vs model or collapsable
-* Database joins vs PHP Assoc array
-* array_values: `'{"00000001x0000x00000001":[{"date":"01\/12\/202`
-* no array_values: `'{"00000001x0000x00000001":{"4":{"date":"01\/12\/202`
