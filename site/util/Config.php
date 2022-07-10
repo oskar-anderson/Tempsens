@@ -10,21 +10,12 @@ class Config
 {
    public function __construct()
    {
-      echo "in Config start<br>";
-      echo "dir path: " . dirname(__DIR__, 2)."<br>";
-      echo "dir: " . __DIR__ ."<br>";
-      echo "__FILE__: " . __FILE__."<br>";
-      if (file_exists(__DIR__.'/../../.env')) {
-         echo "file_exists(__DIR__.'/../../.env'): 1 <br>";
+      $environmentFileExists = file_exists(__DIR__.'/../../.env');
+      if ($environmentFileExists) {
          $dotenv = Dotenv::createImmutable(dirname(__DIR__, 2));
          $dotenv->load();
-         echo "dotenv OK <br>";
-      } else {
-         echo "file_exists(__DIR__.'/../../.env'): 0 <br>";
-         echo "dotenv Not loaded<br>";
       }
-
-      echo "in Config end<br>";
+      Console::DebugToConsole(".env file exists: " . json_encode($environmentFileExists), true);
    }
 
    public static function GetConfig(): array
@@ -50,7 +41,7 @@ class Config
    public function GetConnectUrl(): string
    {
       // Console::WriteLine("GetConnectUrl:" . $_ENV['db_local_dev_connectUrl']);
-      return $_SERVER['db_local_dev_connectUrl'];
+      return $_ENV['db_local_dev_connectUrl'];
    }
 
    public function GetUsername(): string
@@ -63,10 +54,5 @@ class Config
    {
       // Console::WriteLine("GetPassword:" . $_ENV['db_local_dev_password']);
       return $_ENV["db_local_dev_password"];
-   }
-
-   public static function EchoTest(): string
-   {
-      return "In EchoTest<br>";
    }
 }

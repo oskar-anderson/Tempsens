@@ -19,6 +19,7 @@ use App\db\DbHelper;
 use App\model\SensorReading;
 use App\util\Base64;
 use App\util\Config;
+use App\util\Console;
 use App\util\Helper;
 use App\util\InputValidation;
 use DateTime;
@@ -135,7 +136,7 @@ class Programm {
       Helper::Render(__DIR__ . "/../view/main/index.php", $htmlInjects);
 
       foreach ($this->debugs as $debug) {
-         Helper::DebugToConsole($debug, true);
+         Console::DebugToConsole($debug, true);
       }
    }
 

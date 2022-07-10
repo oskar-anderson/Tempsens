@@ -18,4 +18,14 @@ class Console
     {
         echo ($isImportant ? "🐉 " : "") . $value . "\n";
     }
+
+   public static function DebugToConsole(mixed $data, bool $withScriptTag): void
+   {
+      // Buffering to solve problems frameworks, like header() in this and not a solid return.
+      // ob_start();
+
+      $output = 'console.log(' . json_encode($data) . ');';
+      $output = $withScriptTag? '<script type=text/javascript>' . $output . '</script>' : $output;
+      echo $output;
+   }
 }
