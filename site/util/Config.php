@@ -11,6 +11,8 @@ class Config
    public function __construct()
    {
       $environmentFileExists = file_exists(__DIR__.'/../../.env');
+      // .dev file is used for local development,
+      // hosting platforms have other methods for setting up Config variables
       if ($environmentFileExists) {
          $dotenv = Dotenv::createImmutable(dirname(__DIR__, 2));
          $dotenv->load();
@@ -33,25 +35,21 @@ class Config
 
    public function GetWebDbPassword(): string
    {
-      // Console::WriteLine("GetWebDbPassword:" . $_ENV['webDbPassword']);
       return $_ENV['webDbPassword'];
    }
 
    public function GetConnectUrl(): string
    {
-      // Console::WriteLine("GetConnectUrl:" . $_ENV['db_local_dev_connectUrl']);
-      return $_ENV['db_local_dev_connectUrl'];
+      return $_ENV['dbConnectUrl'];
    }
 
    public function GetUsername(): string
    {
-      // Console::WriteLine("GetUsername:" . $_ENV['db_local_dev_username']);
-      return $_ENV["db_local_dev_username"];
+      return $_ENV["dbUsername"];
    }
 
    public function GetPassword(): string
    {
-      // Console::WriteLine("GetPassword:" . $_ENV['db_local_dev_password']);
-      return $_ENV["db_local_dev_password"];
+      return $_ENV["dbPassword"];
    }
 }
