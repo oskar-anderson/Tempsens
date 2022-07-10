@@ -20,7 +20,7 @@ use PDOException;
 use App\Util\Console;
 
 
-Initializer::Initialize('tempsens20210530');
+// Initializer::Initialize('tempsens20210530');
 // Initializer::InitializeData();
 
 // Script class to generate initial database, call from command line
@@ -65,22 +65,22 @@ class Initializer
          $maxRelHum = floatval($line[10]);
          $readingIntervalMinutes = intval($line[11]);
          $sensor_V1_0_0 = new SensorV1_0_0(
-            $id, 
-            $name, 
-            $serial, 
-            $model, 
-            $ip, 
-            $location, 
-            $isPortable, 
+            $id,
+            $name,
+            $serial,
+            $model,
+            $ip,
+            $location,
+            $isPortable,
             $minTemp,
-            $maxTemp, 
-            $minRelHum, 
-            $maxRelHum, 
+            $maxTemp,
+            $minRelHum,
+            $maxRelHum,
             $readingIntervalMinutes
          );
          array_push($sensors, $sensor_V1_0_0->MapToModel());
       }
-      
+
       fclose($file);
 
       $file = fopen("backupCSV/202104201605-V0_3_4/sensor-readings.csv","r");
@@ -104,17 +104,17 @@ class Initializer
          $timer = intval($line[11]);
          $dactdate = (string) $line[12];
          $sensorReadingV0_3_4 = new SensorReadingV0_3_4(
-            $id, 
-            $passKey, 
-            $device, 
-            $temp, 
-            $relHum, 
-            $compQuant, 
-            $pressure, 
-            $alarms, 
-            $compType, 
-            $tempU, 
-            $pressureU, 
+            $id,
+            $passKey,
+            $device,
+            $temp,
+            $relHum,
+            $compQuant,
+            $pressure,
+            $alarms,
+            $compType,
+            $tempU,
+            $pressureU,
             $timer,
             $dactdate
          );
@@ -122,7 +122,7 @@ class Initializer
          array_push($sensorReadings, $sensorReadingV0_3_4->GetUp($sensor->id, $sensor->isPortable)->MapToModel());
       }
       fclose($file);
-      
+
       $pdo = DbHelper::GetPDO();
       $pdo->beginTransaction();
 
