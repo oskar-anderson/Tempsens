@@ -2,7 +2,6 @@
 .idea
 .DS_Store
 vendor
-config.php
 .editorconfig
 Cache.json
 **/backupCSV/

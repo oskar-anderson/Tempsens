@@ -19,11 +19,6 @@ class Config
       }
    }
 
-   public static function GetConfig(): array
-   {
-      return require (__DIR__."/../config/config.php");
-   }
-
    public function GetEnvDbCredentials(): array
    {
       return [
