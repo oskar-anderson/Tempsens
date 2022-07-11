@@ -8,6 +8,7 @@ use PDO;
 
 interface IDalBase {
     /**
+     * Table names will be lowercase in DB
     *  @return string
     */
    public function GetName(): string;
