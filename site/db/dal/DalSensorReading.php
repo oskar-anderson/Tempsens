@@ -32,7 +32,7 @@ class DalSensorReading implements IDalBase
          "DateRecorded VARCHAR(64) NOT NULL, " .
          "DateAdded VARCHAR(64), " .
          "CONSTRAINT " . DalSensorReading::GetName() ."FKSensor foreign key (SensorId) references " . (new DalSensors)->GetName() . "(Id)" .
-         " );";
+         " ) DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_bin;";
       return $result;
    }
 

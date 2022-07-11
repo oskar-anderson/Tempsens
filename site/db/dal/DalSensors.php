@@ -36,7 +36,7 @@ class DalSensors implements IDalBase
             "MinRelHum DECIMAL(18,1) NOT NULL, " .
             "MaxRelHum DECIMAL(18,1) NOT NULL, " .
             "ReadingIntervalMinutes INTEGER NOT NULL " .
-            " );";
+            " ) DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_bin;";
         return $result;
     }
 

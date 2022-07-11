@@ -20,7 +20,7 @@ use PDOException;
 use App\Util\Console;
 
 
-// Initializer::Initialize('tempsens20210530');
+Initializer::Initialize('tempsens20210530');
 // Initializer::InitializeData();
 
 // Script class to generate initial database, call from command line

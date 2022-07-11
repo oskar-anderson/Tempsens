@@ -35,7 +35,7 @@ class DalSensorReadingTmp implements IDalBase
          "TmpDupId VARCHAR(64), " .
          "TmpDupSensorId VARCHAR(64), " .
          "TmpDupDateRecorded VARCHAR(64) " .
-         " );";
+         " ) DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_bin;";
       return $result;
    }
 
