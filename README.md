@@ -40,9 +40,9 @@ Sample CSV data files are available on request.
 Create directory `site/db/backupCSV` and place the data there.
 
 ### SOAP API
-You can test sensor's SOAP insert API requests locally using your prefered API testing tool, I used Postman.
+You can test sensor's SOAP insert API requests locally using your preferred API testing tool, I used Postman.
 
-Send a `POST` request to URL `http://localhost:80/myApps/Tempsens/site/Soapmethods.php` with request body:
+Send a `POST` request to URL `http://localhost:80/myApps/Tempsens/site/SoapMethods.php` with request body:
 
 ```
 <?xml version="1.0" encoding="utf-8"?>
@@ -124,7 +124,7 @@ DateAdded is null for not isPortable sensors.
 
 ### 1.0.0
 
-[Preview image](_documents/version_1.0.0.png)
+![Preview image](_documents/version_1.0.0.png)
 
 Notes:
 * Remade database (removed: alarms, emails, emails_to_sensor, parms, portable and queue. Redesigned sensor and sensorReading)
@@ -152,7 +152,7 @@ Notes:
 by: Karl Oskar Anderson
 
 ## Production setup notes
-Configure the registered SOAP API path both on sensors and `site/SoapMethods.php`
+Configure sensor's registered SOAP API path to  `site/SoapMethods.php`
 
 Merge current document in _documents folder with the latest production documentation
 

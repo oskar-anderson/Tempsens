@@ -91,7 +91,7 @@ class SoapMethods {
 </soap:Envelope>
 -------------------------------------------------------------------------------  */
 
-      SensorApi::Save($passKey, $temp, $relHum);
+      SensorApi::Save($passKey, floatval($temp), floatval($relHum));
    }
 }
 
