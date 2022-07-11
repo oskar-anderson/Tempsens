@@ -16,14 +16,14 @@ require_once(__DIR__."/../vendor/autoload.php");
 
 class SensorApi
 {
-   public static function Save($serial, $temp, $relHum)
+   public static function Save(string $serial, float $temp, float $relHum): void
    {
       $sensorId = SensorReading::GetSensorBySerial((new DalSensors())->GetAll(), $serial)->id;
       $reading = new SensorReading(
          id:Base64::GenerateId(),
          sensorId: $sensorId,
-         temp: floatval($temp),
-         relHum: floatval($relHum),
+         temp: $temp,
+         relHum: $relHum,
          dateRecorded: Helper::GetDateNow(),
          dateAdded: null
       );
