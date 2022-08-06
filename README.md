@@ -29,14 +29,14 @@ Go into your `php.ini` file and uncomment `extension=pdo_mysql`.
 ## Local testing
 
 ### Test web upload:
-Sample CSV data files are available on request to test portable sensor's sensor readings import functionality. 
-Request `backupCSV/portable` folder.
+Sample CSV data files [are available on request [link]](https://drive.google.com/drive/folders/1l-BW7Rwa57Zx1lE251V4ASbUaw9odJsC?usp=sharing) to test portable sensor's sensor readings import functionality. 
+`backupCSV/portable` folder.
 
 ### Sample data for Database
 Script `site/db/Initializer.php` generates new database tables and imports data from local CSV files.
 Modify the script to fit your needs then run `php Initializer.php` to execute the script.
 
-Sample CSV data files are available on request. 
+Sample CSV data files [are available on request [link]](https://drive.google.com/drive/folders/1l-BW7Rwa57Zx1lE251V4ASbUaw9odJsC?usp=sharing). 
 Create directory `site/db/backupCSV` and place the data there.
 
 ### SOAP API
@@ -104,6 +104,9 @@ Expected response:
 Date format is YYYYMMDDHHmm. This makes ordering SensorReadings by date easy (eg 13:42, 13.03.2021 becomes 202103131342)                
 DateAdded is null for not isPortable sensors.
 
+## Documentation
+[IT documentation - Temperature and Humidity Monitoring in the Baltic Warehouse [link]](https://drive.google.com/drive/folders/1U-jQZR57uo2S5RYVUKuww7ev0e6jwKyZ?usp=sharing)
+
 ## Patch notes
 
 
@@ -149,16 +152,28 @@ Notes:
 * Created favicon
 * Used new PHP 8.0 and below features (function parameter and return types, named arguments, constructor property promotion)
 
-by: Karl Oskar Anderson
+Made with ❤️ by Karl Oskar Anderson
+
+### 1.1.0
+Notes:
+* Update UI - Sensor info (Alerts, Actions, Details) are organized into clickable `nav` element buttons
+* Change database table collation to binary. All field comparisons are now case sensitive.
+* Remove dependency from existing database:
+  * Update environment variable reading
+  * Change database initializer to work with CSV files
+* Refactor code, increase readability
+* Fix a bug causing alert packing to result in a null pointer exception
+
+Made with ❤️ by Karl Oskar Anderson
 
 ## Production setup notes
-Configure sensor's registered SOAP API path to  `site/SoapMethods.php`
+Configure sensor's registered SOAP API path to `site/SoapMethods.php`
 
 Merge current document in _documents folder with the latest production documentation
 
 
-## Todo
+## Todo ⬜️/✅
 
 Todo notes:
-* Test SensorReading sql performance in non localhost environment. 
-I had a weird situation where selecting 1 more field (dateAdded) significantly slows down query even if the field is always empty/null. 
+- ⬜️ Test `sensorreading` SQL performance in non localhost environment. 
+I had a weird situation where selecting 1 more field (dateAdded) significantly slows down query even if the field is always empty/null. Use `sensorreadingtmp` as a duplicate table of `sensorreading`.
