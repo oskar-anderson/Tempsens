@@ -1,9 +1,6 @@
 # Tempsens
 
-## Demo
-[Live demo on Heroku](https://tempsens-testing.herokuapp.com/site/viewController/index.php?From=-91&To=01-04-2021)
-
-NB! Database size is limited to 5MB, so displayed data is not accurate.
+Sirowa warehouse sensor temperature and humidity data visualization logserver.
 
 ## Local installation
 Guide for setting the project up locally using XAMPP, assuming the project is located at `C:\xampp\htdocs\myApps\Tempsens`.
@@ -14,7 +11,7 @@ Guide for setting the project up locally using XAMPP, assuming the project is lo
 * [phpdotenv](https://github.com/vlucas/phpdotenv) - Loads environment variables from `.env` to `getenv()`, `$_ENV` and `$_SERVER` automagically.
 
 #### Generate dependencies
-Run `composer update` in root folder.
+Run `composer install` in root folder.
 
 If the command throws error '`Root composer.json requires PHP extension ext-soap ...`' uncomment `extension=soap` attribute in the `php.ini` global PHP config file.
 
