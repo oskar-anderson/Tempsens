@@ -10,19 +10,19 @@ use JetBrains\PhpStorm\Pure;
 use PDO;
 
 
-class DalSensors implements IDalBase
+class DalSensors extends AbstractDalBase
 {
    /**
     *  @return string
     */
-   public function GetName(): string { return "Sensors"; }
+   public function GetTableName(): string { return "Sensors"; }
 
    /**
     *  @return string
     */
     public function SqlCreateTableStmt(): string
     {
-        $result = "create table " . $this->GetName() .
+        $result = "create table " . $this->GetDatabaseNameDotTableName() .
             " ( " .
             "Id VARCHAR(64) NOT NULL PRIMARY KEY, " .
             "Name VARCHAR(64) NOT NULL, " .
@@ -56,7 +56,7 @@ class DalSensors implements IDalBase
                            "MinRelHum, " .
                            "MaxRelHum, " .
                            "ReadingIntervalMinutes " .
-                           " FROM " . $this->GetName() . ";";
+                           " FROM " . $this->GetDatabaseNameDotTableName() . ";";
       $pdo = DbHelper::GetPDO();
       $res = $pdo->query($qry);
       $result = array();
@@ -67,11 +67,11 @@ class DalSensors implements IDalBase
    }
 
    /**
-    *  @param Sensor $sensor
+    *  @param Sensor $object
     */
-   public function Update(Sensor $sensor) {
+   public function Update($object): void {
       $pdo = DbHelper::GetPDO();
-      $qry = "UPDATE " . $this->GetName() . " SET " .
+      $qry = "UPDATE " . $this->GetDatabaseNameDotTableName() . " SET " .
          "Name = ?, " .
          "Serial = ?, " .
          "Model = ?, " .
@@ -85,32 +85,30 @@ class DalSensors implements IDalBase
          "ReadingIntervalMinutes = ? " .
          "WHERE Id = ?";
       $stmt = $pdo->prepare($qry);
-      $stmt->execute([$sensor->name, $sensor->serial,
-         $sensor->model, $sensor->ip, $sensor->location, $sensor->isPortable,
-         $sensor->minTemp, $sensor->maxTemp, $sensor->minRelHum, $sensor->maxRelHum,
-         $sensor->readingIntervalMinutes, $sensor->id ]);
+      $stmt->execute([$object->name, $object->serial,
+         $object->model, $object->ip, $object->location, intval($object->isPortable),
+         $object->minTemp, $object->maxTemp, $object->minRelHum, $object->maxRelHum,
+         $object->readingIntervalMinutes, $object->id ]);
    }
 
    /**
     *  @param string $id
     */
-   public function Delete(string $id) {
+   public function Delete(string $id): void {
+      (new DalSensorReading())->DeleteWhereSensorId($id);
       $pdo = DbHelper::GetPDO();
-      $qry = "DELETE FROM " . (new DalSensorReading())->GetName() . " WHERE SensorId = ?";
-      $stmt = $pdo->prepare($qry);
-      $stmt->execute([$id]);
 
-      $qry = "DELETE FROM " . $this->GetName() . " WHERE Id = ?";
+      $qry = "DELETE FROM " . $this->GetDatabaseNameDotTableName() . " WHERE Id = ?";
       $stmt = $pdo->prepare($qry);
       $stmt->execute([$id]);
    }
 
    /**
-    *  @param Sensor $sensor
+    *  @param Sensor[] $objects
     *  @param PDO $pdo
     */
-   public function Create(Sensor $sensor, PDO $pdo): void {
-      $qry = "INSERT INTO " . $this->GetName() . " ( " .
+   protected function Insert($objects, PDO $pdo): void {
+      $qry = "INSERT INTO " . $this->GetDatabaseNameDotTableName() . " ( " .
          "Id, " .
          "Name, " .
          "Serial, " .
@@ -123,12 +121,16 @@ class DalSensors implements IDalBase
          "MinRelHum, " .
          "MaxRelHum, " .
          "ReadingIntervalMinutes ) " .
-         " VALUES (?,?,?,?,?,?,?,?,?,?,?,?);";
+         " VALUES " . $this->getPlaceHolders(numberOfQuestionMarks: 12, numberOfRows: sizeof($objects)) . ";";
       $stmt = $pdo->prepare($qry);
-      $stmt->execute([$sensor->id, $sensor->name, $sensor->serial,
-         $sensor->model, $sensor->ip, $sensor->location, $sensor->isPortable,
-         $sensor->minTemp, $sensor->maxTemp, $sensor->minRelHum, $sensor->maxRelHum,
-         $sensor->readingIntervalMinutes ]);
+      $params = [];
+      foreach ($objects as $object) {
+         array_push($params, $object->id, $object->name, $object->serial,
+            $object->model, $object->ip, $object->location, intval($object->isPortable),
+            $object->minTemp, $object->maxTemp, $object->minRelHum, $object->maxRelHum,
+            $object->readingIntervalMinutes);
+      }
+      $stmt->execute($params);
    }
 
    /**

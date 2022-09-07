@@ -11,19 +11,19 @@ use App\model\SensorReading;
 use JetBrains\PhpStorm\Pure;
 use PDO;
 
-class DalSensorReading implements IDalBase
+class DalSensorReading extends AbstractDalBase
 {
    /**
     *  @return string
     */
-   public function GetName(): string { return "SensorReading"; }
+   public function GetTableName(): string { return "SensorReading"; }
 
    /**
     *  @return string
     */
    public function SqlCreateTableStmt(): string
    {
-      $result = "create table " . DalSensorReading::GetName() .
+      $result = "create table " . $this->GetDatabaseNameDotTableName() .
          " ( " .
          "Id VARCHAR(64) NOT NULL PRIMARY KEY, " .
          "SensorId VARCHAR(64) NOT NULL, " .
@@ -31,7 +31,7 @@ class DalSensorReading implements IDalBase
          "RelHum DECIMAL(18,1) NOT NULL, " .
          "DateRecorded VARCHAR(64) NOT NULL, " .
          "DateAdded VARCHAR(64), " .
-         "CONSTRAINT " . DalSensorReading::GetName() ."FKSensor foreign key (SensorId) references " . (new DalSensors)->GetName() . "(Id)" .
+         "CONSTRAINT " . DalSensorReading::GetTableName() ."FKSensor foreign key (SensorId) references " . (new DalSensors)->GetTableName() . "(Id)" .
          " ) DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_bin;";
       return $result;
    }
@@ -42,12 +42,7 @@ class DalSensorReading implements IDalBase
    public static function ResetCache(array $sensors): void
    {
       CacheJsonDTO::CreateEmpty();
-      $lastReadings = [];
-      foreach ($sensors as $sensor) {
-         $lastReading = (new DalSensorReading())->GetLastReading($sensor->id);
-         $lastReadings[$sensor->id] = $lastReading;
-      }
-      (new CacheJsonDTO($lastReadings))->Save();
+      DalSensorReading::GetLastReadingsFromCacheOrDatabase($sensors);
    }
 
    /**
@@ -56,7 +51,8 @@ class DalSensorReading implements IDalBase
    public static function SetLastReadingsCache(SensorReading $sensorReading): void
    {
       if (! CacheJsonDTO::DoesFileExist()) {
-         (new CacheJsonDTO((new DalSensorReading())->GetLastSensorReadings()))->Save();
+         $sensors = (new DalSensors())->GetAll();
+         (new CacheJsonDTO((new DalSensorReading())->GetLastSensorReadings($sensors)))->Save();
       }
       $cache = CacheJsonDTO::Read();
       $cache->sensorReadings[$sensorReading->sensorId] = $sensorReading;
@@ -70,7 +66,7 @@ class DalSensorReading implements IDalBase
    public static function GetLastReadingsFromCacheOrDatabase(array $sensors): array
    {
       if (! CacheJsonDTO::DoesFileExist()) {
-         (new CacheJsonDTO((new DalSensorReading())->GetLastSensorReadings()))->Save();
+         (new CacheJsonDTO((new DalSensorReading())->GetLastSensorReadings($sensors)))->Save();
       }
       $cache = CacheJsonDTO::Read();
       $isDirty = false;
@@ -82,7 +78,7 @@ class DalSensorReading implements IDalBase
             continue;
          }
          // Do a DB query to get the sensors last reading
-         $lastReading = (new DalSensorReading())->GetLastReading($sensor->id);
+         $lastReading = (new DalSensorReading())->GetLastSensorReading($sensor->id);
          $lastReadings[$sensor->id] = $lastReading;
          $isDirty = true;
       }
@@ -96,13 +92,13 @@ class DalSensorReading implements IDalBase
 
    /**
     * Get assoc array of sensor id and sensor's last SensorReading? (SensorReading|null)[]
+    * @param Sensor[] $sensors
     * @return array<SensorReading|null>
     */
-   public function GetLastSensorReadings(): array {
-      $sensors = (new DalSensors())->GetAll();
+   public function GetLastSensorReadings(array $sensors): array {
       $lastReadings = [];
       foreach ($sensors as $sensor) {
-         $lastReadings[$sensor->id] = (new DalSensorReading())->GetLastReading($sensor->id);
+         $lastReadings[$sensor->id] = (new DalSensorReading())->GetLastSensorReading($sensor->id);
       }
       return $lastReadings;
    }
@@ -111,7 +107,7 @@ class DalSensorReading implements IDalBase
     *  @param string $sensorId
     *  @return SensorReading|null
     */
-   public function GetLastReading(string $sensorId): SensorReading|null
+   public function GetLastSensorReading(string $sensorId): SensorReading|null
    {
       $pdo = DbHelper::GetPDO();
       $qry = "SELECT Id, " .
@@ -120,7 +116,7 @@ class DalSensorReading implements IDalBase
          "RelHum, " .
          "DateRecorded, " .
          "DateAdded " .
-         " FROM " . $this->GetName() .
+         " FROM " . $this->GetDatabaseNameDotTableName() .
          " WHERE SensorId = ? " .
          " ORDER BY DateRecorded DESC LIMIT 1;";
       $stmt = $pdo->prepare($qry);
@@ -147,7 +143,7 @@ class DalSensorReading implements IDalBase
          "RelHum, " .
          "DateRecorded " .
          " " .
-         " FROM " . $this->GetName() .
+         " FROM " . $this->GetDatabaseNameDotTableName() .
          " WHERE DateRecorded >= ? " .
          " AND DateRecorded <= ? " .
          " ORDER BY DateRecorded ASC";
@@ -175,7 +171,7 @@ class DalSensorReading implements IDalBase
          "RelHum, " .
          "DateRecorded " .
          " " .
-         " FROM " . $this->GetName() .
+         " FROM " . $this->GetDatabaseNameDotTableName() .
          " WHERE SensorId >= ? " .
          " ORDER BY DateRecorded ASC";
       $stmt = $pdo->prepare($qry);
@@ -189,23 +185,26 @@ class DalSensorReading implements IDalBase
    }
 
    /**
-    *  @param SensorReading $sensorReading
+    *  @param SensorReading[] $objects
     *  @param PDO $pdo
     */
-   public function Create(SensorReading $sensorReading, PDO $pdo): void
+   protected function Insert($objects, PDO $pdo): void
    {
-      $qry = "INSERT INTO " . $this->GetName() . " ( " .
+      $qry = "INSERT INTO " . $this->GetDatabaseNameDotTableName() . " ( " .
          "Id, " .
          "SensorId, " .
          "Temp, " .
          "RelHum, " .
          "DateRecorded, " .
          "DateAdded) " .
-         " VALUES (?,?,?,?,?,?);";
+         " VALUES " . $this->getPlaceHolders(numberOfQuestionMarks: 6, numberOfRows: sizeof($objects)) . ";";
       $stmt = $pdo->prepare($qry);
-      $stmt->execute([
-         $sensorReading->id, $sensorReading->sensorId, $sensorReading->temp,
-         $sensorReading->relHum, $sensorReading->dateRecorded, $sensorReading->dateAdded]);
+      $params = [];
+      foreach ($objects as $object) {
+         array_push($params, $object->id, $object->sensorId, $object->temp,
+            $object->relHum, $object->dateRecorded, $object->dateAdded);
+      }
+      $stmt->execute($params);
    }
 
    /**
@@ -223,5 +222,45 @@ class DalSensorReading implements IDalBase
          $value['DateRecorded'],
          $value['DateAdded'],
       );
+   }
+
+   /**
+    * @param string $id Parent sensor id
+    */
+   public function DeleteWhereSensorId(string $id): void {
+      $pdo = DbHelper::GetPDO();
+      $qry = "DELETE FROM " . $this->GetDatabaseNameDotTableName() . " WHERE SensorId = ?";
+      $stmt = $pdo->prepare($qry);
+      $stmt->execute([$id]);
+   }
+
+
+   /**
+    * @param string $id SensorReading id
+    */
+   public function Delete(string $id): void
+   {
+      $pdo = DbHelper::GetPDO();
+      $qry = "DELETE FROM " . $this->GetDatabaseNameDotTableName() . " WHERE Id = ?";
+      $stmt = $pdo->prepare($qry);
+      $stmt->execute([$id]);
+   }
+
+   /**
+    * @param SensorReading $object
+    */
+   public function Update($object): void
+   {
+      $pdo = DbHelper::GetPDO();
+      $qry = "UPDATE " . $this->GetDatabaseNameDotTableName() . " SET " .
+         "SensorId = ?, " .
+         "Temp = ?, " .
+         "RelHum = ?, " .
+         "DateRecorded = ?, " .
+         "DateAdded = ? " .
+         "WHERE Id = ?";
+      $stmt = $pdo->prepare($qry);
+      $stmt->execute([$object->sensorId, $object->temp,
+         $object->relHum, $object->dateRecorded, $object->dateAdded, $object->id]);
    }
 }

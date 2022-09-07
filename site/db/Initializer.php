@@ -15,35 +15,37 @@ use App\db\migrations\V1_0_0\SensorV1_0_0;
 use App\db\migrations\V1_0_0\SensorReadingV1_0_0;
 use App\model\Sensor;
 use App\model\SensorReading;
-use PDO;
-use PDOException;
+use App\model\SensorReadingTmp;
+use App\util\Config;
 use App\Util\Console;
 
-
-Initializer::Initialize('tempsens20210530');
-// Initializer::InitializeData();
+// Run this from terminal
+// php -r "require './Initializer.php'; App\db\Initializer::Initialize();"
 
 // Script class to generate initial database, call from command line
 class Initializer
 {
-   public static function Initialize(string $name) {
-      Console::WriteLine();
+   public static function Initialize(): void {
+      $console = (new Console(Console::$Linefeed, true));
+      $console->WriteLine();
       $pdo = DbHelper::GetPDO();
+      $name = (new Config())->GetDatabaseName();
       $dropStatement = "DROP DATABASE IF EXISTS {$name};";
-      Console::WriteLine($dropStatement, true);
+      $console->WriteLine($dropStatement);
       $pdo->exec($dropStatement);
       $createStatement = "CREATE DATABASE IF NOT EXISTS {$name};";
-      Console::WriteLine($createStatement, true);
+      $console->WriteLine($createStatement);
       $pdo->exec($createStatement);
 
-      Console::WriteLine("Creating tables...", true);
+      $console->WriteLine("Creating tables...");
       DbHelper::CreateTables();
-      Console::WriteLine("Initialisizing data...", true);
+      $console->WriteLine("Initializing data...");
       Initializer::InitializeData();
-      Console::WriteLine("All good!", true);
+      $console->WriteLine("All good!");
    }
 
-   public static function InitializeData() {
+   public static function InitializeData(): void
+   {
       // $csv = array_map('str_getcsv', file('backupCSV/202104201605-V1_0_0/sensorsV1_0_0.csv'));
       $file = fopen("backupCSV/202104201605-V1_0_0/sensors.csv","r");
       $sensors = Sensor::NewArray();
@@ -85,6 +87,7 @@ class Initializer
 
       $file = fopen("backupCSV/202104201605-V0_3_4/sensor-readings.csv","r");
       $sensorReadings = SensorReading::NewArray();
+      $debugSensorReadings = SensorReadingTmp::NewArray();
       for($i = 0; $line = fgetcsv($file, separator: ";"); $i++)
       {
          // var_dump($line);
@@ -119,22 +122,30 @@ class Initializer
             $dactdate
          );
          $sensor = SensorReading::GetSensorBySerial($sensors, $passKey);
-         array_push($sensorReadings, $sensorReadingV0_3_4->GetUp($sensor->id, $sensor->isPortable)->MapToModel());
+         $sensorReadingV1_0_0 = $sensorReadingV0_3_4->GetUp($sensor->id, $sensor->isPortable)->MapToModel();
+         array_push($sensorReadings, $sensorReadingV1_0_0);
+         $sensorReadingTmp = new SensorReadingTmp(
+            $sensorReadingV1_0_0->id, $sensorReadingV1_0_0->sensorId, $sensorReadingV1_0_0->relHum,
+            $sensorReadingV1_0_0->temp, $sensorReadingV1_0_0->dateRecorded, $sensorReadingV1_0_0->dateAdded,
+            $sensorReadingV1_0_0->id, $sensorReadingV1_0_0->sensorId, $sensorReadingV1_0_0->dateRecorded
+         );
+         array_push($debugSensorReadings, $sensorReadingTmp);
       }
       fclose($file);
 
       $pdo = DbHelper::GetPDO();
       $pdo->beginTransaction();
 
-      Console::WriteLine('Transaction adding sensors: ' . sizeof($sensors), true);
-      foreach ($sensors as $sensor) {
-         (new DalSensors())->Create($sensor, $pdo);
-      }
+      $console = new Console(Console::$Linefeed, true);
+      $console->WriteLine('Transaction adding table sensors: ' . sizeof($sensors));
+      (new DalSensors())->InsertByChunk($sensors, $pdo);
 
-      Console::WriteLine('Transaction adding sensorReadings: ' . sizeof($sensorReadings), true);
-      foreach ($sensorReadings as $sensorReading) {
-         (new DalSensorReading())->Create($sensorReading, $pdo);
-      }
+      $console->WriteLine('Transaction adding table sensorReadings: ' . sizeof($sensorReadings));
+      (new DalSensorReading())->InsertByChunk($sensorReadings, $pdo);
+
+      $console->WriteLine('Transaction adding debug tables... ');
+      $console->WriteLine('Transaction adding table sensorReadingsTmp: ' . sizeof($debugSensorReadings));
+      (new DalSensorReadingTmp())->InsertByChunk($debugSensorReadings, $pdo);
 
       $pdo->commit();
 

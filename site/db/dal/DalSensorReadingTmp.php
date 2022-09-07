@@ -12,19 +12,19 @@ use App\model\SensorReadingTmp;
 use JetBrains\PhpStorm\Pure;
 use PDO;
 
-class DalSensorReadingTmp implements IDalBase
+class DalSensorReadingTmp extends AbstractDalBase
 {
    /**
     *  @return string
     */
-   public function GetName(): string { return "SensorReadingTmp"; }
+   public function GetTableName(): string { return "SensorReadingTmp"; }
 
    /**
     *  @return string
     */
    public function SqlCreateTableStmt(): string
    {
-      $result = "create table " . DalSensorReadingTmp::GetName() .
+      $result = "create table " . $this->GetDatabaseNameDotTableName() .
          " ( " .
          "Id VARCHAR(64) NOT NULL PRIMARY KEY, " .
          "SensorId VARCHAR(64) NOT NULL, " .
@@ -50,7 +50,24 @@ class DalSensorReadingTmp implements IDalBase
       $qry = "SELECT Id, SensorId, " .
          "Temp, RelHum, " .
          "DateRecorded, DateAdded, TmpDupId, TmpDupSensorId, TmpDupDateRecorded " .
-         " FROM " . $this->GetName() .
+         " FROM " . $this->GetDatabaseNameDotTableName() .
+         " WHERE DateRecorded >= ? " .
+         " AND DateRecorded <= ? " .
+         " ORDER BY DateRecorded ASC";
+      $stmt = $pdo->prepare($qry);
+      $stmt->execute([$from, $to]);
+
+      return $result;
+   }
+
+   public function GetAllBetweenTest4(string $from, string $to): array
+   {
+      $pdo = DbHelper::GetPDO();
+      $result = [];
+      $qry = "SELECT Id, Temp, RelHum, DateRecorded, DateAdded" .
+         " " .
+         " " .
+         " FROM " . $this->GetDatabaseNameDotTableName() .
          " WHERE DateRecorded >= ? " .
          " AND DateRecorded <= ? " .
          " ORDER BY DateRecorded ASC";
@@ -61,24 +78,27 @@ class DalSensorReadingTmp implements IDalBase
    }
 
    /**
-    *  @param SensorReadingTmp $sensorReading
+    *  @param SensorReadingTmp[] $objects
     *  @param PDO $pdo
     */
-   public function Create(SensorReadingTmp $sensorReading, PDO $pdo): void
+   protected function Insert($objects, PDO $pdo): void
    {
-      $qry = "INSERT INTO " . $this->GetName() . " ( " .
+      $qry = "INSERT INTO " . $this->GetDatabaseNameDotTableName() . " ( " .
          "Id, " .
          "SensorId, " .
          "Temp, " .
          "RelHum, " .
          "DateRecorded, " .
          "DateAdded, TmpDupId, TmpDupSensorId, TmpDupDateRecorded) " .
-         " VALUES (?,?,?,?,?,?,?,?,?);";
+         " VALUES " . $this->getPlaceHolders(9, sizeof($objects)) . ";";
       $stmt = $pdo->prepare($qry);
-      $stmt->execute([
-         $sensorReading->id, $sensorReading->sensorId, $sensorReading->temp,
-         $sensorReading->relHum, $sensorReading->dateRecorded, $sensorReading->dateAdded,
-         $sensorReading->tmpDupId, $sensorReading->tmpDupSensorId, $sensorReading->tmpDupDateRecorded ]);
+      $params = [];
+      foreach ($objects as $object) {
+         array_push($params, $object->id, $object->sensorId, $object->temp,
+            $object->relHum, $object->dateRecorded, $object->dateAdded,
+            $object->tmpDupId, $object->tmpDupSensorId, $object->tmpDupDateRecorded);
+      }
+      $stmt->execute($params);
    }
 
    /**
@@ -96,5 +116,15 @@ class DalSensorReadingTmp implements IDalBase
          $value['DateRecorded'],
          $value['DateAdded'], $value['TmpDupId'], $value['TmpDupSensorId'], $value['TmpDupDateRecorded']
       );
+   }
+
+   public function Delete(string $id): void
+   {
+      // TODO: Implement Delete() method.
+   }
+
+   public function Update($object): void
+   {
+      // TODO: Implement Update() method.
    }
 }

@@ -9,7 +9,7 @@ use App\db\dal\DalSensorReadingTmp;
 use App\db\dal\DalSensors;
 use App\db\DbHelper;
 use App\model\SensorReading;
-use DateTime;
+use App\util\Console;
 
 // (new Debug())->main();
 
@@ -19,47 +19,50 @@ class Debug
 
    function main(): void
    {
-
+      // It does not seem to actually measure performance well - the performance of the same db query can take 9sec or 27sec
+      // Also every other page refresh fails:
+      // Fatal error: Uncaught PDOException: SQLSTATE[HY000]: General error: 2006 MySQL server has gone away
 
       $from = '202006010000';
       $to = '202012010000';
-      $iterations = 30;
+      $iterations = 1;
 
 
-      $times = [];
-      if (false) {
-         for ($i = 0; $i < $iterations; $i++) {
-            $before = microtime(true);
-            (new DalSensorReadingTmp())->GetAllBetweenTest3($from, $to);
-            array_push($times, microtime(true) - $before);
-         }
-      }
+      /*
+      Debug::measurePerformance(function () use($from, $to) {
+         (new DalSensorReadingTmp())->GetAllBetweenTest3($from, $to);
+      }, "GetAllBetweenTest3", $this->debugs, 2);
+      */
+      Debug::measurePerformance(function () use($from, $to) {
+         (new DalSensorReadingTmp())->GetAllBetweenTest4($from, $to);
+      }, "GetAllBetweenTest4", $this->debugs, $iterations);
 
 
-      array_push($this->debugs,'Select all avg time ' . array_sum($times) / $iterations);
-      array_push($this->debugs,'Select all times ' . var_export($times, true));
-      $times = [];
 
-      for ($i = 0; $i < $iterations; $i++) {
-         $before = microtime(true);
-         $pdo = DbHelper::GetPDO();
-         $qry = "SELECT Id, SensorId, " .
-            "Temp, RelHum, " .
-            "DateRecorded, DateAdded " .
-            " FROM " . ' SensorReading' .
-            " WHERE DateRecorded >= ? " .
-            " AND DateRecorded <= ? " .
-            " ORDER BY DateRecorded ASC";
+      Debug::measurePerformance(function () use($from, $to) {
+         $pdo = DbHelper::GetPdo();
+         $qry = 'SELECT Id, SensorId, Temp, RelHum, DateRecorded, DateAdded
+        FROM railway.SensorReading
+        WHERE DateRecorded >= ? AND DateRecorded <= ? ORDER BY DateRecorded ASC';
          $stmt = $pdo->prepare($qry);
          $stmt->execute([$from, $to]);
+      }, "SelectAllBetween", $this->debugs, 1);
+
+      $console = new Console(Console::$Break, true);
+      foreach ($this->debugs as $debug) {
+         $console->WriteLine($debug . "<br>");
+      }
+   }
+
+   public static function measurePerformance($callback, $callbackName, &$resultLogArr, $numberOfExecutions): void {
+      $times = [];
+      for ($i = 0; $i < $numberOfExecutions; $i++) {
+         $before = microtime(true);
+         $callback();
          array_push($times, microtime(true) - $before);
       }
-      array_push($this->debugs,'Select all but sensorId avg time ' . array_sum($times) / $iterations);
-      array_push($this->debugs,'Select all but sensorId times ' . var_export($times, true));
 
-      foreach ($this->debugs as $debug) {
-         echo var_export($debug, true);
-         echo '\n';
-      }
+      array_push($resultLogArr,"$callbackName avg time " . array_sum($times) / $numberOfExecutions);
+      array_push($resultLogArr,"$callbackName all times " . var_export($times, true));
    }
 }

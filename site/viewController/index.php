@@ -295,7 +295,7 @@ class Programm {
             $id = Base64::GenerateId();
             $sensor = new Sensor($id, $name, $serial, $model, $ip, $location, $isPortable, $minTemp, $maxTemp, $minRelHum, $maxRelHum, $readingIntervalMinutes);
             $pdo = DbHelper::GetPDO();
-            (new DalSensors())->Create($sensor, $pdo);
+            (new DalSensors())->InsertByChunk([$sensor], $pdo);
             break;
          case 'edit':
             $sensor = new Sensor(
@@ -357,7 +357,6 @@ class Programm {
       }
 
       $sensorReadings = [];
-      $lastDateSensorReading = null;
       foreach ($jsonDataInput as $row) {
          $temp = $row->temp;
          if (! is_numeric($temp)) {
@@ -386,12 +385,6 @@ class Programm {
             dateRecorded: $date,
             dateAdded: Helper::GetDateNow()
          );
-         if ($lastDateSensorReading === null) {
-            $lastDateSensorReading = $sensorReading;
-         }
-         if ($sensorReading->dateRecorded > $lastDateSensorReading->dateRecorded) {
-            $lastDateSensorReading = $sensorReading;
-         }
 
          array_push($sensorReadings, $sensorReading);
       }
@@ -418,9 +411,7 @@ class Programm {
 
       $pdo = DbHelper::GetPDO();
       $pdo->beginTransaction();
-      foreach ($sensorReadings as $sensorReading) {
-         (new DalSensorReading())->Create($sensorReading, $pdo);
-      }
+      (new DalSensorReading())->InsertByChunk($sensorReadings, $pdo);
       $pdo->commit();
 
       DalSensorReading::ResetCache($sensors);

@@ -28,7 +28,7 @@ class SensorApi
          dateAdded: null
       );
       $db = DbHelper::GetPDO();
-      (new DalSensorReading)->Create($reading, $db);
+      (new DalSensorReading)->InsertByChunk([$reading], $db);
       DalSensorReading::SetLastReadingsCache($reading);
    }
 }

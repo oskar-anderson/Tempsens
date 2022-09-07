@@ -3,20 +3,33 @@
 
 namespace App\util;
 
+use DateTime;
+
 require_once(__DIR__."/../../vendor/autoload.php");
 
 
 class Console
 {
+   public static string $Break = "<br>";
+   public static string $Linefeed = "\n";
+   public static string $BreakLF = "<br>\n";
+
+   public function __construct(
+      private string $newline,
+      private bool $withDate
+   ) {
+   }
+
+
     /**
      * Wrap the echo function for better syntax and automatic newline support
-     * @param string $value Message that will be echod
-     * @param bool $isImportant Adds a dragon emoji to differentiate important- and debug-echos
+     * @param string $value Message that will be echoed
     *  @return void
     */
-    public static function WriteLine($value = "", $isImportant = false): void
+    public function WriteLine(string $value = ""): void
     {
-        echo ($isImportant ? "🐉 " : "") . $value . "\n";
+        echo ($this->withDate && $value !== "" ? ((new DateTime())->format("H:i:s:u") . " ") : "") .
+           $value . $this->newline;
     }
 
    public static function DebugToConsole(mixed $data, bool $withScriptTag): void

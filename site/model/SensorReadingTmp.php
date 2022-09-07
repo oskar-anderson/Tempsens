@@ -28,4 +28,13 @@ class SensorReadingTmp
       $this->tmpDupSensorId = $tmpDupSensorId;
       $this->tmpDupDateRecorded = $tmpDupDateRecorded;
    }
+
+   /**
+    * Type hinting trick
+    *  @return SensorReading[]
+    */
+   public static function NewArray(): array
+   {
+      return [];
+   }
 }

@@ -30,7 +30,7 @@ class SensorReading
     {
        $arr = array_values(array_filter($sensors,
           function ($obj) use ($serial) {
-             return $obj->serial == $serial;
+             return $obj->serial === $serial;
           }));
        if (sizeof($arr) === 0) die('Sensor with serial:' . $serial . ' does not exist!');
        if (sizeof($arr) > 1) die('Multiple sensors with serial:' . $serial);

@@ -7,7 +7,7 @@ require_once(__DIR__."/../../vendor/autoload.php");
 use App\db\dal\DalSensorReading;
 use App\db\dal\DalSensorReadingTmp;
 use App\db\dal\DalSensors;
-use App\db\dal\IDalBase;
+use App\db\dal\AbstractDalBase;
 use App\util\Config as Config;
 use PDO;
 use PDOException;
@@ -16,7 +16,7 @@ use App\Util\Console;
 class DbHelper {
 
    /**
-    *  @return IDalBase[]
+    *  @return AbstractDalBase[]
     */
    private static function GetTrackedTables(): array
    {
@@ -28,21 +28,21 @@ class DbHelper {
    }
 
     public static function CreateTables() {
-       $createTableStatements = array_map(fn(IDalBase $x) => $x->SqlCreateTableStmt(), DbHelper::GetTrackedTables());
+       $createTableStatements = array_map(fn(AbstractDalBase $x) => $x->SqlCreateTableStmt(), DbHelper::GetTrackedTables());
        $pdo = DbHelper::GetPDO();
        foreach ($createTableStatements as $i=>$table) {
-          Console::WriteLine($i + 1 . "/" . count($createTableStatements) . ": " . $table, true);
+          (new Console(Console::$Linefeed, true))->WriteLine($i + 1 . "/" . count($createTableStatements) . ": " . $table);
           $pdo->query($table);
        }
     }
 
    public static function DropTables() {
-      $tableNames = array_map(fn(IDalBase $x) => $x->GetName(), DbHelper::GetTrackedTables());
+      $tableNames = array_map(fn(AbstractDalBase $x) => $x->GetTableName(), DbHelper::GetTrackedTables());
       $pdo = DbHelper::GetPDO();
       $pdo->query("SET FOREIGN_KEY_CHECKS = 0;");
       foreach ($tableNames as $i=>$table) {
          $stmt = "DROP TABLE IF EXISTS " . $table . ";";
-         Console::WriteLine($i + 1 . "/" . count($tableNames) . ": " . $stmt, true);
+         (new Console(Console::$Linefeed, true))->WriteLine($i + 1 . "/" . count($tableNames) . ": " . $stmt);
          $pdo->query($stmt);
       }
       $pdo->query("SET FOREIGN_KEY_CHECKS = 1;");
@@ -52,18 +52,18 @@ class DbHelper {
    public static function GetPDO(): PDO
    {
       $config = new Config();
-      return DbHelper::GetPdoByKey($config->GetConnectUrl(), $config->GetUsername(), $config->GetPassword());
+      return DbHelper::GetPdoByKey($config->GetConnectDsn(), $config->GetUsername(), $config->GetPassword());
    }
 
-   public static function GetPdoByKey(string $url, string $username, string $password): PDO
+   public static function GetPdoByKey(string $dsn, string $username, string $password): PDO
    {
-      // Console::WriteLine("New PDO(connectUrl= {$dbconf['connectUrl']}, username=***, password=***)");
       try {
-         $pdo = new PDO($url, $username, $password);
+         $pdo = new PDO($dsn, $username, $password);
          $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+         // var_dump($pdo->setAttribute(PDO::ATTR_TIMEOUT, 28800)); // this fails
          return $pdo;
       } catch (PDOException $e) {
-         Console::WriteLine("GetPdoByKey FAILED ({$e->getMessage()})", true);
+         (new Console(Console::$Linefeed, true))->WriteLine("GetPdoByKey FAILED ({$e->getMessage()})");
          throw $e;
       }
    }
