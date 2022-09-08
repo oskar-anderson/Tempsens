@@ -5,9 +5,6 @@ namespace App\db\dal;
 require_once(__DIR__ . "/../../../vendor/autoload.php");
 
 use App\db\DbHelper;
-use App\dto\CacheJsonDTO;
-use App\model\Sensor;
-use App\model\SensorReading;
 use App\model\SensorReadingTmp;
 use JetBrains\PhpStorm\Pure;
 use PDO;

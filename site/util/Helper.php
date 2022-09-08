@@ -34,7 +34,8 @@ class Helper
 
 
    /** @noinspection PhpUnusedParameterInspection */
-   public static function Render($fileName, $model) {
+   public static function Render($fileName, $model): void
+   {
       require($fileName);
    }
 }

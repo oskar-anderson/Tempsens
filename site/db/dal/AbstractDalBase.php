@@ -7,6 +7,7 @@ require_once(__DIR__."/../../../vendor/autoload.php");
 use App\util\Config;
 use App\util\Console;
 use PDO;
+use PDOException;
 
 abstract class AbstractDalBase {
     /**
@@ -30,9 +31,9 @@ abstract class AbstractDalBase {
 
    public abstract function Map(array $value);
    /**
-    *  @throws \PDOException
+    *  @throws PDOException
     */
-   protected abstract function Insert(array $objects, PDO $pdo);
+   protected abstract function Insert(array $objects, PDO $pdo): void;
    public abstract function Delete(string $id): void;
    public abstract function Update($object): void;
 
@@ -64,7 +65,7 @@ abstract class AbstractDalBase {
             $this->Insert($chunk, $pdo);
          }
       }
-      catch (\PDOException $e) {
+      catch (PDOException $e) {
          $console = new Console(Console::$BreakLF, true);
          $console->WriteLine("PDOException " . $i . "/" . sizeof($chunks) . ": " . $e);
          die();

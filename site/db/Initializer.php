@@ -5,6 +5,7 @@ namespace App\db;
 
 require_once(__DIR__."/../../vendor/autoload.php");
 
+use App\db\dal\DalCache;
 use App\db\dal\DalSensorReading;
 use App\db\dal\DalSensorReadingTmp;
 use App\db\dal\DalSensors;
@@ -13,9 +14,11 @@ use App\db\migrations\V0_3_4\SensorReadingV0_3_4;
 use App\db\migrations\V0_3_4\SensorV0_3_4;
 use App\db\migrations\V1_0_0\SensorV1_0_0;
 use App\db\migrations\V1_0_0\SensorReadingV1_0_0;
+use App\model\Cache;
 use App\model\Sensor;
 use App\model\SensorReading;
 use App\model\SensorReadingTmp;
+use App\util\Base64;
 use App\util\Config;
 use App\Util\Console;
 
@@ -142,6 +145,14 @@ class Initializer
 
       $console->WriteLine('Transaction adding table sensorReadings: ' . sizeof($sensorReadings));
       (new DalSensorReading())->InsertByChunk($sensorReadings, $pdo);
+
+      $cache = [(new Cache(true, true, true))->
+         setId(Base64::GenerateId())->
+         setType(DalCache::getLastSensorReadingType())->
+         setContent([])
+      ];
+      $console->WriteLine('Transaction adding table cache: ' . sizeof($cache));
+      (new DalCache())->InsertByChunk($cache, $pdo);
 
       $console->WriteLine('Transaction adding debug tables... ');
       $console->WriteLine('Transaction adding table sensorReadingsTmp: ' . sizeof($debugSensorReadings));

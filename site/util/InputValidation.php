@@ -28,7 +28,7 @@ class InputValidation
       }
    }
 
-   public static function FloatInputValidation(array &$errorMessages, string $input, $name)
+   public static function FloatInputValidation(array &$errorMessages, string $input, $name): void
    {
       $isEmpty = $input === '';
       $isNumeric = is_numeric($input);

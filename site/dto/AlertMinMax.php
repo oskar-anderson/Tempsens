@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 
 namespace App\dto;
 
@@ -12,7 +13,7 @@ use DateTime;
 class AlertMinMax
 {
    public string $beforeDate;
-   public string $duration;
+   public int $duration;
    public int $count;
    public float $temp;
    public float $hum;
@@ -40,13 +41,13 @@ class AlertMinMax
       }
       if (sizeof($outOfBoundsGroup) === 1) {
          [$temp, $relHum] = AlertMinMax::GetDeviation($sensor, $outOfBoundsGroup);
-         $before = DateTime::createFromFormat($outputDateTimeFormat, $outOfBoundsGroup[0]->date);
+         $before = DateTime::createFromFormat($outputDateTimeFormat, $outOfBoundsGroup[0]->getDate());
          return new AlertMinMax($before, 0, 1, $temp, $relHum);
       }
       $before = $outOfBoundsGroup[0];
       $end = $outOfBoundsGroup[sizeof($outOfBoundsGroup) - 1];
-      $before = DateTime::createFromFormat($outputDateTimeFormat, $before->date);
-      $end = DateTime::createFromFormat($outputDateTimeFormat, $end->date);
+      $before = DateTime::createFromFormat($outputDateTimeFormat, $before->getDate());
+      $end = DateTime::createFromFormat($outputDateTimeFormat, $end->getDate());
       [$temp, $relHum] = AlertMinMax::GetDeviation($sensor, $outOfBoundsGroup);
       $result = new AlertMinMax(
          beforeDate: $before,
@@ -61,10 +62,10 @@ class AlertMinMax
    /* @param SensorReadingDTO[] $outOfBoundsGroup */
    private static function GetDeviation(Sensor $sensor, array $outOfBoundsGroup): array {
       $hums = array_map(function ($x) {
-         return $x->relHum;
+         return $x->getRelHum();
       }, $outOfBoundsGroup);
       $temps = array_map(function ($x) {
-         return $x->temp;
+         return $x->getTemp();
       }, $outOfBoundsGroup);
       $lowTemp = min($temps);
       $highTemp = max($temps);
@@ -101,8 +102,8 @@ class AlertMinMax
          $rawOutOfBoundBefore = $ungroupedOutOfBounds[$i];
          $rawOutOfBoundAfter = $ungroupedOutOfBounds[$i + 1];
 
-         $isPartOfSameChain = (DateTime::createFromFormat($outputDateTimeFormat, $rawOutOfBoundAfter->date)->getTimestamp() -
-               DateTime::createFromFormat($outputDateTimeFormat, $rawOutOfBoundBefore->date)->getTimestamp())
+         $isPartOfSameChain = (DateTime::createFromFormat($outputDateTimeFormat, $rawOutOfBoundAfter->getDate())->getTimestamp() -
+               DateTime::createFromFormat($outputDateTimeFormat, $rawOutOfBoundBefore->getDate())->getTimestamp())
             / 60 <= $sensor->readingIntervalMinutes;
          $isPartOfChainBreak = sizeof($outOfBoundsChain) > 1 && ! $isPartOfSameChain;
          $isNotPartOfChain = sizeof($outOfBoundsChain) === 0 && ! $isPartOfSameChain;

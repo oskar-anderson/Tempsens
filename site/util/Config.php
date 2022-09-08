@@ -6,6 +6,7 @@ namespace App\util;
 require_once(__DIR__."/../../vendor/autoload.php");
 use Dotenv\Dotenv;
 use Exception;
+use JetBrains\PhpStorm\ArrayShape;
 
 class Config
 {
@@ -20,6 +21,7 @@ class Config
       }
    }
 
+   #[ArrayShape(["connectDsn" => "string", "username" => "string", "password" => "string"])]
    public function GetEnvDbCredentials(): array
    {
       return [
@@ -77,5 +79,19 @@ class Config
    public function GetPassword(): string
    {
       return $this->GetByName("dbPassword");
+   }
+
+   /**
+    * @throws Exception Undefined
+    */
+   public function GetUseDbCache(): bool
+   {
+      $type = $this->GetByName("cacheType");
+      $isDb = $type === "db";
+      $isFile = $type === "file";
+      if ($isFile || $isDb) {
+         return $isDb;
+      }
+      throw new Exception("Config cacheType={$type} must be in ['db', 'file']!");
    }
 }

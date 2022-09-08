@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\viewController;
 
 require_once(__DIR__."/../../vendor/autoload.php");
 
 use App\db\dal\DalSensorReading;
-use App\db\dal\DalSensorReadingTmp;
 use App\db\dal\DalSensors;
 use App\dto\AlertMinMax;
 use App\dto\IndexViewModel;
@@ -93,11 +94,10 @@ class Programm {
       foreach ($sensors as $sensor) {
          $sensorReadingsOfSensor = array_values(array_filter($sensorReadings, fn($x) => $x->sensorId === $sensor->id));
          $sensorReadingsBySensorId[$sensor->id] = array_map(function ($x) {
-            return new SensorReadingDTO(
-               date: DateTime::createFromFormat('YmdHi', $x->dateRecorded)->format($this->pageOutputDateTimeFormat),
-               temp: $x->temp,
-               relHum: $x->relHum
-            );
+            return (new SensorReadingDTO(true, true, true, false))->
+               setDate(DateTime::createFromFormat('YmdHi', $x->dateRecorded)->format($this->pageOutputDateTimeFormat))->
+               setTemp($x->temp)->
+               setRelHum($x->relHum);
          }, $sensorReadingsOfSensor);
       }
 
@@ -107,8 +107,8 @@ class Programm {
       $sensorAlertsMinMax = [];
       foreach ($sensors as $sensor) {
          $rawOutOfBounds = array_values(array_filter($sensorReadingsBySensorId[$sensor->id], fn($x) =>
-            $x->temp < $sensor->minTemp || $x->temp > $sensor->maxTemp ||
-            $x->relHum < $sensor->minRelHum || $x->relHum > $sensor->maxRelHum
+            $x->getTemp() < $sensor->minTemp || $x->getTemp() > $sensor->maxTemp ||
+            $x->getRelHum() < $sensor->minRelHum || $x->getRelHum() > $sensor->maxRelHum
          ));
          $sensorAlertsMinMax[$sensor->id] = AlertMinMax::Get($sensor, $this->pageOutputDateTimeFormat, $rawOutOfBounds);
       }
@@ -196,7 +196,7 @@ class Programm {
       $model = isset($_POST['model']) ? trim($_POST['model']) : null;
       $ip = isset($_POST['ip']) ? trim($_POST['ip']) : null;
       $location = isset($_POST['location']) ? trim($_POST['location']) : null;
-      $isPortable = isset($_POST['isPortable']) ? trim($_POST['isPortable'] === 'Y') : false;
+      $isPortable = isset($_POST['isPortable']) && trim($_POST['isPortable']) === 'Y';
       $minTemp = isset($_POST['minTemp']) ? trim($_POST['minTemp']) : null;
       $maxTemp = isset($_POST['maxTemp']) ? trim($_POST['maxTemp']) : null;
       $minRelHum = isset($_POST['minRelHum']) ? trim($_POST['minRelHum']) : null;
@@ -222,7 +222,7 @@ class Programm {
          return new SensorCrudBadCreateValues(null, '');
       }
       if ($name === null || $serial === null || $model === null || $ip === null
-         || $location === null || $isPortable === null || $minTemp === null || $maxTemp === null
+         || $location === null || $isPortable || $minTemp === null || $maxTemp === null
          || $minRelHum === null || $maxRelHum === null || $readingIntervalMinutes === null) {
          $str = 'Internal error! Cannot read from values.' .
             sprintf("name: %s, serial: %s, model: %s, ip: %s," .

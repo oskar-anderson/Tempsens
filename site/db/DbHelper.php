@@ -4,6 +4,7 @@ namespace App\db;
 
 require_once(__DIR__."/../../vendor/autoload.php");
 
+use App\db\dal\DalCache;
 use App\db\dal\DalSensorReading;
 use App\db\dal\DalSensorReadingTmp;
 use App\db\dal\DalSensors;
@@ -23,11 +24,13 @@ class DbHelper {
       return [
          new DalSensors(),
          new DalSensorReadingTmp(),
-         new DalSensorReading()
+         new DalSensorReading(),
+         new DalCache()
       ];
    }
 
-    public static function CreateTables() {
+    public static function CreateTables(): void
+    {
        $createTableStatements = array_map(fn(AbstractDalBase $x) => $x->SqlCreateTableStmt(), DbHelper::GetTrackedTables());
        $pdo = DbHelper::GetPDO();
        foreach ($createTableStatements as $i=>$table) {
@@ -35,19 +38,6 @@ class DbHelper {
           $pdo->query($table);
        }
     }
-
-   public static function DropTables() {
-      $tableNames = array_map(fn(AbstractDalBase $x) => $x->GetTableName(), DbHelper::GetTrackedTables());
-      $pdo = DbHelper::GetPDO();
-      $pdo->query("SET FOREIGN_KEY_CHECKS = 0;");
-      foreach ($tableNames as $i=>$table) {
-         $stmt = "DROP TABLE IF EXISTS " . $table . ";";
-         (new Console(Console::$Linefeed, true))->WriteLine($i + 1 . "/" . count($tableNames) . ": " . $stmt);
-         $pdo->query($stmt);
-      }
-      $pdo->query("SET FOREIGN_KEY_CHECKS = 1;");
-   }
-
 
    public static function GetPDO(): PDO
    {

@@ -306,12 +306,12 @@ $errors = $model->errors;
                   <i class="bi bi-caret-right"></i>
                </span>
                <?php
-               $temps = array_map(fn($obj) => $obj->temp, $sensorReadingsBySensorId[$sensor->id]);
+               $temps = array_map(fn($obj) => $obj->getTemp(), $sensorReadingsBySensorId[$sensor->id]);
                $tempAvg = sizeof($temps) === 0 ? 'NULL' : number_format(array_sum($temps) / sizeof($temps), 1);
                $tempMax = sizeof($temps) === 0 ? 'NULL' : number_format(max($temps), 1);
                $tempMix = sizeof($temps) === 0 ? 'NULL' : number_format(min($temps), 1);
 
-               $hums = array_map(fn($obj) => $obj->relHum, $sensorReadingsBySensorId[$sensor->id]);
+               $hums = array_map(fn($obj) => $obj->getRelHum(), $sensorReadingsBySensorId[$sensor->id]);
                $humAvg = sizeof($hums) === 0 ? 'NULL' : number_format(array_sum($hums) / sizeof($hums), 1);
                $humMax = sizeof($hums) === 0 ? 'NULL' : number_format(max($hums), 1);
                $humMix = sizeof($hums) === 0 ? 'NULL' : number_format(min($hums), 1);
@@ -332,7 +332,18 @@ $errors = $model->errors;
                      </div>
                   </div>
                </div>
-               <div><?php echo sizeof($sensorReadingOutOfBounds[$sensor->id]) ?></div>
+               <div>
+                  <?php echo sizeof(array_values(array_filter(
+                     $sensorReadingOutOfBounds[$sensor->id],
+                     fn($x) => $x->temp < $sensor->minTemp || $x->temp > $sensor->maxTemp))
+                  )
+                  . "|" .
+                  sizeof(array_values(array_filter(
+                     $sensorReadingOutOfBounds[$sensor->id],
+                     fn($x) => $x->hum < $sensor->minRelHum || $x->hum > $sensor->maxRelHum))
+                  )
+                  ?>
+               </div>
                <div><?php echo $tempAvg ?></div>
                <div><?php echo $tempMix ?></div>
                <div><?php echo $tempMax ?></div>
@@ -390,8 +401,16 @@ $errors = $model->errors;
                                     <td><?php echo $item->beforeDate ?></td>
                                     <td><?php echo $item->duration ?></td>
                                     <td><?php echo $item->count ?></td>
-                                    <td><?php echo $item->temp ?></td>
-                                    <td><?php echo $item->hum ?></td>
+                                    <td <?php echo $item->temp < $sensor->minTemp || $item->temp > $sensor->maxTemp ?
+                                       "style='background-color: #c64848;'" :
+                                       "" ?>>
+                                       <?php echo number_format($item->temp, 1) ?>
+                                    </td>
+                                    <td <?php echo $item->hum < $sensor->minRelHum || $item->hum > $sensor->maxRelHum ?
+                                       "style='background-color: #c64848;'" :
+                                       "" ?>>
+                                       <?php echo number_format($item->hum, 1) ?>
+                                    </td>
                                  </tr>
                               <?php } ?>
                               </tbody>
@@ -796,6 +815,7 @@ $errors = $model->errors;
       // They are done multiple times in different places.
       // Perhaps this design can be improved.
       for (let sensor of sensors) {
+         let sensorReadings = indexModel.sensorReadingsMap.find(x => x.key === sensor.id).value;
          let tempRangeAvg = (sensor.maxTemp + sensor.minTemp) / 2;
          let humRangeAvg = (sensor.maxRelHum + sensor.minRelHum) / 2;
 
@@ -815,7 +835,7 @@ $errors = $model->errors;
             let before = xAxisTimesToSensors[i].date;
             let after = xAxisTimesToSensors[i + 1].date;
 
-            let tmp = FilterSortedArrayValuesBetweenDates(sensor.sensorReadings, before, after, low);
+            let tmp = FilterSortedArrayValuesBetweenDates(sensorReadings, before, after, low);
             let currentRows = tmp.result;
             low = tmp.low;
 
@@ -990,10 +1010,9 @@ $errors = $model->errors;
    }
 
    class Sensor {
-      constructor(id, name, sensorReadings, maxTemp, minTemp, maxRelHum, minRelHum, sensorSettings) {
+      constructor(id, name, maxTemp, minTemp, maxRelHum, minRelHum, sensorSettings) {
          this.id = id;
          this.name = name;
-         this.sensorReadings = sensorReadings;
          this.maxTemp = maxTemp;
          this.minTemp = minTemp;
          this.maxRelHum = maxRelHum;
@@ -1088,7 +1107,6 @@ $errors = $model->errors;
             sensors.push(new Sensor(
                sensor.id,
                sensor.name,
-               sensorReadingsMap.find(x => x.key === sensor.id).value,
                sensor.maxTemp,
                sensor.minTemp,
                sensor.maxRelHum,
@@ -1106,7 +1124,6 @@ $errors = $model->errors;
             sensors.push(new Sensor(
                sensor.id,
                sensor.name,
-               this.sensorReadingsMap.find(x => x.key === sensor.id).value,
                sensor.maxTemp,
                sensor.minTemp,
                sensor.maxRelHum,

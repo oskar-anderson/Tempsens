@@ -3,10 +3,8 @@
 namespace App;
 
 use App\db\dal\DalSensorReading;
-use App\db\dal\DalSensorReadingTmp;
 use App\db\dal\DalSensors;
 use App\db\DbHelper;
-use App\dto\IndexViewModelChildren\SensorReadingDTO;
 use App\model\SensorReading;
 use App\util\Base64;
 use App\util\Helper;

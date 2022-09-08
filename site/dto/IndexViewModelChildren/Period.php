@@ -4,10 +4,10 @@ namespace App\dto\IndexViewModelChildren;
 
 class Period
 {
-  public $name;
-  public $value;
+  public string $name;
+  public int $value;
 
-  function __construct($name, $value)
+  function __construct(string $name, int $value)
   {
     $this->name = $name;
     $this->value = $value;
