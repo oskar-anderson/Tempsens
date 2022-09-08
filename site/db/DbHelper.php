@@ -42,13 +42,8 @@ class DbHelper {
    public static function GetPDO(): PDO
    {
       $config = new Config();
-      return DbHelper::GetPdoByKey($config->GetConnectDsn(), $config->GetUsername(), $config->GetPassword());
-   }
-
-   public static function GetPdoByKey(string $dsn, string $username, string $password): PDO
-   {
       try {
-         $pdo = new PDO($dsn, $username, $password);
+         $pdo = new PDO($config->GetConnectDsn(), $config->GetUsername(), $config->GetPassword());
          $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
          // var_dump($pdo->setAttribute(PDO::ATTR_TIMEOUT, 28800)); // this fails
          return $pdo;
