@@ -7,6 +7,7 @@ use App\db\dal\DalCache;
 use App\model\Cache;
 use App\model\SensorReading;
 use App\util\Config;
+use DateTimeImmutable;
 use Exception;
 
 require_once (__DIR__."/../../vendor/autoload.php");
@@ -94,8 +95,8 @@ class CacheJsonDTO
             $sensorReadingJson->sensorId,
             $sensorReadingJson->temp,
             $sensorReadingJson->relHum,
-            $sensorReadingJson->dateRecorded,
-            $sensorReadingJson->dateAdded,
+            DateTimeImmutable::createFromFormat("YmdHi", $sensorReadingJson->dateRecorded),
+            $sensorReadingJson->dateAdded === null ? null : DateTimeImmutable::createFromFormat("YmdHi", $sensorReadingJson->dateAdded),
          );
          $sensorReadings[$sensorReading->sensorId] = $sensorReading;
 

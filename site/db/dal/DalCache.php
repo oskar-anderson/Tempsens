@@ -5,6 +5,7 @@ namespace App\db\dal;
 use App\db\DbHelper;
 use App\model\Cache;
 use App\model\SensorReading;
+use DateTimeImmutable;
 use Exception;
 use PDO;
 
@@ -51,8 +52,8 @@ class DalCache extends AbstractDalBase
                   $item["sensorId"],
                   $item["temp"],
                   $item["relHum"],
-                  $item["dateRecorded"],
-                  $item["dateAdded"]
+                  DateTimeImmutable::createFromFormat('YmdHi', $item["dateRecorded"]),
+                  $item["dateAdded"] === null ? null : DateTimeImmutable::createFromFormat('YmdHi', $item["dateAdded"])
                );
                $arr[$key] = $sensorReading;
             }

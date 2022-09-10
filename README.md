@@ -3,25 +3,22 @@
 Sirowa warehouse sensor temperature and humidity data visualization logserver.
 
 ## Local installation
-Guide for setting the project up locally using XAMPP, assuming the project is located at `C:\xampp\htdocs\myApps\Tempsens`.
 
-### Dependencies
-
-#### Current dependencies:
-* [phpdotenv](https://github.com/vlucas/phpdotenv) - Loads environment variables from `.env` to `getenv()`, `$_ENV` and `$_SERVER` automagically.
-
-#### Generate dependencies
-Run `composer install` in root folder.
-
-If the command throws error '`Root composer.json requires PHP extension ext-soap ...`' uncomment `extension=soap` attribute in the `php.ini` global PHP config file.
-
-### Create `.env` file
-To prevent sensitive data being uploaded to remote (Github) a template file is used.
-`.env_template` file is provided with empty keys.
-Create a copy of this file named `.env` and set its key values.
+1. Download/`git clone` the project
+2. Run `composer install` in root folder to generate dependencies and autoloading. If the command throws error '`Root composer.json requires PHP extension ext-soap ...`' uncomment `extension=soap` attribute in the `php.ini` global PHP config file.
+3. Create `.env` file from `.env_template` file and adjust parameters
+4. (if you have data files) Copy `backupCSV` folder to `site/db` and generate db with sample data `php -r "require './db/Initializer.php'; App\db\Initializer::Initialize();"`
+5. Open terminal and `cd site`
+6. Start php server by running command `php -S localhost:8080`
+7. Open in browser http://127.0.0.1:8080
 
 ### Allow database access
 Go into your `php.ini` file and uncomment `extension=pdo_mysql`.
+
+## Dependencies
+* [phpdotenv](https://github.com/vlucas/phpdotenv) - Loads environment variables from `.env` to `getenv()`, `$_ENV` and `$_SERVER` automagically.
+
+
 
 ## Local testing
 
@@ -39,7 +36,7 @@ Create directory `site/db/backupCSV` and place the data there.
 ### SOAP API
 You can test sensor's SOAP insert API requests locally using your preferred API testing tool, I used Postman.
 
-Send a `POST` request to URL `http://localhost:80/myApps/Tempsens/site/SoapMethods.php` with request body:
+Send a `POST` request to URL `http://localhost:80/site/SoapMethods.php` with request body:
 
 ```
 <?xml version="1.0" encoding="utf-8"?>

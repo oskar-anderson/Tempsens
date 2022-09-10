@@ -8,19 +8,19 @@ require_once (__DIR__."/../../vendor/autoload.php");
 
 use App\dto\IndexViewModelChildren\SensorReadingDTO;
 use App\model\Sensor;
-use DateTime;
+use DateTimeImmutable;
 
 class AlertMinMax
 {
-   public string $beforeDate;
+   public DateTimeImmutable $beforeDate;
    public int $duration;
    public int $count;
    public float $temp;
    public float $hum;
 
-   private function __construct(DateTime $beforeDate, int $duration, int $count, float $temp, float $hum)
+   private function __construct(DateTimeImmutable $beforeDate, int $duration, int $count, float $temp, float $hum)
    {
-      $this->beforeDate = $beforeDate->format('d/m/Y H:i');
+      $this->beforeDate = $beforeDate;
       $this->duration = $duration;
       $this->count = $count;
       $this->temp = $temp;
@@ -29,11 +29,10 @@ class AlertMinMax
 
    /**
     * @param Sensor $sensor
-    * @param string $outputDateTimeFormat
     * @param SensorReadingDTO[] $outOfBoundsGroup
     * @return AlertMinMax
     */
-   private static function Create(Sensor $sensor, string $outputDateTimeFormat, array $outOfBoundsGroup): AlertMinMax
+   private static function Create(Sensor $sensor, array $outOfBoundsGroup): AlertMinMax
    {
       $outOfBoundsGroup = array_values($outOfBoundsGroup);
       if (sizeof($outOfBoundsGroup) === 0) {
@@ -41,17 +40,14 @@ class AlertMinMax
       }
       if (sizeof($outOfBoundsGroup) === 1) {
          [$temp, $relHum] = AlertMinMax::GetDeviation($sensor, $outOfBoundsGroup);
-         $before = DateTime::createFromFormat($outputDateTimeFormat, $outOfBoundsGroup[0]->getDate());
-         return new AlertMinMax($before, 0, 1, $temp, $relHum);
+         return new AlertMinMax($outOfBoundsGroup[0]->getDate(), 0, 1, $temp, $relHum);
       }
       $before = $outOfBoundsGroup[0];
       $end = $outOfBoundsGroup[sizeof($outOfBoundsGroup) - 1];
-      $before = DateTime::createFromFormat($outputDateTimeFormat, $before->getDate());
-      $end = DateTime::createFromFormat($outputDateTimeFormat, $end->getDate());
       [$temp, $relHum] = AlertMinMax::GetDeviation($sensor, $outOfBoundsGroup);
       $result = new AlertMinMax(
-         beforeDate: $before,
-         duration: ($end->getTimestamp() - $before->getTimestamp()) / 60,
+         beforeDate: $before->getDate(),
+         duration: ($end->getDate()->getTimestamp() - $before->getDate()->getTimestamp()) / 60,
          count: sizeof($outOfBoundsGroup),
          temp: $temp,
          hum: $relHum
@@ -83,7 +79,7 @@ class AlertMinMax
     * @param SensorReadingDTO[] $ungroupedOutOfBounds
     * @return AlertMinMax[]
     */
-   public static function Get(Sensor $sensor, string $outputDateTimeFormat, array $ungroupedOutOfBounds): array {
+   public static function Get(Sensor $sensor, array $ungroupedOutOfBounds): array {
       $outOfBounds = [];
       $outOfBoundsChain = [];
 
@@ -91,7 +87,7 @@ class AlertMinMax
          return [];
       }
       if (sizeof($ungroupedOutOfBounds) === 1) {
-         array_push($outOfBounds, AlertMinMax::Create($sensor, $outputDateTimeFormat, $ungroupedOutOfBounds));
+         array_push($outOfBounds, AlertMinMax::Create($sensor, $ungroupedOutOfBounds));
          return $outOfBounds;
       }
 
@@ -102,8 +98,8 @@ class AlertMinMax
          $rawOutOfBoundBefore = $ungroupedOutOfBounds[$i];
          $rawOutOfBoundAfter = $ungroupedOutOfBounds[$i + 1];
 
-         $isPartOfSameChain = (DateTime::createFromFormat($outputDateTimeFormat, $rawOutOfBoundAfter->getDate())->getTimestamp() -
-               DateTime::createFromFormat($outputDateTimeFormat, $rawOutOfBoundBefore->getDate())->getTimestamp())
+         $isPartOfSameChain = ($rawOutOfBoundAfter->getDate()->getTimestamp() -
+            $rawOutOfBoundBefore->getDate()->getTimestamp())
             / 60 <= $sensor->readingIntervalMinutes;
          $isPartOfChainBreak = sizeof($outOfBoundsChain) > 1 && ! $isPartOfSameChain;
          $isNotPartOfChain = sizeof($outOfBoundsChain) === 0 && ! $isPartOfSameChain;
@@ -117,20 +113,20 @@ class AlertMinMax
                }
                array_push($outOfBoundsChain, $rawOutOfBoundAfter);
                if ($isLast) {
-                  array_push($outOfBounds, AlertMinMax::Create($sensor, $outputDateTimeFormat, $outOfBoundsChain));
+                  array_push($outOfBounds, AlertMinMax::Create($sensor, $outOfBoundsChain));
                }
                break;
             case "isPartOfChainBreak":  // leads to isPartOfSameChain or isNotPartOfChain
-               array_push($outOfBounds, AlertMinMax::Create($sensor, $outputDateTimeFormat, $outOfBoundsChain));
+               array_push($outOfBounds, AlertMinMax::Create($sensor, $outOfBoundsChain));
                $outOfBoundsChain = [];
                if ($isLast) {
-                  array_push($outOfBounds, AlertMinMax::Create($sensor, $outputDateTimeFormat, [$rawOutOfBoundAfter]));
+                  array_push($outOfBounds, AlertMinMax::Create($sensor, [$rawOutOfBoundAfter]));
                }
                break;
             case "isNotPartOfChain":  // leads to isPartOfSameChain or isNotPartOfChain
-               array_push($outOfBounds, AlertMinMax::Create($sensor, $outputDateTimeFormat, [$rawOutOfBoundBefore]));
+               array_push($outOfBounds, AlertMinMax::Create($sensor, [$rawOutOfBoundBefore]));
                if ($isLast) {
-                  array_push($outOfBounds, AlertMinMax::Create($sensor, $outputDateTimeFormat, [$rawOutOfBoundAfter]));
+                  array_push($outOfBounds, AlertMinMax::Create($sensor, [$rawOutOfBoundAfter]));
                }
                break;
             default:

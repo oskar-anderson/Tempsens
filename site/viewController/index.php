@@ -23,14 +23,13 @@ use App\util\Config;
 use App\util\Console;
 use App\util\Helper;
 use App\util\InputValidation;
-use DateTime;
+use DateTimeImmutable;
 
 (new Programm())->main();
 
 class Programm {
 
    public array $debugs = [];
-   public string $pageOutputDateTimeFormat = 'd/m/Y H:i';
    public array $errors = [];
 
    function main(): void
@@ -51,10 +50,10 @@ class Programm {
          $dateRecorded = 'NO DATA';
          $col = 'red';
          if ($lastReading !== null) {
-            $lastDate = DateTime::createFromFormat('YmdHi', $lastReading->dateRecorded)->format($this->pageOutputDateTimeFormat);
+            $lastDate = $lastReading->getDateRecordedAsDateTime()->format('d/m/Y H:i');
             $minutesDiff = (
-               DateTime::createFromFormat('YmdHi', Helper::GetDateNow())->getTimestamp() -
-               DateTime::createFromFormat('YmdHi', $lastReading->dateRecorded)->getTimestamp()
+               Helper::GetDateNowAsDateTime()->getTimestamp() -
+               $lastReading->getDateRecordedAsDateTime()->getTimestamp()
             ) / 60;
             if ($sensor->readingIntervalMinutes - $minutesDiff < 0 && !$sensor->isPortable) {
                $dateRecorded = 'DOWN @' . $lastDate . ' (' . $minutesDiff . ' min ago)';
@@ -82,26 +81,17 @@ class Programm {
       array_push($this->debugs,'Get Last readings: ' . microtime(true) - $before);
       $before = microtime(true);
 
-      $from = DateTime::createFromFormat('d-m-Y', $input->dateFrom)->format('Ymd') . '0000';
-      $to = DateTime::createFromFormat('d-m-Y', $input->dateTo)->format('Ymd') . '2359';
+      $from = DateTimeImmutable::createFromFormat('d-m-Y', $input->dateFrom)->format('Ymd') . '0000';
+      $to = DateTimeImmutable::createFromFormat('d-m-Y', $input->dateTo)->format('Ymd') . '2359';
 
-      $sensorReadings = (new DalSensorReading())->GetAllBetween($from, $to);
-
-      array_push($this->debugs,"DalSensorReading->GetAllBetween($from, $to) query: " . microtime(true) - $before);
-      $before = microtime(true);
 
       $sensorReadingsBySensorId = [];
       foreach ($sensors as $sensor) {
-         $sensorReadingsOfSensor = array_values(array_filter($sensorReadings, fn($x) => $x->sensorId === $sensor->id));
-         $sensorReadingsBySensorId[$sensor->id] = array_map(function ($x) {
-            return (new SensorReadingDTO(true, true, true, false))->
-               setDate(DateTime::createFromFormat('YmdHi', $x->dateRecorded)->format($this->pageOutputDateTimeFormat))->
-               setTemp($x->temp)->
-               setRelHum($x->relHum);
-         }, $sensorReadingsOfSensor);
+         $sensorReadingsBySensorId[$sensor->id] = [];
       }
+      $sensorReadingsBySensorId = array_merge($sensorReadingsBySensorId, (new DalSensorReading())->GetAllBetween($from, $to));
 
-      array_push($this->debugs,'Map $sensorReadings to sensor: ' . microtime(true) - $before);
+      array_push($this->debugs,"DalSensorReading->GetAllBetween($from, $to) query: " . microtime(true) - $before);
       $before = microtime(true);
 
       $sensorAlertsMinMax = [];
@@ -110,7 +100,7 @@ class Programm {
             $x->getTemp() < $sensor->minTemp || $x->getTemp() > $sensor->maxTemp ||
             $x->getRelHum() < $sensor->minRelHum || $x->getRelHum() > $sensor->maxRelHum
          ));
-         $sensorAlertsMinMax[$sensor->id] = AlertMinMax::Get($sensor, $this->pageOutputDateTimeFormat, $rawOutOfBounds);
+         $sensorAlertsMinMax[$sensor->id] = AlertMinMax::Get($sensor, $rawOutOfBounds);
       }
 
       array_push($this->debugs,'Combine sensor alerts: ' . microtime(true) - $before);
@@ -143,49 +133,52 @@ class Programm {
 
    function HandleInput(array &$sensors): HandleInputModel
    {
-      $dateTo = (new DateTime())->format('d-m-Y');
+      $dateTo = Helper::GetDateNowAsDateTime();
       $inputDateTo = $_GET['To'] ?? '';
       if (InputValidation::isDateFormat__d_m_Y($inputDateTo)) {
-         $dateTo = DateTime::createFromFormat('d-m-Y', $inputDateTo)->format('d-m-Y');
+         $dateTo = DateTimeImmutable::createFromFormat('d-m-Y', $inputDateTo);
       }
 
 
-      $dateFrom = DateTime::createFromFormat('d-m-Y', $dateTo)->modify("-91 day")->format('d-m-Y');
+      $dateFrom = $dateTo->modify("-91 day");
       $dateFromType = 'relative';
 
       $inputDateFrom = $_GET['From'] ?? '';
       if (strlen($inputDateFrom) > 0 && $inputDateFrom[0] === '-' && is_numeric(substr($inputDateFrom, 1))) {
-         $dateFrom = DateTime::createFromFormat('d-m-Y', $dateTo)->modify($inputDateFrom . "day")->format('d-m-Y');
+         $dateFrom = $dateTo->modify($inputDateFrom . "day");
       } else if (InputValidation::isDateFormat__d_m_Y($inputDateFrom)) {
-         $dateFrom = DateTime::createFromFormat('d-m-Y', $inputDateFrom)->format('d-m-Y');
+         $dateFrom = DateTimeImmutable::createFromFormat('d-m-Y', $inputDateFrom);
          $dateFromType = 'absolute';
       }
-
 
       $selectOptionsRelativeDateFrom = $this->HandleSelectOptionsRelativeDateFrom($dateFrom, $dateTo);
       $sensorCrud = $this->HandleSensorCrud($sensors);
       $this->UploadReadings($sensors);
 
-      $result = new HandleInputModel($dateFrom, $dateTo, $selectOptionsRelativeDateFrom, $dateFromType, $sensorCrud);
+      $result = new HandleInputModel($dateFrom->format('d-m-Y'), $dateTo->format('d-m-Y'), $selectOptionsRelativeDateFrom, $dateFromType, $sensorCrud);
       return $result;
    }
 
-   /* @return string[] */
-   function HandleSelectOptionsRelativeDateFrom($dateFrom, $dateTo): array {
-      $search = DateTime::createFromFormat('d-m-Y', $dateTo)
-         ->diff(DateTime::createFromFormat('d-m-Y', $dateFrom))
-         ->days;
-      $daysBefore = $this->IntArrGetClosest($search, array_map(fn($x) => $x->value, Period::GetPeriods()));
+   /**
+    * @param $dateFrom DateTimeImmutable
+    * @param $dateTo DateTimeImmutable
+    * @return string[]
+    */
+   public function HandleSelectOptionsRelativeDateFrom(DateTimeImmutable $dateFrom, DateTimeImmutable $dateTo): array {
+      $daysBefore = $this->IntArrGetClosest(
+         $dateTo->diff($dateFrom)->days,
+         array_map(
+            fn($x) => $x->value,
+            Period::GetPeriods()
+         )
+      );
 
-      $selectOptionsRelativeDateFrom = [];
       $periods = Period::GetPeriods();
-      foreach ($periods as $period) {
-         $t = $daysBefore === $period->value ?
+      return array_map(
+         fn($period) => $daysBefore === $period->value ?
             "<option value='$period->value' selected>-$period->name</option>" :
-            "<option value='$period->value'>-$period->name</option>";
-         array_push($selectOptionsRelativeDateFrom, $t);
-      }
-      return $selectOptionsRelativeDateFrom;
+            "<option value='$period->value'>-$period->name</option>",
+         $periods);
    }
 
    function HandleSensorCrud(array &$sensors): SensorCrudBadCreateValues {
@@ -356,7 +349,7 @@ class Programm {
          return false;
       }
 
-      $sensorReadings = [];
+      $newSensorReadings = SensorReading::NewArray();
       foreach ($jsonDataInput as $row) {
          $temp = $row->temp;
          if (! is_numeric($temp)) {
@@ -370,48 +363,43 @@ class Programm {
          }
 
          $date = $row->date;
-         $tmpDate = DateTime::createFromFormat('d-m-Y H:i', $date);
-         if ($tmpDate === false) {
+         $dateDateTime = DateTimeImmutable::createFromFormat('d-m-Y H:i', $date);
+         if ($dateDateTime === false) {
             array_push($this->errors, 'Error! Date cannot be read! Date: ' . $date);
             return false;
          }
-         $date = $tmpDate->format('YmdHi');
 
          $sensorReading = new SensorReading(
             id: Base64::GenerateId(),
             sensorId: $sensorId,
             temp: $temp,
             relHum: $relHum,
-            dateRecorded: $date,
-            dateAdded: Helper::GetDateNow()
+            dateRecorded: $dateDateTime,
+            dateAdded: Helper::GetDateNowAsDateTime()
          );
 
-         array_push($sensorReadings, $sensorReading);
+         array_push($newSensorReadings, $sensorReading);
       }
 
-      $dups = [];
-      $sensorReadingsDupCheckArr = (new DalSensorReading())->GetAllWhereSensorId($sensorId);
-      $sensorReadingsByDateRecorded = [];
-      foreach ($sensorReadingsDupCheckArr as $sensorReadingDb) {
-         $sensorReadingsByDateRecorded[$sensorReadingDb->dateRecorded] = true;
-      }
-      foreach ($sensorReadings as $sensorReadingNew) {
-         if (isset($sensorReadingsByDateRecorded[$sensorReadingNew->dateRecorded])) {
-            array_push($dups,
-               DateTime::createFromFormat('YmdHi', $sensorReadingNew->dateRecorded)
-                  ->format($this->pageOutputDateTimeFormat)
-            );
-         }
-      }
+      $sensorReadingsByDateRecorded = array_map(
+         fn($x) => $x->getDate(),
+         (new DalSensorReading())->GetAllWhereSensorId($sensorId)
+      );
+      $duplicateDateTimes = array_filter($newSensorReadings, fn($sensorReadingNew) =>
+         in_array($sensorReadingNew->dateRecorded, $sensorReadingsByDateRecorded, true)
+      );
 
-      if (sizeof($dups) !== 0) {
-         array_push($this->errors, 'Duplicate entry dates: ' . join(', ', $dups));
+      if (sizeof($duplicateDateTimes) !== 0) {
+         $duplicateDateStrings = array_map(
+            fn($duplicateDateTime) => $duplicateDateTime->getDateRecordedAsDateTime()->format('d/m/Y H:i'),
+            $duplicateDateTimes);
+         array_push($this->errors, 'Duplicate entry dates: ' . join(', ', $duplicateDateStrings));
          return false;
       }
 
       $pdo = DbHelper::GetPDO();
       $pdo->beginTransaction();
-      (new DalSensorReading())->InsertByChunk($sensorReadings, $pdo);
+      (new DalSensorReading())->InsertByChunk($newSensorReadings, $pdo);
       $pdo->commit();
 
       DalSensorReading::ResetCache($sensors);

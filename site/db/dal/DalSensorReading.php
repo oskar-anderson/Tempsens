@@ -6,8 +6,11 @@ require_once(__DIR__ . "/../../../vendor/autoload.php");
 
 use App\db\DbHelper;
 use App\dto\CacheJsonDTO;
+use App\dto\IndexViewModelChildren\SensorReadingDTO;
 use App\model\Sensor;
 use App\model\SensorReading;
+use App\util\Console;
+use DateTimeImmutable;
 use JetBrains\PhpStorm\Pure;
 use PDO;
 
@@ -111,7 +114,7 @@ class DalSensorReading extends AbstractDalBase
    {
       $pdo = DbHelper::GetPDO();
       $qry = "SELECT Id, " .
-         "SensorId, " .
+         " " .
          "Temp, " .
          "RelHum, " .
          "DateRecorded, " .
@@ -125,13 +128,14 @@ class DalSensorReading extends AbstractDalBase
       if (!$value) {
          return null;
       }
+      $value["SensorId"] = $sensorId;
       return $this->Map($value);
    }
 
    /**
-    *  @param string $from
-    *  @param string $to
-    *  @return SensorReading[]
+    * @param string $from
+    * @param string $to
+    * @return SensorReadingDTO[]
     */
    public function GetAllBetween(string $from, string $to): array
    {
@@ -150,8 +154,11 @@ class DalSensorReading extends AbstractDalBase
       $stmt = $pdo->prepare($qry);
       $stmt->execute([$from, $to]);
       while ($value = $stmt->fetch()) {
-         $value['DateAdded'] = null;
-         array_push($result, $this->Map($value));
+         $key = $value['SensorId'];
+         if (! array_key_exists($key, $result)) {
+            $result[$key] = [];
+         }
+         array_push($result[$key], $this->MapToDTO($value));
       }
 
       return $result;
@@ -159,14 +166,14 @@ class DalSensorReading extends AbstractDalBase
 
    /**
     *  @param string $sensorId
-    *  @return SensorReading[]
+    *  @return SensorReadingDTO[]
     */
    public function GetAllWhereSensorId(string $sensorId): array
    {
       $pdo = DbHelper::GetPDO();
       $result = [];
       $qry = "SELECT Id, " .
-         "SensorId, " .
+         " " .
          "Temp, " .
          "RelHum, " .
          "DateRecorded " .
@@ -178,7 +185,8 @@ class DalSensorReading extends AbstractDalBase
       $stmt->execute([$sensorId]);
       while ($value = $stmt->fetch()) {
          $value['DateAdded'] = null;
-         array_push($result, $this->Map($value));
+         $value['SensorId'] = $sensorId;
+         array_push($result, $this->MapToDTO($value));
       }
 
       return $result;
@@ -219,9 +227,17 @@ class DalSensorReading extends AbstractDalBase
          $value['SensorId'],
          floatval($value['Temp']),
          floatval($value['RelHum']),
-         $value['DateRecorded'],
-         $value['DateAdded'],
+         DateTimeImmutable::createFromFormat('YmdHi', $value["dateRecorded"]),
+         $value["dateAdded"] === null ? DateTimeImmutable::createFromFormat('YmdHi', $value["dateAdded"]) : null
       );
+   }
+
+   public function MapToDTO(array $value): SensorReadingDTO {
+
+      return (new SensorReadingDTO(true, true, true))->
+         setDate(DateTimeImmutable::createFromFormat('YmdHi', $value['DateRecorded']))->
+         setTemp(floatval($value['Temp']))->
+         setRelHum($value['RelHum']);
    }
 
    /**

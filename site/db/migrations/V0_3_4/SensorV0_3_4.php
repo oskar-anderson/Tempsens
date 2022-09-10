@@ -1,4 +1,5 @@
 <?php
+/** @noinspection DuplicatedCode */
 
 namespace App\db\migrations\V0_3_4;
 
@@ -22,7 +23,8 @@ class SensorV0_3_4 {
    /**
     *  @return SensorV1_0_0
     */
-    public function GetUp($model, $minTemp, $maxTemp, $minRelHum, $maxRelHum, $readingIntervalMinutes) {
+    public function GetUp(string $model, float $minTemp, float $maxTemp, float $minRelHum, float $maxRelHum, int $readingIntervalMinutes): SensorV1_0_0
+    {
          $newSensor = new SensorV1_0_0(
             id: Base64::GenerateId(),
             name: $this->name ?? "",
@@ -37,7 +39,23 @@ class SensorV0_3_4 {
             maxRelHum: $maxRelHum,
             readingIntervalMinutes: $readingIntervalMinutes
          );
-      
         return $newSensor;
      }
+
+
+   /**
+    * @param SensorV0_3_4[] $sensors
+    * @param string $serial
+    * @return SensorV0_3_4
+    */
+   public static function GetSensorBySerial(array $sensors, string $serial): SensorV0_3_4
+   {
+      $arr = array_values(array_filter($sensors,
+         function ($obj) use ($serial) {
+            return $obj->serial === $serial;
+         }));
+      if (sizeof($arr) === 0) die('Sensor with serial:' . $serial . ' does not exist!');
+      if (sizeof($arr) > 1) die('Multiple sensors with serial:' . $serial);
+      return $arr[0];
+   }
 }

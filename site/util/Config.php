@@ -94,4 +94,12 @@ class Config
       }
       throw new Exception("Config cacheType={$type} must be in ['db', 'file']!");
    }
+
+   /**
+    * @throws Exception Undefined
+    */
+	public function IsDbInitGenerateDbWithSampleData(): bool
+	{
+      return $this->GetByName("dbInitGenerateDbWithSampleData") === "Y";
+	}
 }

@@ -3,16 +3,20 @@
 
 namespace App\util;
 
+use DateTimeImmutable;
+use DateTimeZone;
+
 require_once(__DIR__."/../../vendor/autoload.php");
 
 
 class Helper
 {
-   public static function GetDateNow(): string
+   public static function GetDateNowAsDateTime(): DateTimeImmutable
    {
-      date_default_timezone_set('Europe/Tallinn');
-      $now = date("YmdHi");
-      return $now;
+      $datetime = new DateTimeImmutable();
+      $timezone = new DateTimeZone('Europe/Tallinn');
+      $datetime->setTimezone($timezone);
+      return $datetime;
    }
 
    /**

@@ -9,7 +9,6 @@ use App\db\dal\DalCache;
 use App\db\dal\DalSensorReading;
 use App\db\dal\DalSensorReadingTmp;
 use App\db\dal\DalSensors;
-use App\db\migrations\V0_3_4\MigrateSensorReading;
 use App\db\migrations\V0_3_4\SensorReadingV0_3_4;
 use App\db\migrations\V0_3_4\SensorV0_3_4;
 use App\db\migrations\V1_0_0\SensorV1_0_0;
@@ -42,8 +41,10 @@ class Initializer
 
       $console->WriteLine("Creating tables...");
       DbHelper::CreateTables();
-      $console->WriteLine("Initializing data...");
-      Initializer::InitializeData();
+      if ((new Config())->IsDbInitGenerateDbWithSampleData()) {
+         $console->WriteLine("Initializing data...");
+         Initializer::InitializeData();
+      }
       $console->WriteLine("All good!");
    }
 
@@ -124,7 +125,7 @@ class Initializer
             $timer,
             $dactdate
          );
-         $sensor = SensorReading::GetSensorBySerial($sensors, $passKey);
+         $sensor = Sensor::GetSensorBySerial($sensors, $passKey);
          $sensorReadingV1_0_0 = $sensorReadingV0_3_4->GetUp($sensor->id, $sensor->isPortable)->MapToModel();
          array_push($sensorReadings, $sensorReadingV1_0_0);
          $sensorReadingTmp = new SensorReadingTmp(
@@ -154,9 +155,9 @@ class Initializer
       $console->WriteLine('Transaction adding table cache: ' . sizeof($cache));
       (new DalCache())->InsertByChunk($cache, $pdo);
 
-      $console->WriteLine('Transaction adding debug tables... ');
-      $console->WriteLine('Transaction adding table sensorReadingsTmp: ' . sizeof($debugSensorReadings));
-      (new DalSensorReadingTmp())->InsertByChunk($debugSensorReadings, $pdo);
+      // $console->WriteLine('Transaction adding debug tables... ');
+      // $console->WriteLine('Transaction adding table sensorReadingsTmp: ' . sizeof($debugSensorReadings));
+      //(new DalSensorReadingTmp())->InsertByChunk($debugSensorReadings, $pdo);
 
       $pdo->commit();
 

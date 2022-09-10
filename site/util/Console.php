@@ -3,8 +3,6 @@
 
 namespace App\util;
 
-use DateTime;
-
 require_once(__DIR__."/../../vendor/autoload.php");
 
 
@@ -28,7 +26,7 @@ class Console
     */
     public function WriteLine(string $value = ""): void
     {
-        echo ($this->withDate && $value !== "" ? ((new DateTime())->format("H:i:s:u") . " ") : "") .
+        echo ($this->withDate && $value !== "" ? ((Helper::GetDateNowAsDateTime())->format("H:i:s:u") . " ") : "") .
            $value . $this->newline;
     }
 

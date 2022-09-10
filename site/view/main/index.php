@@ -333,14 +333,14 @@ $errors = $model->errors;
                   </div>
                </div>
                <div>
-                  <?php echo sizeof(array_values(array_filter(
+                  <?php echo sizeof(array_filter(
                      $sensorReadingOutOfBounds[$sensor->id],
-                     fn($x) => $x->temp < $sensor->minTemp || $x->temp > $sensor->maxTemp))
+                     fn($x) => $x->temp < $sensor->minTemp || $x->temp > $sensor->maxTemp)
                   )
                   . "|" .
-                  sizeof(array_values(array_filter(
+                  sizeof(array_filter(
                      $sensorReadingOutOfBounds[$sensor->id],
-                     fn($x) => $x->hum < $sensor->minRelHum || $x->hum > $sensor->maxRelHum))
+                     fn($x) => $x->hum < $sensor->minRelHum || $x->hum > $sensor->maxRelHum)
                   )
                   ?>
                </div>
@@ -398,7 +398,7 @@ $errors = $model->errors;
                               foreach ($arr as $j => $item) { ?>
                                  <tr>
                                     <td><?php echo $j + 1 ?></td>
-                                    <td><?php echo $item->beforeDate ?></td>
+                                    <td><?php echo $item->beforeDate->format("d/m/Y H:i") ?></td>
                                     <td><?php echo $item->duration ?></td>
                                     <td><?php echo $item->count ?></td>
                                     <td <?php echo $item->temp < $sensor->minTemp || $item->temp > $sensor->maxTemp ?
@@ -1091,7 +1091,7 @@ $errors = $model->errors;
             let newSensorReadings = [];
             for (let sensorReading of sensorReadings) {
                newSensorReadings.push(new SensorReading(
-                  dayjs(sensorReading.date, 'DD/MM/YYYY HH:mm'),
+                  dayjs(sensorReading.date, 'YYYYMMDDHHmm'),
                   parseFloat(sensorReading.temp),
                   parseFloat(sensorReading.relHum)));
             }

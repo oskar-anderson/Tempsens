@@ -25,19 +25,20 @@ class SensorReadingV0_3_4 {
 
 
    /**
-    *  @return SensorReadingV1_0_0
+    * @param string $sensorId
+    * @param bool $isPortable
+    * @return SensorReadingV1_0_0
     */
     public function GetUp(string $sensorId, bool $isPortable): SensorReadingV1_0_0
     {
-      // $sensorId = SensorReadingV0_3_4::GetSensorIdBySerial($sensors, $this->passkey);
-      $sensorReading = new SensorReadingV1_0_0(
+      // $sensorId = SensorV0_3_4::GetSensorBySerial($sensors, $this->passkey);
+       return new SensorReadingV1_0_0(
          id: Base64::GenerateId(),
          sensorId: $sensorId,
-         temp: floatval($this->temp),
-         relHum: floatval($this->relHum),
+         temp: $this->temp,
+         relHum: $this->relHum,
          dateRecorded: $this->dactdate,
-         dateAdded: $isPortable ? $this->dactdate : null);
-
-      return $sensorReading;
+         dateAdded: $isPortable ? $this->dactdate : null
+       );
    }
 }
