@@ -35,7 +35,7 @@ class Config
     * @throws Exception Undefined
     */
    private function GetByName(string $name): string {
-      if ($_ENV[$name] === null || $_ENV[$name] === "") {
+      if ($_ENV[$name] === null) {
          throw new Exception("Internal error! Environment config variable $name not defined.");
       }
       return $_ENV[$name];

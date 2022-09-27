@@ -227,8 +227,8 @@ class DalSensorReading extends AbstractDalBase
          $value['SensorId'],
          floatval($value['Temp']),
          floatval($value['RelHum']),
-         DateTimeImmutable::createFromFormat('YmdHi', $value["dateRecorded"]),
-         $value["dateAdded"] === null ? DateTimeImmutable::createFromFormat('YmdHi', $value["dateAdded"]) : null
+         DateTimeImmutable::createFromFormat('YmdHi', $value["DateRecorded"]),
+         $value["DateAdded"] === null ? null : DateTimeImmutable::createFromFormat('YmdHi', $value["DateAdded"])
       );
    }
 

@@ -51,7 +51,7 @@ class Initializer
    public static function InitializeData(): void
    {
       // $csv = array_map('str_getcsv', file('backupCSV/202104201605-V1_0_0/sensorsV1_0_0.csv'));
-      $file = fopen("backupCSV/202104201605-V1_0_0/sensors.csv","r");
+      $file = fopen(__DIR__ . "/backupCSV/202104201605-V1_0_0/sensors.csv","r");
       $sensors = Sensor::NewArray();
       for($i = 0; $line = fgetcsv($file, separator: ";"); $i++)
       {
@@ -89,7 +89,7 @@ class Initializer
 
       fclose($file);
 
-      $file = fopen("backupCSV/202104201605-V0_3_4/sensor-readings.csv","r");
+      $file = fopen(__DIR__ . "/backupCSV/202104201605-V0_3_4/sensor-readings.csv","r");
       $sensorReadings = SensorReading::NewArray();
       $debugSensorReadings = SensorReadingTmp::NewArray();
       for($i = 0; $line = fgetcsv($file, separator: ";"); $i++)
@@ -155,10 +155,10 @@ class Initializer
       $console->WriteLine('Transaction adding table cache: ' . sizeof($cache));
       (new DalCache())->InsertByChunk($cache, $pdo);
 
+      $console->WriteLine('Committing transactions ...');
       // $console->WriteLine('Transaction adding debug tables... ');
       // $console->WriteLine('Transaction adding table sensorReadingsTmp: ' . sizeof($debugSensorReadings));
       //(new DalSensorReadingTmp())->InsertByChunk($debugSensorReadings, $pdo);
-
       $pdo->commit();
 
       DalSensorReading::GetLastReadingsFromCacheOrDatabase($sensors);

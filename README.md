@@ -7,8 +7,8 @@ Sirowa warehouse sensor temperature and humidity data visualization logserver.
 1. Download/`git clone` the project
 2. Run `composer install` in root folder to generate dependencies and autoloading. If the command throws error '`Root composer.json requires PHP extension ext-soap ...`' uncomment `extension=soap` attribute in the `php.ini` global PHP config file.
 3. Create `.env` file from `.env_template` file and adjust parameters
-4. (if you have data files) Copy `backupCSV` folder to `site/db` and generate db with sample data `php -r "require './db/Initializer.php'; App\db\Initializer::Initialize();"`
-5. Open terminal and `cd site`
+4. Open terminal and `cd site`
+5. (if you have data files) Copy `backupCSV` folder to `site/db` and generate db with sample data `php -r "require './db/Initializer.php'; App\db\Initializer::Initialize();"`
 6. Start php server by running command `php -S localhost:8080`
 7. Open in browser http://127.0.0.1:8080
 
