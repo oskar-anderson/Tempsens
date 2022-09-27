@@ -14,7 +14,7 @@
    --light_grey_02: #ebebeb;
    --light_grey_03: #b9b9b9;
    --grey: #b8b8b8;
-   --green_01: #6fa773;
+   --green_01: #6aa16e;   /* DO NOT TOUCH! Setting checkbox accent-color: var(--green_01) should have white tick mark not black */
 
    --norm_link: var(--sirowa); /*  normal hyperlink */
    --active_link: var(--sirowa); /*  active hyperlink */
@@ -24,6 +24,47 @@
    --ff-heading: "Playfair Display", serif;
    /* #endregion */
 }
+
+/* ==========================
+         FORM ELEMENTS
+   ========================== */
+
+/* #region radio */
+[type="radio"] {
+   appearance: none;
+
+   position: relative;
+   display: inline-flex;
+   width: 20px;
+   height: 20px;
+   border-radius: 20px;
+   background: var(--light_grey_03);
+}
+
+[type="radio"]:checked {
+   background-color: var(--green_01);
+}
+
+
+/* White ball inside checked radio */
+[type="radio"]:checked:after {
+   content: "";
+   position: absolute;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+   width: 6px;
+   height: 6px;
+   border-radius: 10px;
+   background-color: #fff;
+}
+
+/* #endregion radio */
+
+[type="checkbox"] {
+   accent-color: var(--green_01);
+}
+
 
 /* ==========================
             GENERAL

@@ -45,6 +45,7 @@ $errors = $model->errors;
    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
    <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
    <script type="text/javascript" src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+   <script type="text/javascript" src="https://mozilla.github.io/nunjucks/files/nunjucks.js"></script>
    <style>
       .dateFromOption {
          display: grid;
@@ -60,11 +61,6 @@ $errors = $model->errors;
          margin-bottom: 1em;
       }
 
-      .graphOptionsSelect {
-         background: var(--color-green-ll-3);
-         color: white;
-      }
-
       .zebra-overview, .zebra-graph-settings {
          background: var(--light_grey_02);
       }
@@ -72,50 +68,6 @@ $errors = $model->errors;
       .zebra-overview:nth-of-type(4n), .zebra-overview:nth-of-type(4n - 3), .zebra-graph-settings:nth-of-type(2n) {
          background: var(--light_grey_01);
       }
-
-      /* #region radio */
-      [type="radio"] {
-         z-index: -1;
-         position: absolute;
-         opacity: 0;
-      }
-
-      [type="radio"]:checked ~ label {
-         background-color: white;
-      }
-
-      [type="radio"]:not(:checked) ~ label {
-         cursor: pointer;
-      }
-
-      label > .radio-dot {
-         position: relative;
-         display: inline-flex;
-         width: 20px;
-         height: 20px;
-         border-radius: 20px;
-         background: var(--light_grey_03);
-      }
-
-      [type="radio"]:checked ~ label > .radio-dot {
-         background-color: #6FA773;
-      }
-
-      /* White ball inside checked radio */
-      [type="radio"]:checked ~ label .radio-dot:after {
-         content: "";
-         position: absolute;
-         top: 50%;
-         left: 50%;
-         transform: translate(-50%, -50%);
-         width: 6px;
-         height: 6px;
-         border-radius: 10px;
-         background-color: #fff;
-      }
-
-      /* #endregion radio */
-
 
    </style>
    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
@@ -125,22 +77,22 @@ $errors = $model->errors;
    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dayjs@1.10.4/plugin/customParseFormat.js"></script>
 
 </head>
-<body style="min-height: 100vh; min-width: 900px; margin:0; display: grid; grid-template-rows: 1fr auto">
+<body style="min-height: 100vh; min-width: 900px; margin:0; display: grid; grid-template-rows: 1fr auto" class="root">
 
 <div>
    <div>
-      <?php if (sizeof($errors) !== 0) { ?>
+      {% if errors.length !== 0 %}
          <div class="alert alert-danger alert-dismissible fade show" style="margin-bottom: 2em" role="alert">
-            <h4>Errors:</h4>
+            <h4>Errors: </h4>
             <ol>
-               <?php foreach ($errors as $error) { ?>
-                  <li><?php echo $error; ?></li>
-               <?php } ?>
+               {% for error in errors %}
+                  <li>{{ error }}</li>
+               {% endfor %}
             </ol>
             <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span>&times;</span>
             </button>
          </div>
-      <?php } ?>
+      {% endif %}
 
       <div class="🎯">
 
@@ -149,33 +101,27 @@ $errors = $model->errors;
             <div>
 
                <div>
-                  <input type="radio" onclick="handleRadioClick(this);" name="dateFromType" id="typeAbsolute"
-                     <?php if ($dateFromType === 'absolute') {
-                        echo "checked";
-                     } ?>
-                         value="absolute"/>
                   <label class="dateFromOption" for="typeAbsolute">
-                     <span class="radio-dot"></span>
+                     <input type="radio" onclick="handleRadioClick(this);" name="dateFromType" id="typeAbsolute"
+                        <?= $dateFromType === 'absolute' ? 'checked' : '' ?>
+                            value="absolute"/>
                      <span style="margin-left: 20px">From Date</span>
                      <span class="child-input 🎯" style="--xpos: end;">
                         <input name="absoluteDateFrom" type="text" id="absoluteDateFrom"
-                               value="<?php echo $dateFrom; ?>" <?php echo $dateFromType !== 'absolute' ? 'disabled' : ''; ?> />
+                               value="<?= $dateFrom ?>" <?= $dateFromType !== 'absolute' ? 'disabled' : ''; ?> />
                      </span>
                   </label>
                </div>
 
                <div>
-                  <input type="radio" onclick="handleRadioClick(this);" name="dateFromType" id="typeRelative"
-                     <?php if ($dateFromType === 'relative') {
-                        echo "checked";
-                     } ?>
-                         value="relative"/>
                   <label class="dateFromOption" for="typeRelative">
-                     <span class="radio-dot"></span>
+                     <input type="radio" onclick="handleRadioClick(this);" name="dateFromType" id="typeRelative"
+                        <?= $dateFromType === 'relative' ? "checked" : ''?>
+                            value="relative"/>
                      <span style="margin-left: 20px">From Relative</span>
                      <span class="child-input 🎯" style="--xpos: end;">
                         <select name="relativeDateFrom" id="relativeDateFrom" class="active"
-                           <?php echo $dateFromType !== 'relative' ? 'disabled' : ''; ?>
+                           <?= $dateFromType !== 'relative' ? 'disabled' : ''; ?>
                         >
                            <?php
                            foreach ($selectOptionsRelativeDateFrom as $item) {
@@ -193,7 +139,7 @@ $errors = $model->errors;
             </div>
             <div class="🎯" style="height: var(--row_height);">
                <label for="dateTo" class="🎯" style="--xpos: start;">To Date</label>
-               <input type="text" name="dateTo" id="dateTo" value="<?php echo $dateTo; ?>"/>
+               <input type="text" name="dateTo" id="dateTo" value="<?= $dateTo; ?>"/>
             </div>
 
 
@@ -267,12 +213,12 @@ $errors = $model->errors;
                      id="collapseSensorCreate">
                   <div
                      style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 0.4em 3em; padding-bottom: 0.8em">
-                     <?php echo SensorCrudPartialCreateEdit::GetHtml($sensorCrud->createBadValues->sensor ?? null) ?>
+                     <?= SensorCrudPartialCreateEdit::GetHtml($sensorCrud->createBadValues->sensor ?? null) ?>
                   </div>
                   <div>
                      <span>Auth</span>
                      <input type="password" name="auth"
-                            value="<?php echo htmlspecialchars($sensorCrud->createBadValues->auth ?? ''); ?>">
+                            value="<?= htmlspecialchars($sensorCrud->createBadValues->auth ?? ''); ?>">
                      <button class="button" type="submit" name="formType" value="create">Create</button>
                   </div>
                </form>
@@ -301,7 +247,7 @@ $errors = $model->errors;
             <div class="🎯 collapse-and-change-icon zebra-overview" style="display: grid; grid-auto-rows: auto;
                            grid-template-columns: 30px 5fr 6fr 2fr 2fr 2fr 2fr 2fr 2fr 2fr;
                            --ypos: center; --xpos: start;" data-toggle="collapse"
-                 data-target="<?php echo "#collapseSensorInfoIdx_" . $i ?>" aria-expanded="false">
+                 data-target="<?= "#collapseSensorInfoIdx_" . $i ?>" aria-expanded="false">
                <span style="padding-left: 4px" type="button">
                   <i class="bi bi-caret-right"></i>
                </span>
@@ -316,24 +262,24 @@ $errors = $model->errors;
                $humMax = sizeof($hums) === 0 ? 'NULL' : number_format(max($hums), 1);
                $humMix = sizeof($hums) === 0 ? 'NULL' : number_format(min($hums), 1);
                ?>
-               <div><?php echo htmlspecialchars($sensor->name) ?></div>
+               <div><?= htmlspecialchars($sensor->name) ?></div>
                <div>
                   <div
                      style="height: 1em; margin-bottom: 6px; overflow: hidden; font-size: 13px; color: <?php echo $lastReadingsView[$sensor->id]->color ?>">
-                     <?php echo htmlspecialchars($lastReadingsView[$sensor->id]->dateRecorded); ?>
+                     <?= htmlspecialchars($lastReadingsView[$sensor->id]->dateRecorded); ?>
                   </div>
                   <div style="--xpos: center; --ypos: center; display: grid; grid-auto-rows: auto;
                         grid-template-columns: auto auto;">
                      <div>
-                        <i class="bi bi-thermometer-half"></i><?php echo $lastReadingsView[$sensor->id]->temp; ?>
+                        <i class="bi bi-thermometer-half"></i><?= $lastReadingsView[$sensor->id]->temp; ?>
                      </div>
                      <div>
-                        <i class="bi bi-droplet-half"></i><?php echo $lastReadingsView[$sensor->id]->relHum; ?>
+                        <i class="bi bi-droplet-half"></i><?= $lastReadingsView[$sensor->id]->relHum; ?>
                      </div>
                   </div>
                </div>
                <div>
-                  <?php echo sizeof(array_filter(
+                  <?= sizeof(array_filter(
                      $sensorReadingOutOfBounds[$sensor->id],
                      fn($x) => $x->temp < $sensor->minTemp || $x->temp > $sensor->maxTemp)
                   )
@@ -344,15 +290,15 @@ $errors = $model->errors;
                   )
                   ?>
                </div>
-               <div><?php echo $tempAvg ?></div>
-               <div><?php echo $tempMix ?></div>
-               <div><?php echo $tempMax ?></div>
-               <div><?php echo $humAvg ?></div>
-               <div><?php echo $humMix ?></div>
-               <div><?php echo $humMax ?></div>
+               <div><?= $tempAvg ?></div>
+               <div><?= $tempMix ?></div>
+               <div><?= $tempMax ?></div>
+               <div><?= $humAvg ?></div>
+               <div><?= $humMix ?></div>
+               <div><?= $humMax ?></div>
             </div>
 
-            <div class="collapse zebra-overview" id="<?php echo "collapseSensorInfoIdx_" . $i ?>"
+            <div class="collapse zebra-overview" id="<?= "collapseSensorInfoIdx_" . $i ?>"
                  style="border-top: 1px dotted black; padding: 0.4em 20px">
                <nav>
                   <div class="nav nav-tabs">
@@ -514,9 +460,9 @@ $errors = $model->errors;
                      <td class="sensorName"><?php echo htmlspecialchars($sensor->name) ?></td>
                      <td style="display: flex">
                         <input class="colorSelectTemp" type="color" style="width: 100%; padding: 0"
-                               value="<?php echo $colors[$i]; ?>">
+                               value="#000000">
                         <input class="colorSelectHum" type="color" style="width: 100%; padding: 0"
-                               value="<?php echo $colors[$i + sizeof($sensors)]; ?>">
+                               value="#000000">
                      </td>
                      <td><input class="tempSelect" type="checkbox"></td>
                      <td><input class="relHumSelect" type="checkbox"></td>
@@ -530,7 +476,7 @@ $errors = $model->errors;
             <div>
                <div class="graphOptions">
                   <p>Interval</p>
-                  <select id="graphOptionsIntervalSelect" class="graphOptionsSelect">
+                  <select id="graphOptionsIntervalSelect">
                      <option value="15" selected>15 min</option>
                      <option value="30">30 min</option>
                      <option value="120">2 hour</option>
@@ -540,7 +486,7 @@ $errors = $model->errors;
                </div>
                <div class="graphOptions">
                   <p>Interval Strategy</p>
-                  <select id="graphOptionsStrategySelect" class="graphOptionsSelect">
+                  <select id="graphOptionsStrategySelect">
                      <option value="median">Take Median</option>
                      <option value="average">Take Average</option>
                      <option value="deviation">Take Deviation</option>
@@ -605,7 +551,8 @@ $errors = $model->errors;
 <script type="text/javascript">
 
    dayjs.extend(window.dayjs_plugin_customParseFormat);
-
+   let stateTemplate = document.querySelector('.root').innerHTML;
+   let errors = JSON.parse('<?php echo Helper::EchoJson($errors); ?>');
 
    function TriggerPortableSensorDataCsvUpload(csvFileUploadBtn) {
       let id = csvFileUploadBtn.getAttribute('data-sensorId');
@@ -1076,6 +1023,27 @@ $errors = $model->errors;
       ExportBase(encodedUri, filename)
    }
 
+   Math.seed = function(s) {
+      // https://stackoverflow.com/questions/521295/seeding-the-random-number-generator-in-javascript
+      let mask = 0xffffffff;
+      let m_w  = (123456789 + s) & mask;
+      let m_z  = (987654321 - s) & mask;
+
+      return function() {
+         m_z = (36969 * (m_z & 65535) + (m_z >>> 16)) & mask;
+         m_w = (18000 * (m_w & 65535) + (m_w >>> 16)) & mask;
+
+         let result = ((m_z << 16) + (m_w & 65535)) >>> 0;
+         result /= 4294967296;
+         return result;
+      }
+   }
+
+   function randomHexColor(getRandom) {
+      // https://stackoverflow.com/questions/1484506/random-color-generator
+      return '#' + (getRandom().toString(16) + "000000").substring(2,8);
+   }
+
 
    class IndexModel {
       dateTo = dayjs('<?php echo $dateTo . ', 23:59' ?>', 'DD-MM-YYYY, HH:mm');
@@ -1135,13 +1103,21 @@ $errors = $model->errors;
       }
    }
 
+   function stateHasChanged() {
+      document.querySelector('.root').innerHTML = nunjucks.renderString(stateTemplate, { errors: errors });
+   }
+
    async function main() {
       let indexModel = new IndexModel();
+      stateHasChanged();
       fetch("../view/partial/FooterPartial.html").then(x => x.text().then(res => document.querySelector(".footer").innerHTML = res));
       document.querySelector('#saveImgBtn').onclick = () => SaveChartImg(
          indexModel.dateFrom.format("DD-MM-YYYY"),
          indexModel.dateTo.format("DD-MM-YYYY")
       );
+      let getRandom = Math.seed(9);
+      document.querySelectorAll('.colorSelectTemp').forEach(x => x.value = randomHexColor(getRandom));
+      document.querySelectorAll('.colorSelectHum').forEach(x => x.value = randomHexColor(getRandom));
       document.querySelectorAll('.csvFile').forEach(x => x.onclick = () => TriggerPortableSensorDataCsvUpload(x));
       document.querySelectorAll('.js-export-btn').forEach(x => x.onclick = () =>
          ExportCSV(
