@@ -138,7 +138,7 @@ $errors = $model->errors;
                <button id="btnLoad" class="button">Load</button>
             </div>
             <div class="🎯" style="height: var(--row_height);">
-               <label for="dateTo" class="🎯" style="--xpos: start;">To Date</label>
+               <label for="dateTo" style="width: 100%;">To Date</label>
                <input type="text" name="dateTo" id="dateTo" value="<?= $dateTo; ?>"/>
             </div>
 

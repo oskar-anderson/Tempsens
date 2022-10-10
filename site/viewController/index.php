@@ -45,7 +45,7 @@ class Programm {
       $lastReadingsData = DalSensorReading::GetLastReadingsFromCacheOrDatabase($sensors);
       $lastReadingsView = [];
       foreach ($sensors as  $sensor) {
-         $lastReading = $lastReadingsData[$sensor->id];
+         $lastReading = $lastReadingsData[$sensor->id] ?? null;
 
          $dateRecorded = 'NO DATA';
          $col = 'red';

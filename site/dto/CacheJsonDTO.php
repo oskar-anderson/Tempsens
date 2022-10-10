@@ -61,7 +61,7 @@ class CacheJsonDTO
     */
     public static function DoesFileExist(): bool {
        if ((new Config())->GetUseDbCache()) {
-          return true;
+          return false;
        }
        return file_exists(CacheJsonDTO::GetFilename());
    }

@@ -69,7 +69,8 @@ class DalSensorReading extends AbstractDalBase
    public static function GetLastReadingsFromCacheOrDatabase(array $sensors): array
    {
       if (! CacheJsonDTO::DoesFileExist()) {
-         (new CacheJsonDTO((new DalSensorReading())->GetLastSensorReadings($sensors)))->Save();
+         $lastReadings = ((new DalSensorReading())->GetLastSensorReadings($sensors));
+         (new CacheJsonDTO($lastReadings))->Save();
       }
       $cache = CacheJsonDTO::Read();
       $isDirty = false;

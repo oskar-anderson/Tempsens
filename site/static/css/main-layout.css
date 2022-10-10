@@ -110,8 +110,6 @@ th, .table-head {
    display: flex;
    align-items: var(--ypos, center);
    justify-content: var(--xpos, center);
-   width: 100%;
-   height: 100%;
 }
 
 /* button-shadow is unused */
