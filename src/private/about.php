@@ -1,1 +1,0 @@
-Hello from src/private/about.php!

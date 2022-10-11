@@ -1,1 +1,0 @@
-Hello from src/test/public/about.php!
