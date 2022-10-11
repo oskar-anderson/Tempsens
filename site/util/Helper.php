@@ -19,6 +19,14 @@ class Helper
       return $datetime;
    }
 
+   public static function GetPhpInfo(): string {
+      ob_start();
+      phpinfo();
+      $phpinfoContent = ob_get_contents();
+      ob_clean();
+      return $phpinfoContent;
+   }
+
    /**
     * Provide universal echo for putting PHP variables inside HTML and JS.
     * Replaces single quotes with \u0027.
@@ -38,8 +46,12 @@ class Helper
 
 
    /** @noinspection PhpUnusedParameterInspection */
-   public static function Render($fileName, $model): void
+   public static function Render($fileName, $model): string
    {
+      ob_start();
       require($fileName);
+      $content = ob_get_contents();
+      ob_clean();
+      return $content;
    }
 }

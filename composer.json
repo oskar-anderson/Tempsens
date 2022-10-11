@@ -8,7 +8,10 @@
         "ext-soap": "*",
         "ext-pdo": "*",
         "ext-ctype": "*",
-        "vlucas/phpdotenv": "^5.4"
+        "ext-simplexml": "*",
+        "vlucas/phpdotenv": "^5.4",
+        "slim/slim": "^4.10",
+        "slim/psr7": "^1.5"
     },
     "autoload": {
         "psr-4": {

@@ -17,61 +17,19 @@ Go into your `php.ini` file and uncomment `extension=pdo_mysql`.
 
 ## Dependencies
 * [phpdotenv](https://github.com/vlucas/phpdotenv) - Loads environment variables from `.env` to `getenv()`, `$_ENV` and `$_SERVER` automagically.
+* [slim](https://github.com/slimphp/Slim) - PHP micro framework that helps you quickly write simple yet powerful web applications and APIs.
+
+## Documentation
+
+### General documentation:  
+[IT documentation - Temperature and Humidity Monitoring in the Baltic Warehouse [link]](https://drive.google.com/drive/folders/1U-jQZR57uo2S5RYVUKuww7ev0e6jwKyZ?usp=sharing)
+
+### API 
+Documentation for physical sensor API and Tempsens logserver API:  
+[API Documentation](_documents/api.md)
 
 
-
-## Local testing
-
-### Test web upload:
-Sample CSV data files [are available on request [link]](https://drive.google.com/drive/folders/1l-BW7Rwa57Zx1lE251V4ASbUaw9odJsC?usp=sharing) to test portable sensor's sensor readings import functionality. 
-`backupCSV/portable` folder.
-
-### Sample data for Database
-Script `site/db/Initializer.php` generates new database tables and imports data from local CSV files.
-Modify the script to fit your needs then run `php Initializer.php` to execute the script.
-
-Sample CSV data files [are available on request [link]](https://drive.google.com/drive/folders/1l-BW7Rwa57Zx1lE251V4ASbUaw9odJsC?usp=sharing). 
-Create directory `site/db/backupCSV` and place the data there.
-
-### SOAP API
-You can test sensor's SOAP insert API requests locally using your preferred API testing tool, I used Postman.
-
-Send a `POST` request to URL `http://localhost:80/site/SoapMethods.php` with request body:
-
-```
-<?xml version="1.0" encoding="utf-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
-   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-   <soap:Body>
-      <InsertTx5xxSample xmlns="http://cometsystem.cz/schemas/soapTx5xx_v2.xsd">
-         <passKey>20960050</passKey>
-         <device>4145</device>
-         <temp>1.4</temp>
-         <relHum>91.9</relHum>
-         <compQuant>0.3</compQuant>
-         <pressure>-9999</pressure>
-         <alarms>hi,no,no,no</alarms>
-         <compType>Dew point</compType>
-         <tempU>C</tempU>
-         <pressureU>n/a</pressureU>
-         <timer>60</timer>
-      </InsertTx5xxSample>
-   </soap:Body>
-</soap:Envelope>
-```
-Expected response:
-```
-<?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns1="http://localhost" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-    <SOAP-ENV:Body>
-        <ns1:InsertTx5xxSampleResponse>
-            <return xsi:nil="true"/>
-        </ns1:InsertTx5xxSampleResponse>
-    </SOAP-ENV:Body>
-</SOAP-ENV:Envelope>
-```
-## Database Schema
+### Database Schema
 
 [Note] Disable word wrap to display table correctly (alt + z in VSCode). Viewing markdown files through Github is not an issue. 
 
@@ -92,14 +50,37 @@ Expected response:
 | MaxRelHum    | decimal(18,1)!|     |                                                                                                              
 | ReadingInterv| int!          |     |                                                                                                               
 +--------------+---------------+-----+                                                                        
+
+
++------------------------------------+
+|                Cache               |
++--------------+---------------+-----+
+| Id           | string!       | PK  |
+| Key0         | string!       |     |
+| Content      | string!       |     |
++--------------+---------------+-----+
 ```                                                                                                           
-[Tip] To edit DB schema learn to use VSCode multiline editing shortcuts (alt + mouse_click; alt + ctrl + down/up arrow)
+[Tip] Use VSCode multiline editing shortcuts (alt + mouse_click; alt + ctrl + down/up arrow) to edit DB schema
 
 Date format is YYYYMMDDHHmm. This makes ordering SensorReadings by date easy (eg 13:42, 13.03.2021 becomes 202103131342)                
-DateAdded is null for not isPortable sensors.
+DateAdded is `null` for not isPortable sensors.  
+Cache is `string` key to JSON `SensorReading[]` value for latest `SensorReading` values for all sensors.
 
-## Documentation
-[IT documentation - Temperature and Humidity Monitoring in the Baltic Warehouse [link]](https://drive.google.com/drive/folders/1U-jQZR57uo2S5RYVUKuww7ev0e6jwKyZ?usp=sharing)
+## Testing
+
+### Sample data for Database
+Script `site/db/Initializer.php` generates new database tables and imports data from local CSV files.
+Modify the script to fit your needs then run `php Initializer.php` to execute the script.
+
+Sample CSV data files [are available on request [link]](https://drive.google.com/drive/folders/1l-BW7Rwa57Zx1lE251V4ASbUaw9odJsC?usp=sharing).
+Create directory `site/db/backupCSV` and place the data there.
+
+### Test web upload:
+Sample CSV data files [are available on request [link]](https://drive.google.com/drive/folders/1l-BW7Rwa57Zx1lE251V4ASbUaw9odJsC?usp=sharing) to test portable sensor's sensor readings import functionality.
+
+### Test API
+Api request endpoint and body is described in [API](#API).
+
 
 ## Patch notes
 
@@ -114,14 +95,14 @@ DateAdded is null for not isPortable sensors.
 
 ### 0.3.4 (was used in production)
 
-[Preview image](_documents/version_0.3.4.png)
+[Preview image](_documents/images/version_0.3.4.png)
 
 ### 0.3.5 (didn't reach production)
 24.01.2021 - watchdog added
 
 ### 1.0.0
 
-![Preview image](_documents/version_1.0.0.png)
+![Preview image](_documents/images/version_1.0.0.png)
 
 Notes:
 * Remade database (removed: alarms, emails, emails_to_sensor, parms, portable and queue. Redesigned sensor and sensorReading)
@@ -159,15 +140,3 @@ Notes:
 * Fix a bug causing alert packing to result in a null pointer exception
 
 Made with ❤️ by Karl Oskar Anderson
-
-## Production setup notes
-Configure sensor's registered SOAP API path to `site/SoapMethods.php`
-
-Merge current document in _documents folder with the latest production documentation
-
-
-## Todo ⬜️/✅
-
-Todo notes:
-- ⬜️ Test `sensorreading` SQL performance in non localhost environment. 
-I had a weird situation where selecting 1 more field (dateAdded) significantly slows down query even if the field is always empty/null. Use `sensorreadingtmp` as a duplicate table of `sensorreading`.

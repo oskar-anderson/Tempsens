@@ -24,15 +24,16 @@ use App\util\Console;
 use App\util\Helper;
 use App\util\InputValidation;
 use DateTimeImmutable;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
 
-(new Programm())->main();
 
-class Programm {
+class Overview {
 
    public array $debugs = [];
    public array $errors = [];
 
-   function main(): void
+   public function main(Request $request, Response $response, $args): Response
    {
       $before = microtime(true);
 
@@ -91,7 +92,7 @@ class Programm {
       }
       $sensorReadingsBySensorId = array_merge($sensorReadingsBySensorId, (new DalSensorReading())->GetAllBetween($from, $to));
 
-      array_push($this->debugs,"DalSensorReading->GetAllBetween($from, $to) query: " . microtime(true) - $before);
+      array_push($this->debugs,"DalSensorReading->GetAllBetween($from, $to) query (count: " . array_sum(array_map("count", $sensorReadingsBySensorId)) . "): " . microtime(true) - $before);
       $before = microtime(true);
 
       $sensorAlertsMinMax = [];
@@ -103,7 +104,7 @@ class Programm {
          $sensorAlertsMinMax[$sensor->id] = AlertMinMax::Get($sensor, $rawOutOfBounds);
       }
 
-      array_push($this->debugs,'Combine sensor alerts: ' . microtime(true) - $before);
+      array_push($this->debugs,'Group chaining sensor alerts: ' . microtime(true) - $before);
       $before = microtime(true);
 
       $colors = [];
@@ -123,11 +124,11 @@ class Programm {
          ->SetErrors($this->errors)
          ->SetDefault();
 
-      Helper::Render(__DIR__ . "/../view/main/index.php", $htmlInjects);
+      $content = Helper::Render(__DIR__ . "/../view/main/overview.php", $htmlInjects);
+      $content .= join("", array_map(fn($x) => Console::DebugToConsole($x, true), $this->debugs));
+      $response->getBody()->write($content);
 
-      foreach ($this->debugs as $debug) {
-         Console::DebugToConsole($debug, true);
-      }
+      return $response;
    }
 
 
@@ -151,34 +152,12 @@ class Programm {
          $dateFromType = 'absolute';
       }
 
-      $selectOptionsRelativeDateFrom = $this->HandleSelectOptionsRelativeDateFrom($dateFrom, $dateTo);
+      $selectOptionsRelativeDateFrom = Period::GetPeriodOptions($dateFrom, $dateTo);
       $sensorCrud = $this->HandleSensorCrud($sensors);
       $this->UploadReadings($sensors);
 
       $result = new HandleInputModel($dateFrom->format('d-m-Y'), $dateTo->format('d-m-Y'), $selectOptionsRelativeDateFrom, $dateFromType, $sensorCrud);
       return $result;
-   }
-
-   /**
-    * @param $dateFrom DateTimeImmutable
-    * @param $dateTo DateTimeImmutable
-    * @return string[]
-    */
-   public function HandleSelectOptionsRelativeDateFrom(DateTimeImmutable $dateFrom, DateTimeImmutable $dateTo): array {
-      $daysBefore = $this->IntArrGetClosest(
-         $dateTo->diff($dateFrom)->days,
-         array_map(
-            fn($x) => $x->value,
-            Period::GetPeriods()
-         )
-      );
-
-      $periods = Period::GetPeriods();
-      return array_map(
-         fn($period) => $daysBefore === $period->value ?
-            "<option value='$period->value' selected>-$period->name</option>" :
-            "<option value='$period->value'>-$period->name</option>",
-         $periods);
    }
 
    function HandleSensorCrud(array &$sensors): SensorCrudBadCreateValues {
@@ -215,7 +194,7 @@ class Programm {
          return new SensorCrudBadCreateValues(null, '');
       }
       if ($name === null || $serial === null || $model === null || $ip === null
-         || $location === null || $isPortable || $minTemp === null || $maxTemp === null
+         || $location === null || $minTemp === null || $maxTemp === null
          || $minRelHum === null || $maxRelHum === null || $readingIntervalMinutes === null) {
          $str = 'Internal error! Cannot read from values.' .
             sprintf("name: %s, serial: %s, model: %s, ip: %s," .
@@ -404,15 +383,5 @@ class Programm {
 
       DalSensorReading::ResetCache($sensors);
       return true;
-   }
-
-   function IntArrGetClosest(int $needle, array $arr) : int|null {
-      $search = null;
-      foreach ($arr as $item) {
-         if ($search === null || abs($needle - $search) > abs($item - $needle)) {
-            $search = $item;
-         }
-      }
-      return $search;
    }
 }

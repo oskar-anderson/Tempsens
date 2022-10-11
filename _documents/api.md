@@ -1,23 +1,50 @@
-<?php
-// T3510 - PHP + NGINX
-// XSD schema: http://cometsystem.cz/schemas/soapTx5xx_v2.xsd
+[back to index](../README.md)
 
-namespace App;
+# API
+Documentation for API endpoints.
 
-require_once(__DIR__."/../vendor/autoload.php");
+## physical-sensor
+Official info about the T3510 model sensor from Comet System website and sensor manual:
+* [Official site](https://www.cometsystem.com/products/web-sensor-remote-thermometer-hygrometer-with-ethernet-interface/reg-t3510)
+* [Official manual](./web-sensor-tx5xx-docs-v28.pdf)
 
-use SoapServer;
+Official info about the M1140 portable model data logger sensor from Comet System website and sensor manual:
+* [Official site](https://www.cometsystem.com/products/data-loggers/reg-m1140)
 
-/** @noinspection PhpUnused */
-class SoapMethods {
-   // InsertTx5xxSample name is hardcoded to sensors
-   function InsertTx5xxSample($passKey, $device, $temp, $relHum, $compQuant, $pressure, $alarms, $compType, $tempU, $pressureU, $timer) {
-      /*
---------------------------------------------------------------------------------
- v1.0 for firmware 1-5-7.4, 2017-09-11
---------------------------------------------------------------------------------
+## physical-sensor
+Physical sensor API used in Tempsens logserver.
 
+### Insert
+Data transfer between the physical sensors and logserver web app using SOAP XML.
 
+Sensor insert API requests can be tested locally using an API testing tool like Postman. Send a `POST` request to URL `http://localhost:80/api/physical-sensor/insert-reading` with request body:
+
+XML request body:
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+   <soap:Body>
+      <InsertTx5xxSample xmlns="http://cometsystem.cz/schemas/soapTx5xx_v2.xsd">
+         <passKey>20960050</passKey>
+         <device>4145</device>
+         <temp>1.4</temp>
+         <relHum>91.9</relHum>
+         <compQuant>0.3</compQuant>
+         <pressure>-9999</pressure>
+         <alarms>hi,no,no,no</alarms>
+         <compType>Dew point</compType>
+         <tempU>C</tempU>
+         <pressureU>n/a</pressureU>
+         <timer>60</timer>
+      </InsertTx5xxSample>
+   </soap:Body>
+</soap:Envelope>
+```
+
+Description:
+```
 |----------------|-------------------------------------------------------------|
 | Tag            | Description                                                 |
 |----------------|-------------------------------------------------------------|
@@ -68,34 +95,6 @@ class SoapMethods {
 |----------------|-------------------------------------------------------------|
 | <timer>        | SOAP sending interval in [sec].                             |
 |----------------|-------------------------------------------------------------|
+```
 
-<?xml version="1.0" encoding="utf-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
-   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-   <soap:Body>
-      <InsertTx5xxSample xmlns="http://cometsystem.cz/schemas/soapTx5xx_v2.xsd">
-         <passKey>13960932</passKey>
-         <device>4145</device>
-         <temp>1.4</temp>
-         <relHum>91.9</relHum>
-         <compQuant>0.3</compQuant>
-         <pressure>-9999</pressure>
-         <alarms>hi,no,no,no</alarms>
-         <compType>Dew point</compType>
-         <tempU>C</tempU>
-         <pressureU>n/a</pressureU>
-         <timer>60</timer>
-      </InsertTx5xxSample>
-   </soap:Body>
-</soap:Envelope>
--------------------------------------------------------------------------------  */
-
-      SensorApi::Save($passKey, floatval($temp), floatval($relHum));
-   }
-}
-
-$server = new SoapServer(null, ['uri' => 'http://localhost']);
-$server->setClass('App\\SoapMethods'); // all class functions will be added for handling
-$server->handle();
 

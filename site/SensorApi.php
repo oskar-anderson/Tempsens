@@ -15,7 +15,7 @@ require_once(__DIR__."/../vendor/autoload.php");
 
 class SensorApi
 {
-   public static function Save(string $serial, float $temp, float $relHum): void
+   public static function Save(string $serial, float $temp, float $relHum): string
    {
       $sensorId = Sensor::GetSensorBySerial((new DalSensors())->GetAll(), $serial)->id;
       $reading = new SensorReading(
@@ -29,5 +29,6 @@ class SensorApi
       $db = DbHelper::GetPDO();
       (new DalSensorReading)->InsertByChunk([$reading], $db);
       DalSensorReading::SetLastReadingsCache($reading);
+      return $sensorId;
    }
 }
