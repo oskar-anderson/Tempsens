@@ -2,22 +2,44 @@
 
 Sirowa warehouse sensor temperature and humidity data visualization logserver.
 
-## Local installation
+## Installation
+### Local
 
 1. Download/`git clone` the project
-2. Run `composer install` in root folder to generate dependencies and autoloading. If the command throws error '`Root composer.json requires PHP extension ext-soap ...`' uncomment `extension=soap` attribute in the `php.ini` global PHP config file.
-3. Create `.env` file from `.env_template` file and adjust parameters
+2. Create `.env` file from `.env_template` file and adjust parameters
+3. Run `composer install` in root folder to generate dependencies and autoloading. If the command throws error '`Root composer.json requires PHP extension ext-soap ...`' uncomment `extension=soap` attribute in the `php.ini` global PHP config file.
 4. Open terminal and `cd site`
 5. (if you have data files) Copy `backupCSV` folder to `site/db` and generate db with sample data `php -r "require './db/Initializer.php'; App\db\Initializer::Initialize();"`
 6. Start php server by running command `php -S localhost:8080`
 7. Open in browser http://127.0.0.1:8080
 
-### Allow database access
-Go into your `php.ini` file and uncomment `extension=pdo_mysql`.
+Possible errors:  
+* No database access - Go into your `php.ini` file and uncomment `extension=pdo_mysql`
+
+
+### Docker
+1. Follow 1. and 2. step from local install
+2. Run `docker-compose up -d` in root folder
+3. Install dependencies `docker-compose exec tempsens-app composer install`
+4. Open in browser http://127.0.0.1:8000
+
 
 ## Dependencies
+
+### Server side
 * [phpdotenv](https://github.com/vlucas/phpdotenv) - Loads environment variables from `.env` to `getenv()`, `$_ENV` and `$_SERVER` automagically.
-* [slim](https://github.com/slimphp/Slim) - PHP micro framework that helps you quickly write simple yet powerful web applications and APIs.
+* [Slim](https://github.com/slimphp/Slim) - PHP micro framework that helps you quickly write simple yet powerful web applications and APIs.
+
+### Client side
+* [Reset CSS](https://meyerweb.com/eric/tools/css/reset) - cross browser style inconsistency remover
+* [Bootstrap Icons](https://icons.getbootstrap.com) - Different icons (class tags `bi bi-`)
+* [jQuery](https://jquery.com) - Needed for jQuery UI
+* [jQuery UI](https://jqueryui.com/datepicker) - Cross browser identical calendar/datepicker, kinda stupid for such a simple thing
+* [bootstrap](https://getbootstrap.com) - HTML, CSS and JavaScript framework, Used components: collapsable, modal
+* [Nunjucks](https://github.com/mozilla/nunjucks) - Templating engine (abandoned, but useful) (IN PROGRESS)
+* [Google Chart](https://developers.google.com/chart) (charts/loader.js) - Drawing charts
+* [Day.js](https://day.js.org/) (with plugins: customParseFormat) - date parsing, needed for chart data manipulation
+
 
 ## Documentation
 
@@ -82,14 +104,18 @@ Sample CSV data files [are available on request [link]](https://drive.google.com
 Api request endpoint and body is described in [API](#API).
 
 
-## Patch notes
-
+## Versioning
+Versioning follows major.minor.patch three digit numbering:
+* major - Breaking database changes 
+* minor - API changes or 5+ patch changes worth documenting
+* patch - Small tweaks
 
 ### 0.1.0
 15.01.2020 by Indrek Hiie - Soap Data Collector 
 
 ### 0.2.0
 27.02.2020 by Timm Soodla - initial GUI version
+
 ### 0.3.0
 30.12.2020 by Indrek Hiie - moved to PDO MySQL driver, sensors now in DB, more modular code and some bugfixes applied
 
