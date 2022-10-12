@@ -18,8 +18,9 @@ class SensorApi
    public static function Save(string $serial, float $temp, float $relHum): string
    {
       $sensorId = Sensor::GetSensorBySerial((new DalSensors())->GetAll(), $serial)->id;
+      $id = Base64::GenerateId();
       $reading = new SensorReading(
-         id:Base64::GenerateId(),
+         id: $id,
          sensorId: $sensorId,
          temp: $temp,
          relHum: $relHum,
@@ -29,6 +30,6 @@ class SensorApi
       $db = DbHelper::GetPDO();
       (new DalSensorReading)->InsertByChunk([$reading], $db);
       DalSensorReading::SetLastReadingsCache($reading);
-      return $sensorId;
+      return $id;
    }
 }
