@@ -59,16 +59,6 @@ def githubSideRendering(argv):
             if (key == "commit-hash"):
                 print(f"replacing: {key} with '{commit_hash}'")
                 template_file_content = template_file_content.replace(key_in_templating_syntax, commit_hash)
-            if (key == "latest-version"):
-                pattern = "(v\d+\.\d+\.\d+)"
-                r = re.search(pattern, commit_msg)
-                version = "No version number"
-                if not r:
-                    print(f"latest-version value does not match expected pattern. Regex: '{pattern}', example 'v1.6.13'. Replacing with '{version}'.")
-                else:
-                    version = r.group(0)
-                print(f"replacing: {key} with '{version}'")
-                template_file_content = template_file_content.replace(key_in_templating_syntax, version)
             if (key == "commit-date"):
                 print(f"replacing: {key} with '{commit_date}'")
                 template_file_content = template_file_content.replace(key_in_templating_syntax, commit_date)
