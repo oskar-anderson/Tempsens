@@ -42,23 +42,23 @@ class SensorCrudPartialCreateEdit
          </div>
          <div class="twoByTwo">
             <span>Min Temp</span>
-            <input autocomplete="off" name="minTemp" id="minTempOf%s" type="text" value="%s">
+            <input autocomplete="off" name="minTemp" id="minTempOf%s" type="number" value="%s">
          </div>
          <div class="twoByTwo">
             <span>Max Temp</span>
-            <input autocomplete="off" name="maxTemp" id="maxTempOf%s" type="text" value="%s">
+            <input autocomplete="off" name="maxTemp" id="maxTempOf%s" type="number" value="%s">
          </div>
          <div class="twoByTwo">
             <span>Min Relative Humidity</span>
-            <input autocomplete="off" name="minRelHum" id="minRelHumOf%s" type="text" value="%s">
+            <input autocomplete="off" name="minRelHum" id="minRelHumOf%s" type="number" value="%s">
          </div>
          <div class="twoByTwo">
             <span>Max Relative Humidity</span>
-            <input autocomplete="off" name="maxRelHum" id="maxRelHumOf%s" type="text" value="%s">
+            <input autocomplete="off" name="maxRelHum" id="maxRelHumOf%s" type="number" value="%s">
          </div>
          <div class="twoByTwo">
             <span>Reading Interval Minutes</span>
-            <input autocomplete="off" name="readingIntervalMinutes" id="readingIntervalMinutesOf%s" type="text" value="%s">
+            <input autocomplete="off" name="readingIntervalMinutes" id="readingIntervalMinutesOf%s" type="number" value="%s">
          </div>
       EOT;
 
