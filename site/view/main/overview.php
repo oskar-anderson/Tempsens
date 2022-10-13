@@ -26,7 +26,7 @@ $errors = $model->errors;
 <html lang="en">
 <head>
    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-   <meta name="viewport" content="width=device-width, initial-width, initial-scale=1.0">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <meta name="robots" content="index,nofollow"/>
    <meta name="keywords" content="Sensors"/>
    <meta name="description" content="Sensors"/>
@@ -77,7 +77,8 @@ $errors = $model->errors;
    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dayjs@1.10.4/plugin/customParseFormat.js"></script>
 
 </head>
-<body style="min-height: 100vh; min-width: 900px; margin:0; display: grid; grid-template-rows: 1fr auto" class="root">
+<body style="min-height: 100vh; min-width: 900px; display: none;" class="root">
+<div style="display: grid; grid-template-rows: 1fr auto;">
 
 <div>
    <div>
@@ -546,6 +547,7 @@ $errors = $model->errors;
 </div>
 <!-- end Modal -->
 
+</div>
 </body>
 
 <script type="text/javascript">
@@ -1140,6 +1142,7 @@ $errors = $model->errors;
    }
 
    main();
+   document.querySelector('.root').style.display = 'block';
 
 </script>
 </html>
