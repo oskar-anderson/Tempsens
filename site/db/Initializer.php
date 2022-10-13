@@ -161,6 +161,6 @@ class Initializer
       //(new DalSensorReadingTmp())->InsertByChunk($debugSensorReadings, $pdo);
       $pdo->commit();
 
-      DalSensorReading::GetLastReadingsFromCacheOrDatabase($sensors);
+      (new DalSensorReading())->ResetCache();
    }
 }

@@ -8,15 +8,14 @@ require_once(__DIR__."/../../vendor/autoload.php");
 
 use App\db\dal\DalSensorReading;
 use App\db\dal\DalSensors;
-use App\dto\AlertMinMax;
+use App\db\DbHelper;
 use App\dto\IndexViewModel;
+use App\dto\IndexViewModelChildren\AlertMinMax;
 use App\dto\IndexViewModelChildren\HandleInputModel;
 use App\dto\IndexViewModelChildren\LastSensorReading;
 use App\dto\IndexViewModelChildren\Period;
 use App\dto\IndexViewModelChildren\SensorCrudBadCreateValues;
-use App\dto\IndexViewModelChildren\SensorReadingDTO;
 use App\model\sensor;
-use App\db\DbHelper;
 use App\model\SensorReading;
 use App\util\Base64;
 use App\util\Config;
@@ -35,15 +34,16 @@ class Overview {
 
    public function main(Request $request, Response $response, $args): Response
    {
+      $start = microtime(true);
       $before = microtime(true);
 
       $sensors = (new DalSensors())->GetAll();
       $input = $this->HandleInput($sensors);
 
-      array_push($this->debugs,'GetSensors and handle input: ' . microtime(true) - $before);
+      array_push($this->debugs,'Get sensors and handle input: ' . microtime(true) - $before);
       $before = microtime(true);
 
-      $lastReadingsData = DalSensorReading::GetLastReadingsFromCacheOrDatabase($sensors);
+      $lastReadingsData = DalSensorReading::GetLastReadingsFromCacheOrDefault($sensors);
       $lastReadingsView = [];
       foreach ($sensors as  $sensor) {
          $lastReading = $lastReadingsData[$sensor->id] ?? null;
@@ -79,7 +79,7 @@ class Overview {
          );
       }
 
-      array_push($this->debugs,'Get Last readings: ' . microtime(true) - $before);
+      array_push($this->debugs,'Get last readings: ' . microtime(true) - $before);
       $before = microtime(true);
 
       $from = DateTimeImmutable::createFromFormat('d-m-Y', $input->dateFrom)->format('Ymd') . '0000';
@@ -92,7 +92,7 @@ class Overview {
       }
       $sensorReadingsBySensorId = array_merge($sensorReadingsBySensorId, (new DalSensorReading())->GetAllBetween($from, $to));
 
-      array_push($this->debugs,"DalSensorReading->GetAllBetween($from, $to) query (count: " . array_sum(array_map("count", $sensorReadingsBySensorId)) . "): " . microtime(true) - $before);
+      array_push($this->debugs,"GetAllBetween($from, $to) query (count: " . array_sum(array_map("count", $sensorReadingsBySensorId)) . "): " . microtime(true) - $before);
       $before = microtime(true);
 
       $sensorAlertsMinMax = [];
@@ -125,6 +125,8 @@ class Overview {
          ->SetDefault();
 
       $content = Helper::Render(__DIR__ . "/../view/main/overview.php", $htmlInjects);
+      array_push($this->debugs,'PHP generating page: ' . microtime(true) - $before);
+      array_push($this->debugs,'PHP total: ' . microtime(true) - $start);
       $content .= join("", array_map(fn($x) => Console::DebugToConsole($x, true), $this->debugs));
       $response->getBody()->write($content);
 
@@ -381,7 +383,7 @@ class Overview {
       (new DalSensorReading())->InsertByChunk($newSensorReadings, $pdo);
       $pdo->commit();
 
-      DalSensorReading::ResetCache($sensors);
+      DalSensorReading::ResetCache();
       return true;
    }
 }

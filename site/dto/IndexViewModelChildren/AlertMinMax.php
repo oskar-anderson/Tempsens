@@ -2,11 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\dto;
+namespace App\dto\IndexViewModelChildren;
 
-require_once (__DIR__."/../../vendor/autoload.php");
+require_once (__DIR__."/../../../vendor/autoload.php");
 
-use App\dto\IndexViewModelChildren\SensorReadingDTO;
 use App\model\Sensor;
 use DateTimeImmutable;
 

@@ -5,20 +5,16 @@ namespace App\db\dal;
 use App\db\DbHelper;
 use App\model\Cache;
 use App\model\SensorReading;
+use App\util\Base64;
 use DateTimeImmutable;
 use Exception;
 use PDO;
 
 class DalCache extends AbstractDalBase
 {
-   public static function  getLastSensorReadingType(): string {
-      return "LastSensorReadings";
-   }
+   public static function  getLastSensorReadingType(): string { return "LastSensorReadings"; }
 
-   public function GetTableName(): string
-   {
-      return "Cache";
-   }
+   public function GetTableName(): string { return "Cache"; }
 
    public function SqlCreateTableStmt(): string
    {
@@ -33,33 +29,11 @@ class DalCache extends AbstractDalBase
    }
 
    /**
-    *  @param array $value
-    *  @return SensorReading[]
+    * DO NOT USE!!! Only here because inheritance! All different cache keys will implement their own!
     */
    public function Map(array $value): array
    {
-      $arr = SensorReading::NewArray();
-      if (DalCache::getLastSensorReadingType() === $value['Key0']) {
-
-         $content = json_decode($value['Content'], true);
-         foreach ($content as $key => $item) {
-            if ($item === null) {
-               $arr[$key] = null;
-            } else {
-               // stupid PHP. Can you cast to SensorReadings directly, without?
-               $sensorReading = new SensorReading(
-                  $item["id"],
-                  $item["sensorId"],
-                  $item["temp"],
-                  $item["relHum"],
-                  DateTimeImmutable::createFromFormat('YmdHi', $item["dateRecorded"]),
-                  $item["dateAdded"] === null ? null : DateTimeImmutable::createFromFormat('YmdHi', $item["dateAdded"])
-               );
-               $arr[$key] = $sensorReading;
-            }
-         }
-      }
-      return $arr;
+      throw new Exception("Will not be implemented!");
    }
 
    /**
@@ -82,28 +56,6 @@ class DalCache extends AbstractDalBase
    }
 
    /**
-    * @param string $key
-    * @return SensorReading[]|false
-    * @throws Exception No such field
-    */
-   public function GetByKeyFirstOrFalse(string $key): array|bool
-   {
-      $qry = "SELECT Key0, Content " .
-         " FROM " . $this->GetDatabaseNameDotTableName() .
-         " WHERE Key0 = ? LIMIT 1" .
-         ";";
-      $pdo = DbHelper::GetPDO();
-      $stmt = $pdo->prepare($qry);
-      $stmt->execute([$key]);
-
-      if ($stmt->rowCount() === 0) {
-         // throw new Exception("No field with $key in " . $this->GetDatabaseNameDotTableName() . "!");
-         return false;
-      }
-      return $this->Map($stmt->fetch());
-   }
-
-   /**
     *  @param string $id
     */
    public function Delete(string $id): void
@@ -116,10 +68,10 @@ class DalCache extends AbstractDalBase
 
    /**
     *  @param string $key
+    *  @param PDO $pdo
     */
-   public function DeleteByKey(string $key): void
+   public function DeleteByKey(string $key, PDO $pdo): void
    {
-      $pdo = DbHelper::GetPDO();
       $qry = "DELETE FROM " . $this->GetDatabaseNameDotTableName() . " WHERE Key0 = ?";
       $stmt = $pdo->prepare($qry);
       $stmt->execute([$key]);
@@ -131,12 +83,65 @@ class DalCache extends AbstractDalBase
    public function Update($object): void
    {
       $pdo = DbHelper::GetPDO();
-      $qry = "UPDATE " . $this->GetDatabaseNameDotTableName() . " SET " .
-         "Content = ? " .
-         "WHERE Key0 = ?";
-      $stmt = $pdo->prepare($qry);
-      $stmt->execute([$object->getContent(), $object->getType() ]);
+      $pdo->beginTransaction();
+      $this->DeleteByKey($object->getType(), $pdo);
+      $this->Insert([$object], $pdo);
+      $pdo->commit();
    }
 
 
+   /* @param SensorReading[] $sensorReadings assoc array */
+   public static function SaveSensorReadings(array $sensorReadings): void
+   {
+      (new DalCache())->Update(
+         (new Cache(true, true, true))->
+         setId(Base64::GenerateId())->
+         setType(DalCache::getLastSensorReadingType())->
+         setContent($sensorReadings)
+      );
+   }
+
+   /**
+    * @return SensorReading[] assoc array
+    * @throws Exception
+    */
+   public static function ReadSensorReadings(): array {
+      // DB query
+      $qry = "SELECT Key0, Content " .
+         " FROM " . (new DalCache())->GetDatabaseNameDotTableName() .
+         " WHERE Key0 = ? LIMIT 1" .
+         ";";
+      $pdo = DbHelper::GetPDO();
+      $stmt = $pdo->prepare($qry);
+      $stmt->execute([DalCache::getLastSensorReadingType()]);
+
+      if ($stmt->rowCount() !== 1) {
+         throw new Exception("Internal error! No SensorReadings row in " . (new DalCache())->GetDatabaseNameDotTableName() . "!");
+      }
+      $dalCache = $stmt->fetch();
+
+      // Mapping
+      $lastReadingBySensorIdAssocArr = SensorReading::NewArray();
+      if (DalCache::getLastSensorReadingType() === $dalCache['Key0']) {
+
+         $content = json_decode($dalCache['Content'], true);
+         foreach ($content as $key => $item) {
+            if ($item === null) {
+               $lastReadingBySensorIdAssocArr[$key] = null;
+            } else {
+               // stupid PHP. Can you cast to SensorReadings directly, without?
+               $sensorReading = new SensorReading(
+                  $item["id"],
+                  $item["sensorId"],
+                  $item["temp"],
+                  $item["relHum"],
+                  DateTimeImmutable::createFromFormat('YmdHi', $item["dateRecorded"]),
+                  $item["dateAdded"] === null ? null : DateTimeImmutable::createFromFormat('YmdHi', $item["dateAdded"])
+               );
+               $lastReadingBySensorIdAssocArr[$key] = $sensorReading;
+            }
+         }
+      }
+      return $lastReadingBySensorIdAssocArr;
+   }
 }

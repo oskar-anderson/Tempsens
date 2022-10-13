@@ -5,13 +5,11 @@ namespace App\db\dal;
 require_once(__DIR__ . "/../../../vendor/autoload.php");
 
 use App\db\DbHelper;
-use App\dto\CacheJsonDTO;
 use App\dto\IndexViewModelChildren\SensorReadingDTO;
 use App\model\Sensor;
 use App\model\SensorReading;
 use App\util\Console;
 use DateTimeImmutable;
-use JetBrains\PhpStorm\Pure;
 use PDO;
 
 class DalSensorReading extends AbstractDalBase
@@ -39,13 +37,11 @@ class DalSensorReading extends AbstractDalBase
       return $result;
    }
 
-   /**
-    *  @param Sensor[] $sensors
-    */
-   public static function ResetCache(array $sensors): void
+   public static function ResetCache(): void
    {
-      CacheJsonDTO::CreateEmpty();
-      DalSensorReading::GetLastReadingsFromCacheOrDatabase($sensors);
+      $sensors = (new DalSensors())->GetAll();
+      $lastReadings = (new DalSensorReading())->GetLastSensorReadings($sensors);
+      DalCache::SaveSensorReadings($lastReadings);
    }
 
    /**
@@ -53,32 +49,24 @@ class DalSensorReading extends AbstractDalBase
     */
    public static function SetLastReadingsCache(SensorReading $sensorReading): void
    {
-      if (! CacheJsonDTO::DoesFileExist()) {
-         $sensors = (new DalSensors())->GetAll();
-         (new CacheJsonDTO((new DalSensorReading())->GetLastSensorReadings($sensors)))->Save();
-      }
-      $cache = CacheJsonDTO::Read();
-      $cache->sensorReadings[$sensorReading->sensorId] = $sensorReading;
-      $cache->Save();
+      $cacheSensorReadings = DalCache::ReadSensorReadings();
+      $cacheSensorReadings[$sensorReading->sensorId] = $sensorReading;
+      DalCache::SaveSensorReadings($cacheSensorReadings);
    }
 
    /**
     *  @param Sensor[] $sensors
     *  @return SensorReading[]
     */
-   public static function GetLastReadingsFromCacheOrDatabase(array $sensors): array
+   public static function GetLastReadingsFromCacheOrDefault(array $sensors): array
    {
-      if (! CacheJsonDTO::DoesFileExist()) {
-         $lastReadings = ((new DalSensorReading())->GetLastSensorReadings($sensors));
-         (new CacheJsonDTO($lastReadings))->Save();
-      }
-      $cache = CacheJsonDTO::Read();
+      $cacheSensorReadings = DalCache::ReadSensorReadings();
       $isDirty = false;
       $lastReadings = [];
       foreach ($sensors as $sensor) {
          // check if cache has the last sensorReading of the sensor
-         if (array_key_exists($sensor->id, $cache->sensorReadings)) {
-            $lastReadings[$sensor->id] = $cache->sensorReadings[$sensor->id];
+         if (array_key_exists($sensor->id, $cacheSensorReadings)) {
+            $lastReadings[$sensor->id] = $cacheSensorReadings[$sensor->id];
             continue;
          }
          // Do a DB query to get the sensors last reading
@@ -88,7 +76,7 @@ class DalSensorReading extends AbstractDalBase
       }
       // update cache if any data came from the DB
       if ($isDirty) {
-         (new CacheJsonDTO($lastReadings))->Save();
+         DalCache::SaveSensorReadings($lastReadings);
       }
 
       return $lastReadings;
@@ -100,6 +88,8 @@ class DalSensorReading extends AbstractDalBase
     * @return array<SensorReading|null>
     */
    public function GetLastSensorReadings(array $sensors): array {
+      // https://stackoverflow.com/questions/2411559/how-do-i-query-sql-for-a-latest-record-date-for-each-user
+      // row_number() does not seem to help performance, this n+1 solution seems the best
       $lastReadings = [];
       foreach ($sensors as $sensor) {
          $lastReadings[$sensor->id] = (new DalSensorReading())->GetLastSensorReading($sensor->id);
@@ -220,7 +210,6 @@ class DalSensorReading extends AbstractDalBase
     * @param array $value
     * @return SensorReading
     */
-   #[Pure]
    public function Map(array $value): SensorReading
    {
       return new SensorReading(

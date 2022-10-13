@@ -3,6 +3,5 @@
 .DS_Store
 vendor
 .editorconfig
-Cache.json
 **/backupCSV/
 .env

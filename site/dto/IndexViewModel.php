@@ -4,6 +4,7 @@
 namespace App\dto;
 
 
+use App\dto\IndexViewModelChildren\AlertMinMax;
 use App\dto\IndexViewModelChildren\HandleInputModel;
 use App\dto\IndexViewModelChildren\LastSensorReading;
 use App\dto\IndexViewModelChildren\Period;

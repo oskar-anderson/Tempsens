@@ -84,20 +84,6 @@ class Config
    /**
     * @throws Exception Undefined
     */
-   public function GetUseDbCache(): bool
-   {
-      $type = $this->GetByName("cacheType");
-      $isDb = $type === "db";
-      $isFile = $type === "file";
-      if ($isFile || $isDb) {
-         return $isDb;
-      }
-      throw new Exception("Config cacheType={$type} must be in ['db', 'file']!");
-   }
-
-   /**
-    * @throws Exception Undefined
-    */
 	public function IsDbInitGenerateDbWithSampleData(): bool
 	{
       return $this->GetByName("dbInitGenerateDbWithSampleData") === "Y";
