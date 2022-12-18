@@ -729,40 +729,30 @@ $errors = $model->errors;
       // undefined value is ignored in graph
       let graphDefaultValue = document.getElementById('graphOptionsLoudNoValue').checked ? 0 : undefined;
 
-      let sensors = indexModel.GetSensorsWithSettings()
-      if (true) {
-         // Google charts can handle it built in so this is actually unnecessary, but it does look nicer
-         let chartDiv = document.getElementById('chartDiv');
-         let chartErr = document.getElementById('chartErr');
-         if (sensors.every(x => !x.sensorSettings.isTemp && !x.sensorSettings.isRelHum)) {
-            chartDiv.style.display = 'none';
-            chartErr.innerText = 'No sensor selected';
-            return;
-         }
-         chartDiv.style.display = 'block';
-         chartErr.innerText = '';
-      }
+      let sensors = indexModel.GetSensorsWithSettings().filter(sensor => sensor.sensorSettings.isTemp || sensor.sensorSettings.isRelHum)
 
-      /* Example of xAxisTimesToSensors.
-         [
-            { date; [{temp, relHum}, {temp, relHum} {temp, relHum}] },
-            { 9:15; [{24.1, 15}, {24.5, 15.7} {24.8, 16.7}] },
-            { 9:30; [{21.6, 14.3}, {22, 15.1} {22.4, 15.7}] }
-         ]
-       */
+      let chartDiv = document.getElementById('chartDiv');
+      let chartErr = document.getElementById('chartErr');
+      if (sensors.length === 0) {
+         chartDiv.style.display = 'none';
+         chartErr.innerText = 'No sensor selected';
+         return;
+      }
+      chartDiv.style.display = 'block';
+      chartErr.innerText = '';
+
+
+      let graphLines = [];
       let xAxisTimesToSensors = [];
       for (let i = 0; ; i++) {
          let nextDate = dateFrom.add(step * i, 'minutes');
          if (nextDate >= dateTo) break;
          xAxisTimesToSensors.push({
-            'date': nextDate,
-            'data': []
+            'datetime': nextDate,
+            'data': []  // will match graphLines length
          });
       }
 
-      // Make sure temp operations always come before relHum operations.
-      // They are done multiple times in different places.
-      // Perhaps this design can be improved.
       for (let sensor of sensors) {
          let sensorReadings = indexModel.sensorReadingsMap.find(x => x.key === sensor.id).value;
          let tempRangeAvg = (sensor.maxTemp + sensor.minTemp) / 2;
@@ -770,31 +760,14 @@ $errors = $model->errors;
 
          let low = 0;
          for (let i = 0; i < xAxisTimesToSensors.length - 1; i++) {
-            let sensorDataBetweenDates = {
-               'temp': null,
-               'relHum': null,
-            };
-            if (!sensor.sensorSettings.isTemp && !sensor.sensorSettings.isRelHum) {
-               // This is an optimization.
-               // This value should never be used, but it makes 2d array creation easier as the data is accessed by index.
-               xAxisTimesToSensors[i].data.push(sensorDataBetweenDates);
-               continue;
-            }
-
-            let before = xAxisTimesToSensors[i].date;
-            let after = xAxisTimesToSensors[i + 1].date;
-
-            let tmp = FilterSortedArrayValuesBetweenDates(sensorReadings, before, after, low);
-            let currentRows = tmp.result;
-            low = tmp.low;
-
             let doStrategy = function (strategy, arr, graphDefaultValue, sensorRangeAvg) {
                let getMedianValue = function (arr, graphDefaultValue) {
                   let valOrUndefined = arr[Math.floor(arr.length / 2)];
                   return valOrUndefined === undefined ? graphDefaultValue : valOrUndefined;
                }
                let getAverageValue = function (arr, graphDefaultValue) {
-                  return arr.length === 0 ? graphDefaultValue : arr.reduce((a, b) => a + b) / arr.length;
+                  // rounded to 1 decimal places
+                  return arr.length === 0 ? graphDefaultValue : Math.round(arr.reduce((a, b) => a + b) / arr.length * 10 + Number.EPSILON ) / 10;
                }
                let getDeviationValue = function (arr, graphDefaultValue, sensorRangeAvg) {
                   return arr.length === 0 ? graphDefaultValue :
@@ -810,84 +783,93 @@ $errors = $model->errors;
                   case 'deviation':
                      return getDeviationValue(arr, graphDefaultValue, sensorRangeAvg);
                   default:
-                     console.error('Unknown value!');
-                     return;
+                     throw Error("Unknown value!");
                }
             }
+            let before = xAxisTimesToSensors[i].datetime;
+            let after = xAxisTimesToSensors[i + 1].datetime;
+
+            let tmp = FilterSortedArrayValuesBetweenDates(sensorReadings, before, after, low);
+            let currentRows = tmp.result;
+            low = tmp.low;
 
             if (sensor.sensorSettings.isTemp) {
-               sensorDataBetweenDates.temp = doStrategy(strategy, currentRows.map(x => x.temp), graphDefaultValue, tempRangeAvg);
+               let tempValue = doStrategy(strategy, currentRows.map(x => x.temp), graphDefaultValue, tempRangeAvg);
+               xAxisTimesToSensors[i].data.push(tempValue);
+               if (i === 0) {
+                  graphLines.push({
+                     sensorName: encodeURI(sensor.name),
+                     unit: "℃",
+                     graphLineColor: sensor.sensorSettings.colorTemp,
+                     label: `${sensor.name} temperature (℃)`
+                  });
+               }
             }
             if (sensor.sensorSettings.isRelHum) {
-               sensorDataBetweenDates.relHum = doStrategy(strategy, currentRows.map(x => x.relHum), graphDefaultValue, humRangeAvg);
+               let relHumValue = doStrategy(strategy, currentRows.map(x => x.relHum), graphDefaultValue, humRangeAvg);
+               xAxisTimesToSensors[i].data.push(relHumValue);
+               if (i === 0) {
+                  graphLines.push({
+                     sensorName: encodeURI(sensor.name),
+                     unit: "%",
+                     graphLineColor: sensor.sensorSettings.colorRelHum,
+                     label: `${sensor.name} relative humidity (%)`
+                  });
+               }
             }
-
-            xAxisTimesToSensors[i].data.push(sensorDataBetweenDates);
          }
       }
       // We needed one extra date for data manipulation. The last data is empty
       xAxisTimesToSensors.pop();
 
       // add header columns
-      data.addColumn('string', 'date');
-      for (let sensor of sensors) {
-         if (sensor.sensorSettings.isTemp) {
-            data.addColumn('number', sensor.name + ' temperature (℃)');
-            data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
-         }
-         if (sensor.sensorSettings.isRelHum) {
-            data.addColumn('number', sensor.name + ' relative humidity (%)');
-            data.addColumn({type: 'string', role: 'tooltip', 'p': {'html': true}});
-         }
+      data.addColumn('date');  // This column is for the x axis, you can also use datetime.
+      for (let lineData of graphLines) {
+         data.addColumn('number', lineData.label);  // This column is the data, label is used in legend for each line
+         data.addColumn({ type: 'string', role: 'tooltip', p: { html: true } });  // This column is for HTML tooltips for hovering cursor over line
       }
 
       // add data columns
       let rows = [];
       for (let xAxisTime of xAxisTimesToSensors) {
          let row = [];
-         row.push(xAxisTime.date.add(step / 2, 'minutes').format('DD.MM'))
-         for (let y = 0; y < sensors.length; y++) {
-            let sensor = sensors[y];
-            const addTooltipFunc = function (valueAndSymbol) {
-               return `<div style="height: 50px; width: 14em">
-										<p><b>${xAxisTime.date.format('HH:mm, DD.MM.YYYY')}</b></p>
-               					<p style="margin-top: 6px">${encodeURI(sensor.name)}: <b>${valueAndSymbol}</b></p>
-               				</div>`;
-            };
-            let cell = xAxisTime.data[y];
-            if (sensor.sensorSettings.isTemp) {
-               row.push(cell.temp);
-               row.push(addTooltipFunc(cell.temp + '℃'));
-            }
-            if (sensor.sensorSettings.isRelHum) {
-               row.push(cell.relHum);
-               row.push(addTooltipFunc(cell.relHum + '%'));
-            }
+         row.push(xAxisTime.datetime.add(step / 2, 'minutes').toDate())
+         for (let i = 0; i < graphLines.length; i++) {
+            row.push(xAxisTime.data[i]);
+            row.push(
+               `<div class="p-2">
+                  <p>
+                     <b>${xAxisTime.datetime.format('HH:mm, DD-MM-YYYY')}</b>
+                  </p>
+                  <p style="white-space: nowrap;" class="mt-3">
+                     <i style="color: ${graphLines[i].graphLineColor}" class="bi bi-circle-fill"></i>
+                     ${graphLines[i].sensorName}:
+                     <b>${xAxisTime.data[i]} ${graphLines[i].unit}</b>
+                  </p>
+               </div>`
+            );
          }
          rows.push(row);
       }
       data.addRows(rows);
 
-      let colors = [];
-      for (let sensor of sensors) {
-         if (sensor.sensorSettings.isTemp) {
-            colors.push(sensor.sensorSettings.colorTemp);
-         }
-         if (sensor.sensorSettings.isRelHum) {
-            colors.push(sensor.sensorSettings.colorRelHum)
-         }
-      }
+      let colors = graphLines.map(graphLine => graphLine.graphLineColor);
 
       let options = {
-         title: dateFrom.format('DD-MM-YYYY HH:mm') + ' - ' + dateTo.format('DD-MM-YYYY HH:mm'),
+         title: `Sirowa sensor measurements`,
          fontSize: 13,
          vAxis: {
-            // is it possible to add a callback? I only found ticks, but they mess automatic zooming
-            // ticks: [{v:16, f:'banana'}, {v:18, f:'apple'}, {v:20, f:'mango'}, {v:22, f:'orange'}, {v:24, f:'apricot'}]
             title: 'Temperature (℃) and Relative Humidity (%)',
          },
+         hAxis: {
+            title: `Datetime (${dateFrom.format('DD-MM-YYYY, HH:mm')} - ${dateTo.format('DD-MM-YYYY, HH:mm')})`,
+            minorGridlines: { // will hide non month vertical gridlines
+               color: 'transparent'
+            },
+            format: "dd-MM"
+         },
          tooltip: {isHtml: true},
-         colors: colors,
+         colors: colors,  // hexadecimal color values for every line in order
          legend: {position: 'right'},
       };
       let chart = new google.visualization.LineChart(chartEle);
