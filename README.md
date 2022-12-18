@@ -19,7 +19,7 @@ Possible errors:
 
 ### Docker
 1. Follow 1. and 2. step from local install
-2. Run `docker-compose up -d` in root folder
+2. Run `docker-compose up -d` in `docker` directory
 3. Install dependencies `docker-compose exec tempsens-app composer install`
 4. Open in browser http://127.0.0.1:8000
 
