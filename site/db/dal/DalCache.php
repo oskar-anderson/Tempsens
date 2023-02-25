@@ -14,16 +14,16 @@ class DalCache extends AbstractDalBase
 {
    public static function  getLastSensorReadingType(): string { return "LastSensorReadings"; }
 
-   public function GetTableName(): string { return "Cache"; }
+   public function GetTableName(): string { return "cache"; }
 
    public function SqlCreateTableStmt(): string
    {
       // Key0 is just named like that to avoid using sql keywords, nothing to do with enumeration
-      $result = "create table " . $this->GetDatabaseNameDotTableName() .
+      $result = "CREATE TABLE " . $this->GetDatabaseNameDotTableName() .
          " ( " .
-         "Id VARCHAR(64) NOT NULL PRIMARY KEY, " .
-         "Key0 TEXT(64) NOT NULL, " .
-         "Content TEXT NOT NULL " .
+         Cache::IdColumnName . " VARCHAR(64) NOT NULL PRIMARY KEY, " .
+         Cache::TypeColumnName . " TEXT(64) NOT NULL, " .
+         Cache::ContentColumnName . " TEXT NOT NULL " .
          " ) DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_bin;";
       return $result;
    }
@@ -43,9 +43,9 @@ class DalCache extends AbstractDalBase
    protected function Insert(array $objects, PDO $pdo): void
    {
       $qry = "INSERT INTO " . $this->GetDatabaseNameDotTableName() . " ( " .
-         "Id, " .
-         "Key0, " .
-         "Content ) " .
+         Cache::IdColumnName . ", " .
+         Cache::TypeColumnName . ", " .
+         Cache::ContentColumnName . " ) " .
          " VALUES " . $this->getPlaceHolders(numberOfQuestionMarks: 3, numberOfRows: sizeof($objects)) . ";";
       $stmt = $pdo->prepare($qry);
       $params = [];
@@ -61,7 +61,7 @@ class DalCache extends AbstractDalBase
    public function Delete(string $id): void
    {
       $pdo = DbHelper::GetPDO();
-      $qry = "DELETE FROM " . $this->GetDatabaseNameDotTableName() . " WHERE Id = ?";
+      $qry = "DELETE FROM " . $this->GetDatabaseNameDotTableName() . " WHERE " . Cache::IdColumnName . " = ?;";
       $stmt = $pdo->prepare($qry);
       $stmt->execute([$id]);
    }
@@ -72,7 +72,7 @@ class DalCache extends AbstractDalBase
     */
    public function DeleteByKey(string $key, PDO $pdo): void
    {
-      $qry = "DELETE FROM " . $this->GetDatabaseNameDotTableName() . " WHERE Key0 = ?";
+      $qry = "DELETE FROM " . $this->GetDatabaseNameDotTableName() . " WHERE " . Cache::TypeColumnName . " = ?;";
       $stmt = $pdo->prepare($qry);
       $stmt->execute([$key]);
    }
@@ -107,10 +107,11 @@ class DalCache extends AbstractDalBase
     */
    public static function ReadSensorReadings(): array {
       // DB query
-      $qry = "SELECT Key0, Content " .
+      $qry = "SELECT " .
+         Cache::TypeColumnName . ", " .
+         Cache::ContentColumnName .
          " FROM " . (new DalCache())->GetDatabaseNameDotTableName() .
-         " WHERE Key0 = ? LIMIT 1" .
-         ";";
+         " WHERE " . Cache::TypeColumnName . " = ? LIMIT 1;";
       $pdo = DbHelper::GetPDO();
       $stmt = $pdo->prepare($qry);
       $stmt->execute([DalCache::getLastSensorReadingType()]);
@@ -122,25 +123,14 @@ class DalCache extends AbstractDalBase
 
       // Mapping
       $lastReadingBySensorIdAssocArr = SensorReading::NewArray();
-      if (DalCache::getLastSensorReadingType() === $dalCache['Key0']) {
+      $content = json_decode($dalCache[Cache::ContentColumnName], true);
+      foreach ($content as $key => $item) {
+         $sensorReading = $item === null ? null : (new \CuyZ\Valinor\MapperBuilder())
+            ->supportDateFormats("YmdHis")
+            ->mapper()
+            ->map(SensorReading::class, $item);
 
-         $content = json_decode($dalCache['Content'], true);
-         foreach ($content as $key => $item) {
-            if ($item === null) {
-               $lastReadingBySensorIdAssocArr[$key] = null;
-            } else {
-               // stupid PHP. Can you cast to SensorReadings directly, without?
-               $sensorReading = new SensorReading(
-                  $item["id"],
-                  $item["sensorId"],
-                  $item["temp"],
-                  $item["relHum"],
-                  DateTimeImmutable::createFromFormat('YmdHi', $item["dateRecorded"]),
-                  $item["dateAdded"] === null ? null : DateTimeImmutable::createFromFormat('YmdHi', $item["dateAdded"])
-               );
-               $lastReadingBySensorIdAssocArr[$key] = $sensorReading;
-            }
-         }
+         $lastReadingBySensorIdAssocArr[$key] = $sensorReading;
       }
       return $lastReadingBySensorIdAssocArr;
    }

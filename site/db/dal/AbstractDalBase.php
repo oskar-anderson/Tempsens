@@ -11,7 +11,6 @@ use PDOException;
 
 abstract class AbstractDalBase {
     /**
-     * Table names will be lowercase in DB
     *  @return string
     */
    public abstract function GetTableName(): string;

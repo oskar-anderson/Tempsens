@@ -29,6 +29,7 @@ Possible errors:
 ### Server side
 * [phpdotenv](https://github.com/vlucas/phpdotenv) - Loads environment variables from `.env` to `getenv()`, `$_ENV` and `$_SERVER` automagically.
 * [Slim](https://github.com/slimphp/Slim) - PHP micro framework that helps you quickly write simple yet powerful web applications and APIs.
+* [Valinor](https://github.com/CuyZ/Valinor) - hydrated JSON deserialization to class instance
 
 ### Client side
 * [Reset CSS](https://meyerweb.com/eric/tools/css/reset) - cross browser style inconsistency remover

@@ -15,27 +15,27 @@ class DalSensors extends AbstractDalBase
    /**
     *  @return string
     */
-   public function GetTableName(): string { return "Sensors"; }
+   public function GetTableName(): string { return "sensors"; }
 
    /**
     *  @return string
     */
     public function SqlCreateTableStmt(): string
     {
-        $result = "create table " . $this->GetDatabaseNameDotTableName() .
+        $result = "CREATE TABLE " . $this->GetDatabaseNameDotTableName() .
             " ( " .
-            "Id VARCHAR(64) NOT NULL PRIMARY KEY, " .
-            "Name VARCHAR(64) NOT NULL, " .
-            "Serial VARCHAR(64) NOT NULL, " .
-            "Model VARCHAR(64) NOT NULL, " .
-            "Ip VARCHAR(64) NOT NULL, " .
-            "Location VARCHAR(64) NOT NULL, " .
-            "IsPortable INTEGER NOT NULL, " .
-            "MinTemp DECIMAL(18,1) NOT NULL, " .
-            "MaxTemp DECIMAL(18,1) NOT NULL, " .
-            "MinRelHum DECIMAL(18,1) NOT NULL, " .
-            "MaxRelHum DECIMAL(18,1) NOT NULL, " .
-            "ReadingIntervalMinutes INTEGER NOT NULL " .
+            Sensor::IdColumnName . " VARCHAR(64) NOT NULL PRIMARY KEY, " .
+            Sensor::NameColumnName . " VARCHAR(64) NOT NULL, " .
+            Sensor::SerialColumnName . " VARCHAR(64) NOT NULL, " .
+            Sensor::ModelColumnName . " VARCHAR(64) NOT NULL, " .
+            Sensor::IpColumnName . " VARCHAR(64) NOT NULL, " .
+            Sensor::LocationColumnName . " VARCHAR(64) NOT NULL, " .
+            Sensor::IsPortableColumnName . " INTEGER NOT NULL, " .
+            Sensor::MinTempColumnName . " DECIMAL(18,1) NOT NULL, " .
+            Sensor::MaxTempColumnName . " DECIMAL(18,1) NOT NULL, " .
+            Sensor::MinRelHumColumnName . " DECIMAL(18,1) NOT NULL, " .
+            Sensor::MaxRelHumColumnName . " DECIMAL(18,1) NOT NULL, " .
+            Sensor::ReadingIntervalMinutesColumnName . " INTEGER NOT NULL " .
             " ) DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_bin;";
         return $result;
     }
@@ -44,18 +44,18 @@ class DalSensors extends AbstractDalBase
     *  @return Sensor[]
     */
    public function GetAll(): array {
-      $qry = "SELECT Id, " .
-                           "Name, " .
-                           "Serial, " .
-                           "Model, " .
-                           "Ip, " .
-                           "Location, " .
-                           "IsPortable, " .
-                           "MinTemp, " .
-                           "MaxTemp, " .
-                           "MinRelHum, " .
-                           "MaxRelHum, " .
-                           "ReadingIntervalMinutes " .
+      $qry = "SELECT " . Sensor::IdColumnName . ", ".
+                           Sensor::NameColumnName . ", " .
+                           Sensor::SerialColumnName . ", " .
+                           Sensor::ModelColumnName . ", " .
+                           Sensor::IpColumnName . ", " .
+                           Sensor::LocationColumnName . ", " .
+                           Sensor::IsPortableColumnName . ", " .
+                           Sensor::MinTempColumnName . ", " .
+                           Sensor::MaxTempColumnName . ", " .
+                           Sensor::MinRelHumColumnName . ", " .
+                           Sensor::MaxRelHumColumnName . ", " .
+                           Sensor::ReadingIntervalMinutesColumnName .
                            " FROM " . $this->GetDatabaseNameDotTableName() . ";";
       $pdo = DbHelper::GetPDO();
       $res = $pdo->query($qry);
@@ -72,18 +72,18 @@ class DalSensors extends AbstractDalBase
    public function Update($object): void {
       $pdo = DbHelper::GetPDO();
       $qry = "UPDATE " . $this->GetDatabaseNameDotTableName() . " SET " .
-         "Name = ?, " .
-         "Serial = ?, " .
-         "Model = ?, " .
-         "Ip = ?, " .
-         "Location = ?, " .
-         "IsPortable = ?, " .
-         "MinTemp = ?, " .
-         "MaxTemp = ?, " .
-         "MinRelHum = ?, " .
-         "MaxRelHum = ?, " .
-         "ReadingIntervalMinutes = ? " .
-         "WHERE Id = ?";
+         Sensor::NameColumnName . " = ?, " .
+         Sensor::SerialColumnName . " = ?, " .
+         Sensor::ModelColumnName . " = ?, " .
+         Sensor::IpColumnName . " = ?, " .
+         Sensor::LocationColumnName . " = ?, " .
+         Sensor::IsPortableColumnName . " = ?, " .
+         Sensor::MinTempColumnName . " = ?, " .
+         Sensor::MaxTempColumnName . " = ?, " .
+         Sensor::MinRelHumColumnName . " = ?, " .
+         Sensor::MaxRelHumColumnName . " = ?, " .
+         Sensor::ReadingIntervalMinutesColumnName . " = ? " .
+         "WHERE " . Sensor::IdColumnName . " = ?";
       $stmt = $pdo->prepare($qry);
       $stmt->execute([$object->name, $object->serial,
          $object->model, $object->ip, $object->location, intval($object->isPortable),
@@ -98,7 +98,7 @@ class DalSensors extends AbstractDalBase
       (new DalSensorReading())->DeleteWhereSensorId($id);
       $pdo = DbHelper::GetPDO();
 
-      $qry = "DELETE FROM " . $this->GetDatabaseNameDotTableName() . " WHERE Id = ?";
+      $qry = "DELETE FROM " . $this->GetDatabaseNameDotTableName() . " WHERE " . Sensor::IdColumnName . " = ?";
       $stmt = $pdo->prepare($qry);
       $stmt->execute([$id]);
    }
@@ -109,18 +109,18 @@ class DalSensors extends AbstractDalBase
     */
    protected function Insert($objects, PDO $pdo): void {
       $qry = "INSERT INTO " . $this->GetDatabaseNameDotTableName() . " ( " .
-         "Id, " .
-         "Name, " .
-         "Serial, " .
-         "Model, " .
-         "Ip, " .
-         "Location, " .
-         "IsPortable, " .
-         "MinTemp, " .
-         "MaxTemp, " .
-         "MinRelHum, " .
-         "MaxRelHum, " .
-         "ReadingIntervalMinutes ) " .
+         Sensor::IdColumnName . ", " .
+         Sensor::NameColumnName . ", " .
+         Sensor::SerialColumnName . ", " .
+         Sensor::ModelColumnName . ", " .
+         Sensor::IpColumnName . ", " .
+         Sensor::LocationColumnName . ", " .
+         Sensor::IsPortableColumnName . ", " .
+         Sensor::MinTempColumnName . ", " .
+         Sensor::MaxTempColumnName . ", " .
+         Sensor::MinRelHumColumnName . ", " .
+         Sensor::MaxRelHumColumnName . ", " .
+         Sensor::ReadingIntervalMinutesColumnName . " ) " .
          " VALUES " . $this->getPlaceHolders(numberOfQuestionMarks: 12, numberOfRows: sizeof($objects)) . ";";
       $stmt = $pdo->prepare($qry);
       $params = [];
@@ -141,18 +141,18 @@ class DalSensors extends AbstractDalBase
    public function Map(array $value): Sensor
    {
       return new Sensor(
-         $value['Id'],
-         $value['Name'],
-         $value['Serial'],
-         $value['Model'],
-         $value['Ip'],
-         $value['Location'],
-         boolval($value['IsPortable']),
-         floatval($value['MinTemp']),
-         floatval($value['MaxTemp']),
-         floatval($value['MinRelHum']),
-         floatval($value['MaxRelHum']),
-         intval($value['ReadingIntervalMinutes'])
+         $value[Sensor::IdColumnName],
+         $value[Sensor::NameColumnName],
+         $value[Sensor::SerialColumnName],
+         $value[Sensor::ModelColumnName],
+         $value[Sensor::IpColumnName],
+         $value[Sensor::LocationColumnName],
+         boolval($value[Sensor::IsPortableColumnName]),
+         floatval($value[Sensor::MinTempColumnName]),
+         floatval($value[Sensor::MaxTempColumnName]),
+         floatval($value[Sensor::MinRelHumColumnName]),
+         floatval($value[Sensor::MaxRelHumColumnName]),
+         intval($value[Sensor::ReadingIntervalMinutesColumnName])
       );
    }
 }

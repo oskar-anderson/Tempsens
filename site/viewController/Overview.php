@@ -51,11 +51,11 @@ class Overview {
          $dateRecorded = 'NO DATA';
          $col = 'red';
          if ($lastReading !== null) {
-            $lastDate = $lastReading->getDateRecordedAsDateTime()->format('d/m/Y H:i');
-            $minutesDiff = (
+            $lastDate = $lastReading->getDateRecordedAsDateTime()->format('d/m/Y H:i:s');
+            $minutesDiff = floor((
                Helper::GetDateNowAsDateTime()->getTimestamp() -
                $lastReading->getDateRecordedAsDateTime()->getTimestamp()
-            ) / 60;
+            ) / 60);
             if ($sensor->readingIntervalMinutes - $minutesDiff < 0 && !$sensor->isPortable) {
                $dateRecorded = 'DOWN @' . $lastDate . ' (' . $minutesDiff . ' min ago)';
                $col = 'red';
@@ -344,7 +344,7 @@ class Overview {
          }
 
          $date = $row->date;
-         $dateDateTime = DateTimeImmutable::createFromFormat('d-m-Y H:i', $date);
+         $dateDateTime = DateTimeImmutable::createFromFormat('d-m-Y H:i:s', $date);
          if ($dateDateTime === false) {
             array_push($this->errors, 'Error! Date cannot be read! Date: ' . $date);
             return false;
@@ -372,7 +372,7 @@ class Overview {
 
       if (sizeof($duplicateDateTimes) !== 0) {
          $duplicateDateStrings = array_map(
-            fn($duplicateDateTime) => $duplicateDateTime->getDateRecordedAsDateTime()->format('d/m/Y H:i'),
+            fn($duplicateDateTime) => $duplicateDateTime->getDateRecordedAsDateTime()->format('d/m/Y H:i:s'),
             $duplicateDateTimes);
          array_push($this->errors, 'Duplicate entry dates: ' . join(', ', $duplicateDateStrings));
          return false;

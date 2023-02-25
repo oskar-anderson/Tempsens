@@ -20,11 +20,9 @@ class Helper
    }
 
    public static function GetPhpInfo(): string {
-      ob_start();
-      phpinfo();
-      $phpinfoContent = ob_get_contents();
-      ob_clean();
-      return $phpinfoContent;
+      return Helper::GetOutputBufferContent(function() {
+         phpinfo();
+      });
    }
 
    /**
@@ -45,11 +43,19 @@ class Helper
    }
 
 
-   /** @noinspection PhpUnusedParameterInspection */
+
    public static function Render($fileName, $model): string
    {
+      return Helper::GetOutputBufferContent(function() use ($fileName, $model) {
+         require($fileName);
+      });
+   }
+
+
+   public static function GetOutputBufferContent(callable $contentCallback): string
+   {
       ob_start();
-      require($fileName);
+      $contentCallback();
       $content = ob_get_contents();
       ob_clean();
       return $content;

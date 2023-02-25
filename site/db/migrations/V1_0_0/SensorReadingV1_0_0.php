@@ -19,8 +19,8 @@ class SensorReadingV1_0_0 {
 
    public function MapToModel(): SensorReading
    {
-      $dateRecordedImmutable = DateTimeImmutable::createFromFormat("YmdHi", $this->dateRecorded);
-      $dateAddedImmutableOrNull = $this->dateAdded === null ? null : DateTimeImmutable::createFromFormat("YmdHi", $this->dateAdded);
+      $dateRecordedImmutable = DateTimeImmutable::createFromFormat("YmdHis", $this->dateRecorded);
+      $dateAddedImmutableOrNull = $this->dateAdded === null ? null : DateTimeImmutable::createFromFormat("YmdHis", $this->dateAdded);
       return new SensorReading(
          $this->id,
          $this->sensorId,

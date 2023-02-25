@@ -4,8 +4,8 @@ namespace App\viewController;
 
 require_once(__DIR__."/../../vendor/autoload.php");
 
+use App\db\dal\DalCache;
 use App\db\dal\DalSensorReading;
-use App\db\dal\DalSensorReadingTmp;
 use App\db\dal\DalSensors;
 use App\db\DbHelper;
 use App\model\SensorReading;
@@ -24,31 +24,12 @@ class Debug
       // It does not seem to actually measure performance well - the performance of the same db query can take 9sec or 27sec
       // Also every other page refresh fails:
       // Fatal error: Uncaught PDOException: SQLSTATE[HY000]: General error: 2006 MySQL server has gone away
+      DalCache::ReadSensorReadings();
 
-      $from = '202006010000';
-      $to = '202012010000';
+      $from = '20200601000000';
+      $to = '20201201000000';
       $iterations = 1;
 
-
-      /*
-      Debug::measurePerformance(function () use($from, $to) {
-         (new DalSensorReadingTmp())->GetAllBetweenTest3($from, $to);
-      }, "GetAllBetweenTest3", $this->debugs, 2);
-      */
-      Debug::measurePerformance(function () use($from, $to) {
-         (new DalSensorReadingTmp())->GetAllBetweenTest4($from, $to);
-      }, "GetAllBetweenTest4", $this->debugs, $iterations);
-
-
-
-      Debug::measurePerformance(function () use($from, $to) {
-         $pdo = DbHelper::GetPdo();
-         $qry = 'SELECT Id, SensorId, Temp, RelHum, DateRecorded, DateAdded
-        FROM railway.SensorReading
-        WHERE DateRecorded >= ? AND DateRecorded <= ? ORDER BY DateRecorded ASC';
-         $stmt = $pdo->prepare($qry);
-         $stmt->execute([$from, $to]);
-      }, "SelectAllBetween", $this->debugs, 1);
 
       $body = join("<br>", $this->debugs);
       $response->getBody()->write($body);

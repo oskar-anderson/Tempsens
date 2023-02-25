@@ -9,8 +9,13 @@ use App\dto\AbstractValidModel;
 class Cache extends AbstractValidModel
 {
    // access only through getters
+   const IdColumnName = 'id';
    private ?string $id = null;
+
+   const TypeColumnName = 'typee'; // type is reserved MySQL keyword
    private ?string $type = null;
+
+   const ContentColumnName = 'content';
    private ?string $content = null;
 
    public function __construct(bool $isIdReq, bool $isTypeReq, bool $isContentReq)
@@ -29,7 +34,7 @@ class Cache extends AbstractValidModel
 
    public function setType(string $type): static { $this->isValidCache = false; $this->type = $type; return $this; }
 
-   public function setContent(mixed $content): static { $this->isValidCache = false; $this->content = json_encode($content); return $this;}
+   public function setContent(mixed $content): static { $this->isValidCache = false; $this->content = json_encode($content, JSON_PRESERVE_ZERO_FRACTION); return $this;}    // JSON_PRESERVE_ZERO_FRACTION is needed to keep floats from turning to ints
 
    public function getId(): string { $this->dieWhenInvalid(); return $this->id; }
 

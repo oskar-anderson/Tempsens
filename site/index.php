@@ -60,22 +60,17 @@ $app->post('/api/physical-sensor/insert-reading', function (Request $request, Re
    $xml_string = $request->getBody()->getContents();
    $xmlStringParsable = str_replace('soap:', '', $xml_string);    // https://stackoverflow.com/questions/4194489/how-to-parse-soap-xml
    $requestDataObject = @simplexml_load_string($xmlStringParsable); // add @ before function call to prevent warning message from being added to response
+   if (! $requestDataObject) {
+      $response->getBody()->write("Failed to parse XML: {
+         xml_string: $xml_string,
+         xmlStringParsable: $xmlStringParsable
+      }");
+      return $response;
+   }
    $serial = (string) $requestDataObject->Body->InsertTx5xxSample->passKey;
    $temp = (float) $requestDataObject->Body->InsertTx5xxSample->temp;
    $relHum = (float) $requestDataObject->Body->InsertTx5xxSample->relHum;
 
-   if (! $requestDataObject) {
-      $requestDataObject = json_encode($requestDataObject);
-      $response->getBody()->write("Failed to parse XML: {
-         xml_string: $xml_string,
-         xmlStringParsable: $xmlStringParsable,
-         requestDataObject: $requestDataObject,
-         serial: $serial,
-         temp: $temp,
-         relHum: $relHum,
-      }");
-      return $response;
-   }
    $id = SensorApi::Save($serial, $temp, $relHum);
    $response->getBody()->write($id);
    return $response;

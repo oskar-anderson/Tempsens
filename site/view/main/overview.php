@@ -345,7 +345,7 @@ $errors = $model->errors;
                               foreach ($arr as $j => $item) { ?>
                                  <tr>
                                     <td><?php echo $j + 1 ?></td>
-                                    <td><?php echo $item->beforeDate->format("d/m/Y H:i") ?></td>
+                                    <td><?php echo $item->beforeDate->format("d/m/Y H:i:s") ?></td>
                                     <td><?php echo $item->duration ?></td>
                                     <td><?php echo $item->count ?></td>
                                     <td <?php echo $item->temp < $sensor->minTemp || $item->temp > $sensor->maxTemp ?
@@ -690,16 +690,11 @@ $errors = $model->errors;
             }
             switch (header) {
                case 'date':
-                  // format from sensor
                   let date = dayjs(value, 'DD/MM/YYYY HH:mm:ss');
                   if (!date.isValid()) {
-                     // format from page export
-                     date = dayjs(value, 'DD/MM/YYYY HH:mm');
+                     throw `Row: ${nRowNumber}, Invalid date format! Must be DD/MM/YYYY HH:mm:ss!`
                   }
-                  if (!date.isValid()) {
-                     throw `Row: ${nRowNumber}, Invalid date format! Must be DD/MM/YYYY HH:mm:ss or DD/MM/YYYY HH:mm!`
-                  }
-                  obj[header] = date.format('DD-MM-YYYY HH:mm')
+                  obj[header] = date.format('DD-MM-YYYY HH:mm:ss')
                   break;
                case 'relHum':
                case 'temp':
@@ -997,7 +992,7 @@ $errors = $model->errors;
       let data = [];
       data.push(['Timestamp', 'Temperature (*C)', 'Relative Humidity (%)'])
       for (let sensorReading of sensorReadings) {
-         let row = [sensorReading.date.format("DD/MM/YYYY HH:mm"), sensorReading.temp, sensorReading.relHum];
+         let row = [sensorReading.date.format("DD/MM/YYYY HH:mm:ss"), sensorReading.temp, sensorReading.relHum];
          data.push(row)
       }
       let eol = getEOL();
@@ -1030,8 +1025,8 @@ $errors = $model->errors;
 
 
    class IndexModel {
-      dateTo = dayjs('<?php echo $dateTo . ', 23:59' ?>', 'DD-MM-YYYY, HH:mm');
-      dateFrom = dayjs('<?php echo $dateFrom . ', 00:00' ?>', 'DD-MM-YYYY, HH:mm');
+      dateTo = dayjs('<?php echo $dateTo . ', 23:59:59' ?>', 'DD-MM-YYYY, HH:mm:ss');
+      dateFrom = dayjs('<?php echo $dateFrom . ', 00:00:00' ?>', 'DD-MM-YYYY, HH:mm:ss');
       sensorReadingsMap = [];
       sensorsWithoutSettings = [];
 
@@ -1043,7 +1038,7 @@ $errors = $model->errors;
             let newSensorReadings = [];
             for (let sensorReading of sensorReadings) {
                newSensorReadings.push(new SensorReading(
-                  dayjs(sensorReading.date, 'YYYYMMDDHHmm'),
+                  dayjs(sensorReading.date, 'YYYYMMDDHHmmss'),
                   parseFloat(sensorReading.temp),
                   parseFloat(sensorReading.relHum)));
             }

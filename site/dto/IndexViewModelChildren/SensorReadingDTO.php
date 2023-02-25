@@ -48,7 +48,7 @@ class SensorReadingDTO extends AbstractValidModel
       $this->dieWhenInvalid();
 
       return [
-         "date" => $this->getDate()->format("YmdHi"),
+         "date" => $this->getDate()->format("YmdHis"),
          "temp" => $this->getTemp(),
          "relHum" => $this->getRelHum()
       ];

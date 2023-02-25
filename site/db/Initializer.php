@@ -7,7 +7,6 @@ require_once(__DIR__."/../../vendor/autoload.php");
 
 use App\db\dal\DalCache;
 use App\db\dal\DalSensorReading;
-use App\db\dal\DalSensorReadingTmp;
 use App\db\dal\DalSensors;
 use App\db\migrations\V0_3_4\SensorReadingV0_3_4;
 use App\db\migrations\V0_3_4\SensorV0_3_4;
@@ -16,7 +15,6 @@ use App\db\migrations\V1_0_0\SensorReadingV1_0_0;
 use App\model\Cache;
 use App\model\Sensor;
 use App\model\SensorReading;
-use App\model\SensorReadingTmp;
 use App\util\Base64;
 use App\util\Config;
 use App\Util\Console;
@@ -91,7 +89,6 @@ class Initializer
 
       $file = fopen(__DIR__ . "/backupCSV/202104201605-V0_3_4/sensor-readings.csv","r");
       $sensorReadings = SensorReading::NewArray();
-      $debugSensorReadings = SensorReadingTmp::NewArray();
       for($i = 0; $line = fgetcsv($file, separator: ";"); $i++)
       {
          // var_dump($line);
@@ -109,7 +106,7 @@ class Initializer
          $tempU = (string) $line[9];
          $pressureU = (string) $line[10];
          $timer = intval($line[11]);
-         $dactdate = (string) $line[12];
+         $dactdate = (string) $line[12] . "00";
          $sensorReadingV0_3_4 = new SensorReadingV0_3_4(
             $id,
             $passKey,
@@ -128,12 +125,6 @@ class Initializer
          $sensor = Sensor::GetSensorBySerial($sensors, $passKey);
          $sensorReadingV1_0_0 = $sensorReadingV0_3_4->GetUp($sensor->id, $sensor->isPortable)->MapToModel();
          array_push($sensorReadings, $sensorReadingV1_0_0);
-         $sensorReadingTmp = new SensorReadingTmp(
-            $sensorReadingV1_0_0->id, $sensorReadingV1_0_0->sensorId, $sensorReadingV1_0_0->relHum,
-            $sensorReadingV1_0_0->temp, $sensorReadingV1_0_0->dateRecorded, $sensorReadingV1_0_0->dateAdded,
-            $sensorReadingV1_0_0->id, $sensorReadingV1_0_0->sensorId, $sensorReadingV1_0_0->dateRecorded
-         );
-         array_push($debugSensorReadings, $sensorReadingTmp);
       }
       fclose($file);
 
@@ -156,9 +147,6 @@ class Initializer
       (new DalCache())->InsertByChunk($cache, $pdo);
 
       $console->WriteLine('Committing transactions ...');
-      // $console->WriteLine('Transaction adding debug tables... ');
-      // $console->WriteLine('Transaction adding table sensorReadingsTmp: ' . sizeof($debugSensorReadings));
-      //(new DalSensorReadingTmp())->InsertByChunk($debugSensorReadings, $pdo);
       $pdo->commit();
 
       (new DalSensorReading())->ResetCache();
