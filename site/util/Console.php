@@ -29,14 +29,4 @@ class Console
         echo ($this->withDate && $value !== "" ? ((Helper::GetDateNowAsDateTime())->format("H:i:s:u") . " ") : "") .
            $value . $this->newline;
     }
-
-   public static function DebugToConsole(mixed $data, bool $withScriptTag): string
-   {
-      // Buffering to solve problems frameworks, like header() in this and not a solid return.
-      // ob_start();
-
-      $output = 'console.log(' . json_encode($data) . ');';
-      $output = $withScriptTag? '<script type=text/javascript>' . $output . '</script>' : $output;
-      return $output;
-   }
 }

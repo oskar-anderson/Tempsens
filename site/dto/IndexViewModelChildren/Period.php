@@ -8,22 +8,24 @@ class Period
 {
   public string $name;
   public int $value;
+  public bool $isSelected;
 
-  function __construct(string $name, int $value)
+  function __construct(string $name, int $value, bool $isSelected)
   {
     $this->name = $name;
     $this->value = $value;
+    $this->isSelected = $isSelected;
   }
 
    static function GetPeriods() : array {
       $periods = [
-         new Period('1 day', 1),
-         new Period('2 weeks', 14),
-         new Period('1 month', 30),
-         new Period('3 months', 91),
-         new Period('6 months', 183),
-         new Period('1 year', 365),
-         new Period('10 years', 3650)
+         new Period('1 day', 1, false),
+         new Period('2 weeks', 14, false),
+         new Period('1 month', 30, false),
+         new Period('3 months', 91, false),
+         new Period('6 months', 183, false),
+         new Period('1 year', 365, false),
+         new Period('10 years', 3650, false)
       ];
       return $periods;
    }
@@ -31,7 +33,7 @@ class Period
    /**
     * @param DateTimeImmutable $dateTo
     * @param DateTimeImmutable $dateFrom
-    * @return string[]
+    * @return Period[]
     */
    static function GetPeriodOptions(DateTimeImmutable $dateTo, DateTimeImmutable $dateFrom): array {
       $index = Period::IntArrGetClosest(
@@ -42,14 +44,8 @@ class Period
          )
       );
       $periods = Period::GetPeriods();
-      return array_map(
-         function($i) use ($periods, $index) {
-            $value = $periods[$i]->value;
-            $name = $periods[$i]->name;
-            $selected = $index === $i ? "selected" : "";
-            return "<option value='$value' $selected>-$name</option>";
-         },
-         array_keys($periods));
+      $periods[$index]->isSelected = true;
+      return $periods;
    }
 
    static function IntArrGetClosest(int $needle, array $arr) : int|null {

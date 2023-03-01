@@ -27,8 +27,6 @@ class IndexViewModel
    public array $colors;
    /* @var Period[] $periods */
    public array $periods;
-   /* @var string[] $errors */
-   public array $errors;
 
    function __construct()
    {
@@ -61,9 +59,9 @@ class IndexViewModel
       $this->input = $input;
       return $this;
    }
-   /* @param string[] $errors */
-   function SetErrors(array $errors): IndexViewModel {
-      $this->errors = $errors;
+   /* @param Period[] $periods */
+   function SetPeriods(array $periods): IndexViewModel {
+      $this->periods = $periods;
       return $this;
    }
    function SetDefault(): IndexViewModel {

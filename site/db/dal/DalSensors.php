@@ -4,6 +4,7 @@ namespace App\db\dal;
 
 require_once(__DIR__."/../../../vendor/autoload.php");
 
+use App\frontendDto\Sensor\Sensor_v1;
 use App\model\Sensor;
 use App\db\DbHelper;
 use JetBrains\PhpStorm\Pure;
@@ -64,6 +65,35 @@ class DalSensors extends AbstractDalBase
          array_push($result, $this->Map($value));
       }
       return $result;
+   }
+
+   /**
+    *  @return Sensor|null
+    */
+   public function GetFirstOrDefault(string $id): Sensor|null {
+      $qry = "SELECT " . Sensor::IdColumnName . ", ".
+         Sensor::NameColumnName . ", " .
+         Sensor::SerialColumnName . ", " .
+         Sensor::ModelColumnName . ", " .
+         Sensor::IpColumnName . ", " .
+         Sensor::LocationColumnName . ", " .
+         Sensor::IsPortableColumnName . ", " .
+         Sensor::MinTempColumnName . ", " .
+         Sensor::MaxTempColumnName . ", " .
+         Sensor::MinRelHumColumnName . ", " .
+         Sensor::MaxRelHumColumnName . ", " .
+         Sensor::ReadingIntervalMinutesColumnName .
+         " FROM " . $this->GetDatabaseNameDotTableName() .
+         " WHERE " .Sensor::IdColumnName . " = ? " .
+         " LIMIT 1;";
+      $pdo = DbHelper::GetPDO();
+      $stmt = $pdo->prepare($qry);
+      $stmt->execute([$id]);
+      $value = $stmt->fetch();
+      if (!$value) {
+         return null;
+      }
+      return $this->Map($value);
    }
 
    /**

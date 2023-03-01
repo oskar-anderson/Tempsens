@@ -65,10 +65,7 @@ class DalSensorReading extends AbstractDalBase
          // Do a DB query to get the sensors last reading
          $lastReading = (new DalSensorReading())->GetLastSensorReading($sensor->id);
          $lastReadings[$sensor->id] = $lastReading;
-         $isDirty = true;
       }
-      // update cache if any data came from the DB
-
       return $lastReadings;
    }
 

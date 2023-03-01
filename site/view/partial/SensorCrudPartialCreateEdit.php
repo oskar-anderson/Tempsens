@@ -6,6 +6,7 @@ namespace App\view\partial;
 require_once(__DIR__."/../../../vendor/autoload.php");
 
 use App\model\Sensor;
+use App\util\Base64;
 
 class SensorCrudPartialCreateEdit
 {
@@ -14,57 +15,57 @@ class SensorCrudPartialCreateEdit
       $format = <<<EOT
          <div style="display: none">
             <span>Id</span>
-            <input autocomplete="off" name="id" id="idOf%s" type="text" value="%s">
+            <input autocomplete="off" required="required" name="id" id="idOf%s" type="text" value="%s">
          </div>
          <div class="twoByTwo">
             <span>Name</span>
-            <input autocomplete="off" name="name" id="nameOf%s" type="text" value="%s">
+            <input autocomplete="off" required="required" maxlength="64" name="name" id="nameOf%s" type="text" value="%s">
          </div>
          <div class="twoByTwo">
             <span>Serial</span>
-            <input autocomplete="off" name="serial" id="serialOf%s" type="text" value="%s">
+            <input autocomplete="off" required="required" maxlength="64" name="serial" id="serialOf%s" type="text" value="%s">
          </div>
          <div class="twoByTwo">
             <span>Model</span>
-            <input autocomplete="off" name="model" id="modelOf%s" type="text" value="%s">
+            <input autocomplete="off" required="required" maxlength="64" name="model" id="modelOf%s" type="text" value="%s">
          </div>
          <div class="twoByTwo">
             <span>IP</span>
-            <input autocomplete="off" name="ip" id="ipOf%s" type="text" value="%s">
+            <input autocomplete="off" required="required" maxlength="64" name="ip" id="ipOf%s" type="text" value="%s">
          </div>
          <div class="twoByTwo">
             <span>Location</span>
-            <input autocomplete="off" name="location" id="locationOf%s" type="text" value="%s">
+            <input autocomplete="off" required="required" maxlength="64" name="location" id="locationOf%s" type="text" value="%s">
          </div>
          <div class="twoByTwo">
-            <span>IsPortable</span>
-            <input autocomplete="off" name="isPortable" id="isPortableOf%s" type="checkbox" %s value="%s">
+            <span>Is Portable</span>
+            <input autocomplete="off" required="required" name="isPortable" id="isPortableOf%s" type="checkbox" %s value="%s">
          </div>
          <div class="twoByTwo">
             <span>Min Temp</span>
-            <input autocomplete="off" name="minTemp" id="minTempOf%s" type="number" value="%s">
+            <input autocomplete="off" required="required" name="minTemp" id="minTempOf%s" type="number" value="%s">
          </div>
          <div class="twoByTwo">
             <span>Max Temp</span>
-            <input autocomplete="off" name="maxTemp" id="maxTempOf%s" type="number" value="%s">
+            <input autocomplete="off" required="required" name="maxTemp" id="maxTempOf%s" type="number" value="%s">
          </div>
          <div class="twoByTwo">
             <span>Min Relative Humidity</span>
-            <input autocomplete="off" name="minRelHum" id="minRelHumOf%s" type="number" value="%s">
+            <input autocomplete="off" required="required" name="minRelHum" id="minRelHumOf%s" type="number" value="%s">
          </div>
          <div class="twoByTwo">
             <span>Max Relative Humidity</span>
-            <input autocomplete="off" name="maxRelHum" id="maxRelHumOf%s" type="number" value="%s">
+            <input autocomplete="off" required="required" name="maxRelHum" id="maxRelHumOf%s" type="number" value="%s">
          </div>
          <div class="twoByTwo">
             <span>Reading Interval Minutes</span>
-            <input autocomplete="off" name="readingIntervalMinutes" id="readingIntervalMinutesOf%s" type="number" value="%s">
+            <input autocomplete="off" required="required" name="readingIntervalMinutes" id="readingIntervalMinutesOf%s" type="number" value="%s">
          </div>
       EOT;
 
 
       $idAppend = 'newSensor';
-      $id = '';
+      $id = Base64::GenerateId();
       $name = '';
       $serial = '';
       $model = '';

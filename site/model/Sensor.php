@@ -41,8 +41,8 @@ class Sensor
    public int $readingIntervalMinutes;
 
 
-   function __construct($id, $name, $serial, $model, $ip, $location, $isPortable,
-                        $minTemp, $maxTemp, $minRelHum, $maxRelHum, $readingIntervalMinutes)
+   function __construct(string $id, string $name, string $serial, string $model, string $ip, string $location, bool $isPortable,
+                        int $minTemp, int $maxTemp, int $minRelHum, int $maxRelHum, int $readingIntervalMinutes)
    {
     $this->id = $id;
     $this->name = $name;
@@ -66,21 +66,5 @@ class Sensor
    {
       return [];
    }
-
-	/**
-	 * @param Sensor[] $sensors
-	 * @param string $serial
-	 * @return Sensor
-	 */
-	public static function GetSensorBySerial(array $sensors, string $serial): Sensor
-	{
-		$arr = array_values(array_filter($sensors,
-			function ($obj) use ($serial) {
-				return $obj->serial === $serial;
-			}));
-		if (sizeof($arr) === 0) die('Sensor with serial:' . $serial . ' does not exist!');
-		if (sizeof($arr) > 1) die('Multiple sensors with serial:' . $serial);
-		return $arr[0];
-	}
 }
 

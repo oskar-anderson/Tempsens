@@ -6,38 +6,6 @@ namespace App\util;
 
 class InputValidation
 {
-
-   public static function StringInputValidation(array &$errorMessages, string $input, int $maxLength, $name)
-   {
-      $badChars = str_split(''); // '><|"\'\\/?:*\`'
-      $isBadChars = sizeof(array_intersect(str_split($input), $badChars)) !== 0;
-      $isEmpty = $input === '';
-      $isTooBig = strlen($input) >= $maxLength;
-      $tmp = [];
-      if ($isBadChars) {
-         array_push($tmp, 'Cannot contain special characters (' . htmlspecialchars(implode($badChars)) . '). ');
-      }
-      if ($isEmpty) {
-         array_push($tmp, 'No value. ');
-      }
-      if ($isTooBig) {
-         array_push($tmp, 'Length must be less than ' . $maxLength . '.');
-      }
-      if ($isBadChars || $isEmpty || $isTooBig) {
-         array_push($errorMessages, $name . ' is not valid! ' . implode('', $tmp));
-      }
-   }
-
-   public static function FloatInputValidation(array &$errorMessages, string $input, $name): void
-   {
-      $isEmpty = $input === '';
-      $isNumeric = is_numeric($input);
-      $tmp = [];
-      if ($isEmpty) array_push($tmp, 'No value. ');
-      if (!$isNumeric) array_push($tmp, 'Must be a number. ');
-      if ($isEmpty || !$isNumeric) array_push($errorMessages, $name . ' is not valid! ' . implode('', $tmp));
-   }
-
    public static function isDateFormat__d_m_Y(string $input): bool
    {
       $dmY = explode("-", $input);

@@ -10,15 +10,13 @@ use App\view\partial\SensorCrudPartialCreateEdit;
 $dateFromType = $model->input->dateFromType;
 $dateFrom = $model->input->dateFrom;
 $dateTo = $model->input->dateTo;
-$sensorCrud = $model->input->sensorCrud;
-$selectOptionsRelativeDateFrom = $model->input->selectOptionsRelativeDateFrom;
+$periods = $model->periods;
 
 $sensors = $model->sensors;
 $lastReadingsView = $model->lastReadingsView;
 $sensorReadingOutOfBounds = $model->sensorAlertsMinMax;
 $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
 $colors = $model->colors;
-$errors = $model->errors;
 
 ?>
 
@@ -77,12 +75,13 @@ $errors = $model->errors;
    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dayjs@1.10.4/plugin/customParseFormat.js"></script>
 
 </head>
-<body style="min-height: 100vh; min-width: 900px; display: none;" class="root">
+<body style="min-height: 100vh; min-width: 900px;">
 <div style="display: grid; grid-template-rows: 1fr auto;">
 
 <div>
    <div>
-      {% if errors.length !== 0 %}
+      <div class="templating-root m-2" style="display: none">
+         {% if errors.length !== 0 %}
          <div class="alert alert-danger alert-dismissible fade show" style="margin-bottom: 2em" role="alert">
             <h4>Errors: </h4>
             <ol>
@@ -93,7 +92,8 @@ $errors = $model->errors;
             <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span>&times;</span>
             </button>
          </div>
-      {% endif %}
+         {% endif %}
+      </div>
 
       <div class="🎯">
 
@@ -124,11 +124,10 @@ $errors = $model->errors;
                         <select name="relativeDateFrom" id="relativeDateFrom" class="active"
                            <?= $dateFromType !== 'relative' ? 'disabled' : ''; ?>
                         >
-                           <?php
-                           foreach ($selectOptionsRelativeDateFrom as $item) {
-                              echo $item;
-                           }
-                           ?>
+                           <?php foreach ($periods as $item) { ?>
+                              <option value='<?= $item->value ?>' <?= $item->isSelected ? "selected" : '' ?>>-<?= $item->name ?></option>
+                           <?php } ?>
+
                         </select>
                      </span>
                   </label>
@@ -200,27 +199,20 @@ $errors = $model->errors;
 
 
             <div style="margin-bottom: 1em; background: var(--light_grey_02);">
-               <div
-                  style="display: grid; grid-auto-rows: auto; grid-template-columns: 30px 10em; width: min-content;"
-                  class="collapse-and-change-icon" data-toggle="collapse" data-target="#collapseSensorCreate"
-                  aria-expanded="false">
+               <div style="display: grid; grid-auto-rows: auto; grid-template-columns: 30px 10em; width: min-content;" class="collapse-and-change-icon" data-toggle="collapse" data-target="#collapseSensorCreate" aria-expanded="false">
                   <div style="padding-left: 4px" type="button">
                      <i class="bi bi-caret-right"></i>
                   </div>
                   <div>Create new sensor</div>
                </div>
-               <form action="" method="post" autocomplete="off"
-                     style="padding: 0.4em 30px 0.4em 30px; margin-top: 1.2em" class="collapse"
-                     id="collapseSensorCreate">
-                  <div
-                     style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 0.4em 3em; padding-bottom: 0.8em">
-                     <?= SensorCrudPartialCreateEdit::GetHtml($sensorCrud->createBadValues->sensor ?? null) ?>
+               <form action="" autocomplete="off" style="padding: 0.4em 30px 0.4em 30px; margin-top: 1.2em" class="collapse" id="collapseSensorCreate">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 0.4em 3em; padding-bottom: 0.8em">
+                     <?= SensorCrudPartialCreateEdit::GetHtml(null) ?>
                   </div>
                   <div>
                      <span>Auth</span>
-                     <input type="password" name="auth"
-                            value="<?= htmlspecialchars($sensorCrud->createBadValues->auth ?? ''); ?>">
-                     <button class="button" type="submit" name="formType" value="create">Create</button>
+                     <input type="password" name="auth" value="">
+                     <button id="collapseSensorCreateSubmitBtn" class="button" type="button">Create</button>
                   </div>
                </form>
             </div>
@@ -328,13 +320,11 @@ $errors = $model->errors;
                      <div style="margin-bottom: 1.4em">
                         <p>Number of alerts: <?php echo sizeof($sensorReadingOutOfBounds[$sensor->id]); ?></p>
                         <?php if (sizeof($sensorReadingOutOfBounds[$sensor->id]) !== 0) { ?>
-                           <table style="background: var(--light_grey_03)">
+                           <table>
                               <thead>
                               <tr>
-                                 <th>#</th>
                                  <th>Timestamp</th>
                                  <th>Duration (min)</th>
-                                 <th>Readings count</th>
                                  <th>Deviation Temp (℃)</th>
                                  <th>Deviation Hum (%)</th>
                               </tr>
@@ -343,18 +333,16 @@ $errors = $model->errors;
                               <?php
                               $arr = $sensorReadingOutOfBounds[$sensor->id];
                               foreach ($arr as $j => $item) { ?>
-                                 <tr>
-                                    <td><?php echo $j + 1 ?></td>
-                                    <td><?php echo $item->beforeDate->format("d/m/Y H:i:s") ?></td>
-                                    <td><?php echo $item->duration ?></td>
-                                    <td><?php echo $item->count ?></td>
+                                 <tr style="border-bottom: 1px solid #394960;">
+                                    <td><?php echo $item->beforeDate->format("d/m/Y H:i") ?></td>
+                                    <td title="Readings count: <?php echo $item->count ?>"><?php echo $item->duration ?></td>
                                     <td <?php echo $item->temp < $sensor->minTemp || $item->temp > $sensor->maxTemp ?
-                                       "style='background-color: #c64848;'" :
+                                       "style='color: #dc3545;'" :
                                        "" ?>>
                                        <?php echo number_format($item->temp, 1) ?>
                                     </td>
                                     <td <?php echo $item->hum < $sensor->minRelHum || $item->hum > $sensor->maxRelHum ?
-                                       "style='background-color: #c64848;'" :
+                                       "style='color: #dc3545;'" :
                                        "" ?>>
                                        <?php echo number_format($item->hum, 1) ?>
                                     </td>
@@ -371,18 +359,15 @@ $errors = $model->errors;
                   <div class="tab-pane" id="nav-details-<?php echo $i ?>" role="tabpanel">
                      <h3 class="h3">Details</h3>
                      <form action="" method="post">
-                        <div
-                           style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 0.4em 3em; padding-bottom: 0.8em">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 0.4em 3em; padding-bottom: 0.8em">
                            <?php echo SensorCrudPartialCreateEdit::GetHtml($sensor) ?>
                         </div>
                         <div style="padding-top: 0.4em">
                            <div>
                               <span>Auth</span>
                               <input type="password" name="auth">
-                              <button class="button" type="submit" name="formType" value="edit">Save</button>
-                              <button class="button button-danger" type="submit" name="formType"
-                                      value="delete">Delete
-                              </button>
+                              <button class="button sensorCrudActionSaveBtn" type="button">Save</button>
+                              <button class="button sensorCrudActionDeleteBtn button-danger" type="button">Delete</button>
                            </div>
                         </div>
                      </form>
@@ -553,8 +538,126 @@ $errors = $model->errors;
 <script type="text/javascript">
 
    dayjs.extend(window.dayjs_plugin_customParseFormat);
-   let stateTemplate = document.querySelector('.root').innerHTML;
-   let errors = JSON.parse('<?php echo Helper::EchoJson($errors); ?>');
+   let stateTemplate = document.querySelector('.templating-root').innerHTML;
+   let baseApi = window.location.protocol + '//' + window.location.host + "/v1"
+
+   function HandleSensorCreate() {
+      let submitBtn = document.querySelector('#collapseSensorCreateSubmitBtn');
+      submitBtn.addEventListener('click', async (e) => {
+         e.preventDefault();
+         let form = submitBtn.closest('form');
+         if (! form.reportValidity()) {
+            return;
+         }
+         let formData = getFormSensor(form);
+         console.log("Sending a post request: ", baseApi + "/sensor/create")
+         let response = await fetch(baseApi + "/sensor/create", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json'},
+            body: JSON.stringify(formData)
+         })
+         let msg = await response.text();
+         console.log(`${msg}`);
+         if (response.ok) {
+            location.reload();
+         } else {
+            stateHasChanged([msg]);
+         }
+      })
+   }
+
+   function HandleSensorUpdate() {
+      let submitBtns = document.querySelectorAll('.sensorCrudActionSaveBtn');
+      for (let submitBtn of submitBtns) {
+         submitBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            let form = submitBtn.closest('form');
+            if (! form.reportValidity()) {
+               return;
+            }
+            let formData = getFormSensor(form);
+            console.log("Sending a post request: ", baseApi + "/sensor/update")
+            let response = await fetch(baseApi + "/sensor/update", {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json'},
+               body: JSON.stringify(formData)
+            })
+            let msg = await response.text();
+            console.log(`${msg}`);
+            if (response.ok) {
+               location.reload();
+            } else {
+               stateHasChanged([msg]);
+            }
+         })
+      }
+   }
+
+   function getFormSensor(form) {
+      let id = form.querySelector('[name="id"]').value;
+      let name = form.querySelector('[name="name"]').value;
+      let serial = form.querySelector('[name="serial"]').value;
+      let model = form.querySelector('[name="model"]').value;
+      let ip = form.querySelector('[name="ip"]').value;
+      let location = form.querySelector('[name="location"]').value;
+      let isPortable = form.querySelector('[name="isPortable"]').value === 'Y';
+      let minTemp = form.querySelector('[name="minTemp"]').value;
+      let maxTemp = form.querySelector('[name="maxTemp"]').value;
+      let minRelHum = form.querySelector('[name="minRelHum"]').value;
+      let maxRelHum = form.querySelector('[name="maxRelHum"]').value;
+      let readingIntervalMinutes = form.querySelector('[name="readingIntervalMinutes"]').value;
+      let auth = form.querySelector('[name="auth"]').value;
+      return {
+         auth: auth,
+         sensor: {
+            id: id,
+            name: name,
+            serial: serial,
+            model: model,
+            ip: ip,
+            location: location,
+            isPortable: isPortable,
+            minTemp: minTemp,
+            maxTemp: maxTemp,
+            minRelHum: minRelHum,
+            maxRelHum: maxRelHum,
+            readingIntervalMinutes: readingIntervalMinutes
+         }
+      };
+   }
+
+   function HandleSensorDelete() {
+      let submitBtns = document.querySelectorAll('.sensorCrudActionDeleteBtn');
+      for (let submitBtn of submitBtns) {
+         submitBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            let form = submitBtn.closest('form');
+            if (! form.reportValidity()) {
+               return;
+            }
+            let id = form.querySelector('input[name="id"]').value;
+            let auth = form.querySelector('input[name="auth"]').value;
+            let formData = {
+               'id': id,
+               'auth': auth
+            };
+            console.log("Sending a post request: ", baseApi + "/sensor/delete")
+            let response = await fetch(baseApi + "/sensor/delete", {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json'},
+               body: JSON.stringify(formData)
+            })
+            let msg = await response.text();
+            console.log(`${msg}`);
+            if (response.ok) {
+               location.reload();
+            } else {
+               stateHasChanged([msg]);
+            }
+         })
+      }
+   }
+
 
    function TriggerPortableSensorDataCsvUpload(csvFileUploadBtn) {
       let id = csvFileUploadBtn.getAttribute('data-sensorId');
@@ -567,23 +670,32 @@ $errors = $model->errors;
          try {
             [arr, skipCount] = csvToJsonArray(csv, delimiter, headers);
          } catch (e) {
-            console.error(e);
+            stateHasChanged([e]);
             return false;
          }
          document.getElementById('modalMsg').innerText = `Total data rows count: ${arr.length + skipCount}, skipped ${skipCount}`;
          document.getElementById('csvDataDisplay').innerText = JSON.stringify(arr, null, 2);
          document.getElementById('csvDataDisplay').style.display = 'block';
-         document.querySelector('#import-form-submit-btn').onclick = () => {
+         document.querySelector('#import-form-submit-btn').onclick = async () => {
             let pass = document.getElementById('import-form-password-input').value;
-            // prevents browser remember password prompt.
-            // How does it know that the input is connected with the post request ???
-            document.getElementById('import-form-password-input').remove();
-            post("", {
-               "jsonData": JSON.stringify(arr),
-               "csvSensorId": id,
-               "csvAuth": pass
-               }, "post"
-            );
+            console.log("Sending a post request: ", baseApi + "/sensor-reading/upload")
+            let response = await fetch(baseApi + "/sensor-reading/upload", {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json'},
+               body: JSON.stringify({
+                  "sensorReadings": arr,
+                  "sensorId": id,
+                  "auth": pass
+               })
+            })
+            let msg = await response.text();
+            console.log(`${msg}`);
+            if (response.ok) {
+               location.reload();
+            } else {
+               stateHasChanged([msg]);
+               $('#JsonModal').modal('hide');
+            }
          }
          $('#JsonModal').modal('show');
       }
@@ -601,46 +713,10 @@ $errors = $model->errors;
 
    function LoadButtonEvent() {
       let dateTo = document.getElementById('dateTo').value;
-
       let type = document.querySelector('input[name="dateFromType"]:checked').value;
-      let dateFrom = "";
-      switch (type) {
-         case 'absolute':
-            dateFrom = document.getElementById('absoluteDateFrom').value;
-            break;
-         case 'relative':
-            dateFrom = '-' + document.getElementById('relativeDateFrom').value;
-            break;
-         default:
-            console.error('Unknown type:', type);
-            break;
-      }
-      post("", {"From": dateFrom, "To": dateTo}, "get");
-   }
-
-
-   /**
-    * sends a request to the specified url from a form. this will change the window location.
-    * Taken from Rakesh Pai, https://stackoverflow.com/questions/133925/javascript-post-request-like-a-form-submit?rq=1
-    * @param {string} path the path to send the post request to
-    * @param {object} params the parameters to add to the url
-    * @param {string} [method=post] the method to use on the form
-    */
-   function post(path, params, method = 'post') {
-      const form = document.createElement('form');
-      form.method = method;
-      form.action = path;
-
-      for (const key in params) {
-         const hiddenField = document.createElement('input');
-         hiddenField.type = 'hidden';
-         hiddenField.name = key;
-         hiddenField.value = params[key];
-
-         form.appendChild(hiddenField);
-      }
-      document.body.appendChild(form)
-      form.submit();
+      if (! ['absolute', 'relative'].includes(type)) throw `Unknown type: ${type}`;
+      let dateFrom = type === 'absolute' ? document.getElementById('absoluteDateFrom').value : '-' + document.getElementById('relativeDateFrom').value;
+      window.location.href = window.location.protocol + '//' + window.location.host + `/overview?From=${dateFrom}&To=${dateTo}`;
    }
 
    function getEOL() {
@@ -861,7 +937,7 @@ $errors = $model->errors;
             minorGridlines: { // will hide non month vertical gridlines
                color: 'transparent'
             },
-            format: "dd-MM"
+            format: "dd. MMM"
          },
          tooltip: {isHtml: true},
          colors: colors,  // hexadecimal color values for every line in order
@@ -962,8 +1038,8 @@ $errors = $model->errors;
 
       const relative = "relative";
       const absolute = "absolute";
-      if (!dateFromType.value in [relative, absolute]) {
-         console.error("Unexpected value: " + dateFromType.value)
+      if (! [relative, absolute].includes(dateFromType.value)) {
+         stateHasChanged("Unexpected value: " + dateFromType.value);
          return;
       }
       if (absoluteDateFromInput.disabled && dateFromType.value !== absolute ||
@@ -1082,13 +1158,14 @@ $errors = $model->errors;
       }
    }
 
-   function stateHasChanged() {
-      document.querySelector('.root').innerHTML = nunjucks.renderString(stateTemplate, { errors: errors });
+   function stateHasChanged(errors) {
+      document.querySelector('.templating-root').innerHTML = nunjucks.renderString(stateTemplate, { errors: errors });
+      window.scrollTo(0, 0);
    }
 
    async function main() {
       let indexModel = new IndexModel();
-      stateHasChanged();
+      stateHasChanged([]);
       fetch("../view/partial/FooterPartial.html").then(x => x.text().then(res => document.querySelector(".footer").innerHTML = res));
       document.querySelector('#saveImgBtn').onclick = () => SaveChartImg(
          indexModel.dateFrom.format("DD-MM-YYYY"),
@@ -1104,6 +1181,9 @@ $errors = $model->errors;
             indexModel.sensorReadingsMap.find(y => y.key === x.getAttribute("data-sensorId")).value
          )
       );
+      HandleSensorCreate();
+      HandleSensorUpdate();
+      HandleSensorDelete();
       document.querySelector('#btnLoad').onclick = LoadButtonEvent;
       // we need dates to be in this format for GET request
       ['#dateTo', '#absoluteDateFrom'].forEach(item => $(item).datepicker({dateFormat: "dd-mm-yy"}));
@@ -1119,7 +1199,7 @@ $errors = $model->errors;
    }
 
    main();
-   document.querySelector('.root').style.display = 'block';
+   document.querySelector('.templating-root').style.display = 'block';
 
 </script>
 </html>

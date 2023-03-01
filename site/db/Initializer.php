@@ -18,6 +18,8 @@ use App\model\SensorReading;
 use App\util\Base64;
 use App\util\Config;
 use App\Util\Console;
+use Exception;
+use Illuminate\Support\Collection;
 
 // Run this from terminal
 // php -r "require './Initializer.php'; App\db\Initializer::Initialize();"
@@ -122,7 +124,11 @@ class Initializer
             $timer,
             $dactdate
          );
-         $sensor = Sensor::GetSensorBySerial($sensors, $passKey);
+         /** @var Sensor|null $sensor */
+         $sensor = (new Collection($sensors))->first(fn(Sensor $x) => $x->serial === $passKey);
+         if ($sensor === null) {
+            throw new Exception('Sensor with serial:' . $passKey . ' does not exist!');
+         }
          $sensorReadingV1_0_0 = $sensorReadingV0_3_4->GetUp($sensor->id, $sensor->isPortable)->MapToModel();
          array_push($sensorReadings, $sensorReadingV1_0_0);
       }

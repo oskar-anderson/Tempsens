@@ -8,18 +8,13 @@ class HandleInputModel
 {
    public string $dateFrom;
    public string $dateTo;
-   /* @var string[] $selectOptionsRelativeDateFrom */
-   public array $selectOptionsRelativeDateFrom;
    public string $dateFromType;
-   public SensorCrudBadCreateValues $sensorCrud;
 
-   /* @param  string[] $selectOptionsRelativeDateFrom */
-   function __construct(string $dateFrom, string $dateTo, array $selectOptionsRelativeDateFrom, string $dateFromType, SensorCrudBadCreateValues $sensorCrud)
+
+   function __construct(\DateTimeImmutable $dateFrom, \DateTimeImmutable $dateTo, string $dateFromType)
    {
-      $this->dateFrom = $dateFrom;
-      $this->dateTo = $dateTo;
-      $this->selectOptionsRelativeDateFrom = $selectOptionsRelativeDateFrom;
+      $this->dateFrom = $dateFrom->format('d-m-Y');
+      $this->dateTo = $dateTo->format('d-m-Y');
       $this->dateFromType = $dateFromType;
-      $this->sensorCrud = $sensorCrud;
    }
 }

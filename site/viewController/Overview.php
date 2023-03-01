@@ -14,50 +14,55 @@ use App\dto\IndexViewModelChildren\AlertMinMax;
 use App\dto\IndexViewModelChildren\HandleInputModel;
 use App\dto\IndexViewModelChildren\LastSensorReading;
 use App\dto\IndexViewModelChildren\Period;
-use App\dto\IndexViewModelChildren\SensorCrudBadCreateValues;
-use App\model\sensor;
+use App\frontendDto\Sensor\SensorWithAuth_v1;
+use App\frontendDto\SensorReadingUpload\SensorReadingUpload;
+use App\frontendDto\SensorReadingUpload\SensorReadingUploadReadings;
+use App\mapper\SensorMapper;
 use App\model\SensorReading;
 use App\util\Base64;
 use App\util\Config;
-use App\util\Console;
 use App\util\Helper;
 use App\util\InputValidation;
 use DateTimeImmutable;
+use Illuminate\Support\Collection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+use Symfony\Component\Serializer\Serializer;
 
 
 class Overview {
 
    public array $debugs = [];
-   public array $errors = [];
 
-   public function main(Request $request, Response $response, $args): Response
+   public function Index(Request $request, Response $response, $args): Response
    {
       $start = microtime(true);
       $before = microtime(true);
 
+      $input = $this->HandleInput();
       $sensors = (new DalSensors())->GetAll();
-      $input = $this->HandleInput($sensors);
 
       array_push($this->debugs,'Get sensors and handle input: ' . microtime(true) - $before);
       $before = microtime(true);
 
       $lastReadingsData = DalSensorReading::GetLastReadingsFromCacheOrDefault($sensors);
       $lastReadingsView = [];
-      foreach ($sensors as  $sensor) {
+      foreach ($sensors as $sensor) {
          $lastReading = $lastReadingsData[$sensor->id] ?? null;
 
          $dateRecorded = 'NO DATA';
          $col = 'red';
          if ($lastReading !== null) {
-            $lastDate = $lastReading->getDateRecordedAsDateTime()->format('d/m/Y H:i:s');
+            $lastDate = $lastReading->getDateRecordedAsDateTime()->format('d/m/Y H:i');
             $minutesDiff = floor((
                Helper::GetDateNowAsDateTime()->getTimestamp() -
                $lastReading->getDateRecordedAsDateTime()->getTimestamp()
             ) / 60);
             if ($sensor->readingIntervalMinutes - $minutesDiff < 0 && !$sensor->isPortable) {
-               $dateRecorded = 'DOWN @' . $lastDate . ' (' . $minutesDiff . ' min ago)';
+               $dateRecorded = 'DOWN @' . $lastDate;
                $col = 'red';
             }
             if ($sensor->readingIntervalMinutes - $minutesDiff >= 0 && !$sensor->isPortable) {
@@ -82,17 +87,18 @@ class Overview {
       array_push($this->debugs,'Get last readings: ' . microtime(true) - $before);
       $before = microtime(true);
 
-      $from = DateTimeImmutable::createFromFormat('d-m-Y', $input->dateFrom)->format('Ymd') . '0000';
-      $to = DateTimeImmutable::createFromFormat('d-m-Y', $input->dateTo)->format('Ymd') . '2359';
+      $from = DateTimeImmutable::createFromFormat('d-m-Y', $input->dateFrom);
+      $to = DateTimeImmutable::createFromFormat('d-m-Y', $input->dateTo);
+      $periods = Period::GetPeriodOptions($from, $to);
 
 
       $sensorReadingsBySensorId = [];
       foreach ($sensors as $sensor) {
          $sensorReadingsBySensorId[$sensor->id] = [];
       }
-      $sensorReadingsBySensorId = array_merge($sensorReadingsBySensorId, (new DalSensorReading())->GetAllBetween($from, $to));
+      $sensorReadingsBySensorId = array_merge($sensorReadingsBySensorId, (new DalSensorReading())->GetAllBetween($from->format('Ymd') . '2359', $to->format('Ymd') . '2359'));
 
-      array_push($this->debugs,"GetAllBetween($from, $to) query (count: " . array_sum(array_map("count", $sensorReadingsBySensorId)) . "): " . microtime(true) - $before);
+      array_push($this->debugs,"GetAllBetween(" . $from->format('Ymd') . '2359' . ", " . $to->format('Ymd') . '2359') .  " query (count: " . (new Collection($sensorReadingsBySensorId))->map(function ($readings) { return count($readings); })->sum() . "): " . microtime(true) - $before;
       $before = microtime(true);
 
       $sensorAlertsMinMax = [];
@@ -121,27 +127,24 @@ class Overview {
          ->SetSensorAlertsMinMax($sensorAlertsMinMax)
          ->SetSensorReadingsBySensorId($sensorReadingsBySensorId)
          ->SetSensors($sensors)
-         ->SetErrors($this->errors)
+         ->SetPeriods($periods)
          ->SetDefault();
 
       $content = Helper::Render(__DIR__ . "/../view/main/overview.php", $htmlInjects);
       array_push($this->debugs,'PHP generating page: ' . microtime(true) - $before);
       array_push($this->debugs,'PHP total: ' . microtime(true) - $start);
-      $content .= join("", array_map(fn($x) => Console::DebugToConsole($x, true), $this->debugs));
+      $content .= '<script type=text/javascript>' . join("", array_map(fn($x) => 'console.log(' . json_encode($x) . ');', $this->debugs)) . '</script>';
       $response->getBody()->write($content);
-
-      return $response;
+      return $response->withStatus(200);
    }
 
-
-   function HandleInput(array &$sensors): HandleInputModel
+   function HandleInput(): HandleInputModel
    {
       $dateTo = Helper::GetDateNowAsDateTime();
       $inputDateTo = $_GET['To'] ?? '';
       if (InputValidation::isDateFormat__d_m_Y($inputDateTo)) {
          $dateTo = DateTimeImmutable::createFromFormat('d-m-Y', $inputDateTo);
       }
-
 
       $dateFrom = $dateTo->modify("-91 day");
       $dateFromType = 'relative';
@@ -154,228 +157,126 @@ class Overview {
          $dateFromType = 'absolute';
       }
 
-      $selectOptionsRelativeDateFrom = Period::GetPeriodOptions($dateFrom, $dateTo);
-      $sensorCrud = $this->HandleSensorCrud($sensors);
-      $this->UploadReadings($sensors);
-
-      $result = new HandleInputModel($dateFrom->format('d-m-Y'), $dateTo->format('d-m-Y'), $selectOptionsRelativeDateFrom, $dateFromType, $sensorCrud);
+      $result = new HandleInputModel($dateFrom, $dateTo, $dateFromType);
       return $result;
    }
 
-   function HandleSensorCrud(array &$sensors): SensorCrudBadCreateValues {
-      $formType = $_POST['formType'] ?? null;
-      $id = $_POST['id'] ?? null;
-      $name = isset($_POST['name']) ? trim($_POST['name']) : null;
-      $serial = isset($_POST['serial']) ? trim($_POST['serial']) : null;
-      $model = isset($_POST['model']) ? trim($_POST['model']) : null;
-      $ip = isset($_POST['ip']) ? trim($_POST['ip']) : null;
-      $location = isset($_POST['location']) ? trim($_POST['location']) : null;
-      $isPortable = isset($_POST['isPortable']) && trim($_POST['isPortable']) === 'Y';
-      $minTemp = isset($_POST['minTemp']) ? trim($_POST['minTemp']) : null;
-      $maxTemp = isset($_POST['maxTemp']) ? trim($_POST['maxTemp']) : null;
-      $minRelHum = isset($_POST['minRelHum']) ? trim($_POST['minRelHum']) : null;
-      $maxRelHum = isset($_POST['maxRelHum']) ? trim($_POST['maxRelHum']) : null;
-      $readingIntervalMinutes = isset($_POST['readingIntervalMinutes']) ? trim($_POST['readingIntervalMinutes']) : null;
-      $auth = isset($_POST['auth']) ? trim($_POST['auth']) : null;
+   function CreateSensor(Request $request, Response $response, $args): Response {
+      $body = $request->getBody()->getContents();  // $request->getParsedBody() does not work for some reason
+      $serializer = new Serializer([new ObjectNormalizer()], [new JsonEncoder()]);
+      /** @var SensorWithAuth_v1 $model */
+      $model = $serializer->deserialize($body, SensorWithAuth_v1::class, 'json');
 
-
-      switch ($formType){
-         case 'create':
-            $idValid = $id === '';
-            break;
-         case 'edit':
-         case 'delete':
-            $idValid = in_array($id, array_map(fn($x) => $x->id, $sensors));
-            break;
-         default:
-            return new SensorCrudBadCreateValues(null, '');
+      if (sizeof($model->sensor->validate()) !== 0) {
+         $response->getBody()->write("Bad request or invalid data!");
+         return $response->withStatus(400);
       }
-
-      if (!$idValid) {
-         array_push($this->errors, 'Internal error! Bad sensor id: ' . var_export($id, true));
-         return new SensorCrudBadCreateValues(null, '');
+      if ($model->auth !== (new Config())->GetWebDbPassword()) {
+         $response->getBody()->write("Not authorized!");
+         return $response->withStatus(401);
       }
-      if ($name === null || $serial === null || $model === null || $ip === null
-         || $location === null || $minTemp === null || $maxTemp === null
-         || $minRelHum === null || $maxRelHum === null || $readingIntervalMinutes === null) {
-         $str = 'Internal error! Cannot read from values.' .
-            sprintf("name: %s, serial: %s, model: %s, ip: %s," .
-               "location: %s, isPortable: %s, minTemp: %s, maxTemp: %s, ".
-               "minRelHum: %s, maxRelHum: %s, auth: %s",
-               var_export($name, true), var_export($serial, true),
-               var_export($model, true), var_export($ip, true),
-               var_export($location, true), var_export($isPortable, true),
-               var_export($minTemp, true), var_export($maxTemp, true),
-               var_export($minRelHum, true), var_export($maxRelHum, true),
-               var_export($readingIntervalMinutes, true)
-            );
-         array_push($this->errors, $str);
-         return new SensorCrudBadCreateValues(null, '');
-      }
-
-      if ($auth !== (new Config())->GetWebDbPassword()) {
-         array_push($this->errors, 'Not authorized to ' . $formType . '!');
-         return new SensorCrudBadCreateValues(null, '');
-      }
-
-      $errorMessages = [];
-
-      InputValidation::StringInputValidation($errorMessages, $name, 64, 'Name');
-      InputValidation::StringInputValidation($errorMessages, $serial, 64, 'Serial');
-      InputValidation::StringInputValidation($errorMessages, $model, 64, 'Model');
-      InputValidation::StringInputValidation($errorMessages, $ip, 64, 'Ip');
-      InputValidation::StringInputValidation($errorMessages, $location, 64, 'Location');
-
-      InputValidation::FloatInputValidation($errorMessages, $minTemp, 'Min Temperature');
-      InputValidation::FloatInputValidation($errorMessages, $maxTemp, 'Max Temperature');
-      InputValidation::FloatInputValidation($errorMessages, $minRelHum, 'Min Relative Humidity');
-      InputValidation::FloatInputValidation($errorMessages, $maxRelHum, 'Max Relative Humidity');
-
-      $isEmpty = $readingIntervalMinutes === '';
-      $isInt = ctype_digit($readingIntervalMinutes);
-      $tmp = [];
-      if ($isEmpty) array_push($tmp, 'No value. ');
-      if (!$isInt) array_push($tmp, 'Must be a number. ');
-      if ($isEmpty || !$isInt) array_push($errorMessages, 'Reading Interval Minutes is not valid! ' . implode('', $tmp));
-
-
-      if (sizeof($errorMessages) !== 0) {
-         if ($formType === 'create') {
-            $createBadValues = new SensorCrudBadCreateValues(
-               sensor: new Sensor(
-                  id: '',
-                  name: $name,
-                  serial: $serial,
-                  model: $model,
-                  ip: $ip,
-                  location: $location,
-                  isPortable: $isPortable,
-                  minTemp: $minTemp,
-                  maxTemp: $maxTemp,
-                  minRelHum: $minRelHum,
-                  maxRelHum: $maxRelHum,
-                  readingIntervalMinutes: $readingIntervalMinutes
-               ),
-               auth: $auth,
-            );
-            array_push($this->errors, ...$errorMessages);
-            return $createBadValues;
-         }
-         array_push($this->errors, ...$errorMessages);
-         return new SensorCrudBadCreateValues(null, '');
-      }
-      switch ($formType) {
-         case 'create':
-            $id = Base64::GenerateId();
-            $sensor = new Sensor($id, $name, $serial, $model, $ip, $location, $isPortable, $minTemp, $maxTemp, $minRelHum, $maxRelHum, $readingIntervalMinutes);
-            $pdo = DbHelper::GetPDO();
-            (new DalSensors())->InsertByChunk([$sensor], $pdo);
-            break;
-         case 'edit':
-            $sensor = new Sensor(
-               id: $id,
-               name: $name,
-               serial: $serial,
-               model: $model,
-               ip: $ip,
-               location: $location,
-               isPortable: $isPortable,
-               minTemp: $minTemp,
-               maxTemp: $maxTemp,
-               minRelHum: $minRelHum,
-               maxRelHum: $maxRelHum,
-               readingIntervalMinutes: $readingIntervalMinutes
-            );
-            (new DalSensors())->Update($sensor);
-            break;
-         case 'delete':
-            (new DalSensors())->Delete($id);
-            break;
-         default:
-            array_push($this->errors, 'Internal error! Unknown value: ' . $formType);
-            return new SensorCrudBadCreateValues(null, '');
-      }
-      $sensors = (new DalSensors())->GetAll();
-
-      return new SensorCrudBadCreateValues(null, '');
+      $domainSensor = (new SensorMapper())->MapFrontToDomain($model->sensor);
+      $pdo = DbHelper::GetPDO();
+      (new DalSensors())->InsertByChunk([$domainSensor], $pdo);
+      $response->getBody()->write("All good!");
+      return $response->withStatus(200);
    }
 
-   /* @param Sensor[] $sensors */
-   function UploadReadings(array $sensors): bool  {
-      $jsonDataInput = $_POST['jsonData'] ?? null;
-      $sensorId = $_POST['csvSensorId'] ?? null;
-      $auth = $_POST['csvAuth'] ?? null;
+   function UpdateSensor(Request $request, Response $response, $args): Response {
+      $body = $request->getBody()->getContents();  // $request->getParsedBody() does not work for some reason
+      $serializer = new Serializer([new ObjectNormalizer()], [new JsonEncoder()]);
+      /** @var SensorWithAuth_v1 $model */
+      $model = $serializer->deserialize($body, SensorWithAuth_v1::class, 'json');
 
-      if ($jsonDataInput === null || $sensorId === null || $auth === null) {
-         return false;
+      if (sizeof($model->sensor->validate()) !== 0) {
+         $response->getBody()->write("Bad request or invalid data!");
+         return $response->withStatus(400);
       }
-      $sensor = null;
-      foreach ($sensors as $x) {
-         if ($x->id === $sensorId) {
-            $sensor = $x;
-         }
+      if ($model->auth !== (new Config())->GetWebDbPassword()) {
+         $response->getBody()->write("Not authorized!");
+         return $response->withStatus(401);
       }
-      if ($sensor === null) {
-         array_push($this->errors, 'Error! Sensor with id not found! Id: ' . $sensorId);
-         return false;
-      }
+      $domainSensor = (new SensorMapper())->MapFrontToDomain($model->sensor);
+      (new DalSensors())->Update($domainSensor);
+      $response->getBody()->write("All good!");
+      return $response->withStatus(200);
+   }
 
+   function DeleteSensor(Request $request, Response $response, $args): Response {
+      $model = json_decode($request->getBody()->getContents());
+      $id = $model->id ?? null;
+      $auth = $model->auth ?? null;
+
+      if ($id === null || $auth === null) {
+         $response->getBody()->write("Bad request");
+         return $response->withStatus(400);
+      };
       if ($auth !== (new Config())->GetWebDbPassword()) {
-         array_push($this->errors, 'Not authorized!');
-         return false;
+         $response->getBody()->write("Not authorized!");
+         return $response->withStatus(401);
       }
 
-      $jsonDataInput = json_decode($jsonDataInput);
-      if (sizeof($jsonDataInput) === 0) {
-         return false;
+      (new DalSensors())->Delete($id);
+      $response->getBody()->write("All good!");
+      return $response->withStatus(200);
+   }
+
+   function UploadReadings(Request $request, Response $response, $args): Response {
+      $body = $request->getBody()->getContents();  // $request->getParsedBody() does not work for some reason
+      $serializer = new Serializer([new ObjectNormalizer(), new ArrayDenormalizer()], [new JsonEncoder()]);
+      /** @var SensorReadingUpload $model */
+      $model = $serializer->deserialize($body, SensorReadingUpload::class, 'json');
+      // Deserializer is a piece of shit and will not hydrate array objects
+
+      /** @var SensorReadingUploadReadings[] $sensorReadingDeserialized */
+      $sensorReadingDeserialized = [];
+      foreach ($model->sensorReadings as $sensorReading) {
+         $sensorReadingDeserialized[] = new SensorReadingUploadReadings(DateTimeImmutable::createFromFormat("d-m-Y H:i:s", $sensorReading['date']), $sensorReading['temp'], $sensorReading['relHum']);
+      }
+      $model->sensorReadings = $sensorReadingDeserialized;
+
+      if ($model === null || sizeof($model->sensorReadings) === 0) {
+         $response->getBody()->write("Bad request or invalid data!");
+         return $response->withStatus(400);
+      }
+      $sensor = (new DalSensors())->GetFirstOrDefault($model->sensorId);
+      if ($sensor === null) {
+         $response->getBody()->write('Error! Sensor with id not found! Id: ' . $model->sensorId);
+         return $response->withStatus(400);
       }
 
-      $newSensorReadings = SensorReading::NewArray();
-      foreach ($jsonDataInput as $row) {
-         $temp = $row->temp;
-         if (! is_numeric($temp)) {
-            array_push($this->errors, 'Error! Temperature cannot be read! Temp: ' . $temp);
-            return false;
-         }
-         $relHum = $row->relHum;
-         if (! is_numeric($relHum)) {
-            array_push($this->errors, 'Error! Relative humidity cannot be read! RelHum: ' . $relHum);
-            return false;
-         }
+      if ($model->auth !== (new Config())->GetWebDbPassword()) {
+         $response->getBody()->write('Not authorized!');
+         return $response->withStatus(401);
+      }
 
-         $date = $row->date;
-         $dateDateTime = DateTimeImmutable::createFromFormat('d-m-Y H:i:s', $date);
-         if ($dateDateTime === false) {
-            array_push($this->errors, 'Error! Date cannot be read! Date: ' . $date);
-            return false;
-         }
-
-         $sensorReading = new SensorReading(
+      $newSensorReadings = array_map(function ($row) use ($sensor) {
+         return new SensorReading(
             id: Base64::GenerateId(),
-            sensorId: $sensorId,
-            temp: $temp,
-            relHum: $relHum,
-            dateRecorded: $dateDateTime,
+            sensorId: $sensor->id,
+            temp: $row->temp,
+            relHum: $row->relHum,
+            dateRecorded: $row->date,
             dateAdded: Helper::GetDateNowAsDateTime()
          );
+      }, $model->sensorReadings);
 
-         array_push($newSensorReadings, $sensorReading);
-      }
+      $existingSensorReadingsDateRecordedArr = array_map(
+         fn($x) => $x->getDate()->format('YmdHis'),
+         (new DalSensorReading())->GetAllWhereSensorId($model->sensorId)
+      );
 
-      $sensorReadingsByDateRecorded = array_map(
-         fn($x) => $x->getDate(),
-         (new DalSensorReading())->GetAllWhereSensorId($sensorId)
-      );
-      $duplicateDateTimes = array_filter($newSensorReadings, fn($sensorReadingNew) =>
-         in_array($sensorReadingNew->dateRecorded, $sensorReadingsByDateRecorded, true)
-      );
+      /** @var SensorReading[] $duplicateDateTimes */
+      $duplicateDateTimes = array_filter($newSensorReadings, function($sensorReadingNew) use ($existingSensorReadingsDateRecordedArr) {
+         return in_array($sensorReadingNew->dateRecorded, $existingSensorReadingsDateRecordedArr, true);
+      });
 
       if (sizeof($duplicateDateTimes) !== 0) {
          $duplicateDateStrings = array_map(
             fn($duplicateDateTime) => $duplicateDateTime->getDateRecordedAsDateTime()->format('d/m/Y H:i:s'),
             $duplicateDateTimes);
-         array_push($this->errors, 'Duplicate entry dates: ' . join(', ', $duplicateDateStrings));
-         return false;
+         $response->getBody()->write('Duplicate entry dates: ' . join(', ', $duplicateDateStrings));
+         return $response->withStatus(400);
       }
 
       $pdo = DbHelper::GetPDO();
@@ -384,6 +285,7 @@ class Overview {
       $pdo->commit();
 
       DalSensorReading::ResetCache();
-      return true;
+      $response->getBody()->write('Success!');
+      return $response->withStatus(200);
    }
 }

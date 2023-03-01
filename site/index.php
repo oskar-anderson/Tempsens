@@ -33,7 +33,7 @@ $customErrorHandler = function (
       json_encode($payload, JSON_UNESCAPED_UNICODE)
    );
 
-   return $response->withHeader('Content-Type', 'application/json');
+   return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 };
 
 $errorMiddleware = $app->addErrorMiddleware(displayErrorDetails: true, logErrors: false, logErrorDetails: false);
@@ -50,8 +50,13 @@ $app->get('/info', function (Request $request, Response $response, $args) {
    return $response;
 });
 
-$app->get('/overview', [Overview::class, "main"]);
-$app->post('/overview', [Overview::class, "main"]);
+$app->get('/overview', [Overview::class, "Index"]);
+$app->post('/v1/sensor-reading/upload', [Overview::class, "UploadReadings"]);
+$app->post('/v1/sensor/create', [Overview::class, "CreateSensor"]);
+$app->post('/v1/sensor/update', [Overview::class, "UpdateSensor"]);
+$app->post('/v1/sensor/delete', [Overview::class, "DeleteSensor"]);
+$app->post('/test1', [Debug::class, "Test1_HydrateWithPostData"]);
+$app->post('/test2', [Debug::class, "Test2_HydrateWithSampleData"]);
 
 $app->get('/debug', [Debug::class, "main"]);
 

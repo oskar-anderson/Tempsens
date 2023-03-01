@@ -30,6 +30,8 @@ Possible errors:
 * [phpdotenv](https://github.com/vlucas/phpdotenv) - Loads environment variables from `.env` to `getenv()`, `$_ENV` and `$_SERVER` automagically.
 * [Slim](https://github.com/slimphp/Slim) - PHP micro framework that helps you quickly write simple yet powerful web applications and APIs.
 * [Valinor](https://github.com/CuyZ/Valinor) - hydrated JSON deserialization to class instance
+* [Symfony/Serializer and PropertyAccess](https://symfony.com/doc/current/components/serializer.html) - hydrated JSON deserialization to class instance
+* [Illuminate/Support/Collection](https://laravel.com/api/8.x/Illuminate/Support/Collection.html) - convenient array methods
 
 ### Client side
 * [Reset CSS](https://meyerweb.com/eric/tools/css/reset) - cross browser style inconsistency remover
