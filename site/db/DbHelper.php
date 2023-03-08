@@ -41,12 +41,11 @@ class DbHelper {
    {
       $config = new Config();
       try {
-         $pdo = new PDO($config->GetConnectDsn(), $config->GetUsername(), $config->GetPassword());
+         $pdo = new PDO("mysql:host={$config->GetHost()};port={$config->GetPort()};dbname={$config->GetDatabaseName()}", $config->GetUsername(), $config->GetPassword());
          $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
          // var_dump($pdo->setAttribute(PDO::ATTR_TIMEOUT, 28800)); // this fails
          return $pdo;
       } catch (PDOException $e) {
-         (new Console(Console::$Linefeed, true))->WriteLine("GetPdoByKey FAILED ({$e->getMessage()})");
          throw $e;
       }
    }

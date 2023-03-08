@@ -12,9 +12,9 @@ use App\db\migrations\V0_3_4\SensorReadingV0_3_4;
 use App\db\migrations\V0_3_4\SensorV0_3_4;
 use App\db\migrations\V1_0_0\SensorV1_0_0;
 use App\db\migrations\V1_0_0\SensorReadingV1_0_0;
-use App\model\Cache;
-use App\model\Sensor;
-use App\model\SensorReading;
+use App\domain\Cache;
+use App\domain\Sensor;
+use App\domain\SensorReading;
 use App\util\Base64;
 use App\util\Config;
 use App\Util\Console;
@@ -30,10 +30,10 @@ class Initializer
    public static function Initialize(): void {
       $console = (new Console(Console::$Linefeed, true));
       $console->WriteLine();
-      $pdo = DbHelper::GetPDO();
       $name = (new Config())->GetDatabaseName();
       $dropStatement = "DROP DATABASE IF EXISTS {$name};";
       $console->WriteLine($dropStatement);
+      $pdo = DbHelper::GetPDO();
       $pdo->exec($dropStatement);
       $createStatement = "CREATE DATABASE IF NOT EXISTS {$name};";
       $console->WriteLine($createStatement);

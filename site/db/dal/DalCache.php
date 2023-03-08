@@ -3,8 +3,8 @@
 namespace App\db\dal;
 
 use App\db\DbHelper;
-use App\model\Cache;
-use App\model\SensorReading;
+use App\domain\Cache;
+use App\domain\SensorReading;
 use App\util\Base64;
 use DateTimeImmutable;
 use Exception;
@@ -19,7 +19,7 @@ class DalCache extends AbstractDalBase
    public function SqlCreateTableStmt(): string
    {
       // Key0 is just named like that to avoid using sql keywords, nothing to do with enumeration
-      $result = "CREATE TABLE " . $this->GetDatabaseNameDotTableName() .
+      $result = "CREATE TABLE " . $this->GetTableName() .
          " ( " .
          Cache::IdColumnName . " VARCHAR(64) NOT NULL PRIMARY KEY, " .
          Cache::TypeColumnName . " TEXT(64) NOT NULL, " .
@@ -42,7 +42,7 @@ class DalCache extends AbstractDalBase
     */
    protected function Insert(array $objects, PDO $pdo): void
    {
-      $qry = "INSERT INTO " . $this->GetDatabaseNameDotTableName() . " ( " .
+      $qry = "INSERT INTO " . $this->GetTableName() . " ( " .
          Cache::IdColumnName . ", " .
          Cache::TypeColumnName . ", " .
          Cache::ContentColumnName . " ) " .
@@ -61,7 +61,7 @@ class DalCache extends AbstractDalBase
    public function Delete(string $id): void
    {
       $pdo = DbHelper::GetPDO();
-      $qry = "DELETE FROM " . $this->GetDatabaseNameDotTableName() . " WHERE " . Cache::IdColumnName . " = ?;";
+      $qry = "DELETE FROM " . $this->GetTableName() . " WHERE " . Cache::IdColumnName . " = ?;";
       $stmt = $pdo->prepare($qry);
       $stmt->execute([$id]);
    }
@@ -72,7 +72,7 @@ class DalCache extends AbstractDalBase
     */
    public function DeleteByKey(string $key, PDO $pdo): void
    {
-      $qry = "DELETE FROM " . $this->GetDatabaseNameDotTableName() . " WHERE " . Cache::TypeColumnName . " = ?;";
+      $qry = "DELETE FROM " . $this->GetTableName() . " WHERE " . Cache::TypeColumnName . " = ?;";
       $stmt = $pdo->prepare($qry);
       $stmt->execute([$key]);
    }
@@ -110,14 +110,14 @@ class DalCache extends AbstractDalBase
       $qry = "SELECT " .
          Cache::TypeColumnName . ", " .
          Cache::ContentColumnName .
-         " FROM " . (new DalCache())->GetDatabaseNameDotTableName() .
+         " FROM " . (new DalCache())->GetTableName() .
          " WHERE " . Cache::TypeColumnName . " = ? LIMIT 1;";
       $pdo = DbHelper::GetPDO();
       $stmt = $pdo->prepare($qry);
       $stmt->execute([DalCache::getLastSensorReadingType()]);
 
       if ($stmt->rowCount() !== 1) {
-         throw new Exception("Internal error! No SensorReadings row in " . (new DalCache())->GetDatabaseNameDotTableName() . "!");
+         throw new Exception("Internal error! No SensorReadings row in " . (new DalCache())->GetTableName() . "!");
       }
       $dalCache = $stmt->fetch();
 

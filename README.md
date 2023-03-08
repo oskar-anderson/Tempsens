@@ -9,7 +9,7 @@ Sirowa warehouse sensor temperature and humidity data visualization logserver.
 2. Create `.env` file from `.env_template` file and adjust parameters
 3. Run `composer install` in root folder to generate dependencies and autoloading. If the command throws error '`Root composer.json requires PHP extension ext-soap ...`' uncomment `extension=soap` attribute in the `php.ini` global PHP config file.
 4. Open terminal and `cd site`
-5. (if you have data files) Copy `backupCSV` folder to `site/db` and generate db with sample data `php -r "require './db/Initializer.php'; App\db\Initializer::Initialize();"`
+5. (if you have data files) Copy `backupCSV` folder to `site/db` and generate db with sample data `php -r "require './db/Initializer.php'; App\db\Initializer::Initialize();"`. If the command throws a "Fatal error: Uncaught PDOException: could not find driver in ..." error, uncomment "extension=pdo_mysql" in php.ini.
 6. Start php server by running command `php -S localhost:8080`
 7. Open in browser http://127.0.0.1:8080
 
@@ -19,7 +19,7 @@ Possible errors:
 
 ### Docker
 1. Follow 1. and 2. step from local install
-2. Run `docker-compose up -d` in `docker` directory
+2. Run `docker-compose --env-file ../.env up -d` in `docker` directory
 3. Install dependencies `docker-compose exec tempsens-app composer install`
 4. Open in browser http://127.0.0.1:8000
 

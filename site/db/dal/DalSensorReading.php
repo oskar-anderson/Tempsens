@@ -5,9 +5,8 @@ namespace App\db\dal;
 require_once(__DIR__ . "/../../../vendor/autoload.php");
 
 use App\db\DbHelper;
-use App\dto\IndexViewModelChildren\SensorReadingDTO;
-use App\model\Sensor;
-use App\model\SensorReading;
+use App\domain\Sensor;
+use App\domain\SensorReading;
 use App\util\Console;
 use DateTimeImmutable;
 use PDO;
@@ -17,14 +16,9 @@ class DalSensorReading extends AbstractDalBase
    /**
     *  @return string
     */
-   public function GetTableName(): string { return "sensor_reading"; }
-
-   /**
-    *  @return string
-    */
    public function SqlCreateTableStmt(): string
    {
-      $result = "CREATE TABLE " . $this->GetDatabaseNameDotTableName() .
+      $result = "CREATE TABLE " . SensorReading::TableName .
          " ( " .
          SensorReading::IdColumnName . " VARCHAR(64) NOT NULL PRIMARY KEY, " .
          SensorReading::SensorIdColumnName . " VARCHAR(64) NOT NULL, " .
@@ -32,7 +26,7 @@ class DalSensorReading extends AbstractDalBase
          SensorReading::RelHumColumnName . " DECIMAL(18,1) NOT NULL, " .
          SensorReading::DateRecordedColumnName . " VARCHAR(64) NOT NULL, " .
          SensorReading::DateAddedColumnName . " VARCHAR(64), " .
-         "CONSTRAINT " . DalSensorReading::GetTableName() ."_fk_to_sensor foreign key ( " . SensorReading::SensorIdColumnName . " ) references " . (new DalSensors)->GetTableName() . "(" . Sensor::IdColumnName . ") " .
+         "CONSTRAINT " . SensorReading::TableName ."_fk_to_sensor foreign key ( " . SensorReading::SensorIdColumnName . " ) references " . Sensor::TableName . "(" . Sensor::IdColumnName . ") " .
          " ) DEFAULT CHARSET=utf8mb4 COLLATE utf8mb4_bin;";
       return $result;
    }
@@ -96,7 +90,7 @@ class DalSensorReading extends AbstractDalBase
          SensorReading::RelHumColumnName . ", " .
          SensorReading::DateRecordedColumnName . ", " .
          SensorReading::DateAddedColumnName .
-         " FROM " . $this->GetDatabaseNameDotTableName() .
+         " FROM " . SensorReading::TableName .
          " WHERE " . SensorReading::SensorIdColumnName . " = ? " .
          " ORDER BY " . SensorReading::DateRecordedColumnName . " DESC LIMIT 1;";
       $stmt = $pdo->prepare($qry);
@@ -112,18 +106,20 @@ class DalSensorReading extends AbstractDalBase
    /**
     * @param string $from
     * @param string $to
-    * @return SensorReadingDTO[]
+    * @return \App\dto\SensorReading[]
     */
    public function GetAllBetween(string $from, string $to): array
    {
       $pdo = DbHelper::GetPDO();
       $result = [];
       $qry = "SELECT " .
+         SensorReading::IdColumnName . ", " .
          SensorReading::SensorIdColumnName . ", " .
          SensorReading::TempColumnName . ", " .
          SensorReading::RelHumColumnName . ", " .
-         SensorReading::DateRecordedColumnName .
-         " FROM " . $this->GetDatabaseNameDotTableName() .
+         SensorReading::DateRecordedColumnName . ", " .
+         SensorReading::DateAddedColumnName .
+         " FROM " . SensorReading::TableName .
          " WHERE " . SensorReading::DateRecordedColumnName . " >= ? " .
          " AND " . SensorReading::DateRecordedColumnName . " <= ? " .
          " ORDER BY " . SensorReading::DateRecordedColumnName . " ASC";
@@ -142,17 +138,20 @@ class DalSensorReading extends AbstractDalBase
 
    /**
     *  @param string $sensorId
-    *  @return SensorReadingDTO[]
+    *  @return \App\dto\SensorReading[]
     */
    public function GetAllWhereSensorId(string $sensorId): array
    {
       $pdo = DbHelper::GetPDO();
       $result = [];
       $qry = "SELECT " .
+         SensorReading::IdColumnName . ", " .
+         SensorReading::SensorIdColumnName . ", " .
          SensorReading::TempColumnName . ", " .
          SensorReading::RelHumColumnName . ", " .
-         SensorReading::DateRecordedColumnName .
-         " FROM " . $this->GetDatabaseNameDotTableName() .
+         SensorReading::DateRecordedColumnName . ", " .
+         SensorReading::DateAddedColumnName .
+         " FROM " . SensorReading::TableName .
          " WHERE " . SensorReading::SensorIdColumnName . " >= ? " .
          " ORDER BY " . SensorReading::DateRecordedColumnName . " ASC;";
       $stmt = $pdo->prepare($qry);
@@ -171,7 +170,7 @@ class DalSensorReading extends AbstractDalBase
     */
    protected function Insert($objects, PDO $pdo): void
    {
-      $qry = "INSERT INTO " . $this->GetDatabaseNameDotTableName() . " ( " .
+      $qry = "INSERT INTO " . SensorReading::TableName . " ( " .
          SensorReading::IdColumnName . ", " .
          SensorReading::SensorIdColumnName . ", " .
          SensorReading::TempColumnName . ", " .
@@ -204,12 +203,16 @@ class DalSensorReading extends AbstractDalBase
       );
    }
 
-   public function MapToDTO(array $value): SensorReadingDTO {
+   public function MapToDTO(array $value): \App\dto\SensorReading {
 
-      return (new SensorReadingDTO(true, true, true))->
-         setDate(DateTimeImmutable::createFromFormat('YmdHis', $value[SensorReading::DateRecordedColumnName]))->
-         setTemp(floatval($value[SensorReading::TempColumnName]))->
-         setRelHum($value[SensorReading::RelHumColumnName]);
+      return new \App\dto\SensorReading(
+         id: $value[SensorReading::IdColumnName],
+         sensorId: $value[SensorReading::SensorIdColumnName],
+         temp: floatval($value[SensorReading::TempColumnName]),
+         relHum: floatval($value[SensorReading::RelHumColumnName]),
+         dateRecorded: DateTimeImmutable::createFromFormat('YmdHis', $value[SensorReading::DateRecordedColumnName]),
+         dateAdded: $value[SensorReading::DateAddedColumnName] === null ? null : DateTimeImmutable::createFromFormat('YmdHis', $value[SensorReading::DateAddedColumnName])
+      );
    }
 
    /**
@@ -217,7 +220,7 @@ class DalSensorReading extends AbstractDalBase
     */
    public function DeleteWhereSensorId(string $id): void {
       $pdo = DbHelper::GetPDO();
-      $qry = "DELETE FROM " . $this->GetDatabaseNameDotTableName() . " WHERE " . SensorReading::SensorIdColumnName . " = ?";
+      $qry = "DELETE FROM " . SensorReading::TableName . " WHERE " . SensorReading::SensorIdColumnName . " = ?";
       $stmt = $pdo->prepare($qry);
       $stmt->execute([$id]);
    }
@@ -229,7 +232,7 @@ class DalSensorReading extends AbstractDalBase
    public function Delete(string $id): void
    {
       $pdo = DbHelper::GetPDO();
-      $qry = "DELETE FROM " . $this->GetDatabaseNameDotTableName() . " WHERE " . SensorReading::IdColumnName . " = ?";
+      $qry = "DELETE FROM " . SensorReading::TableName . " WHERE " . SensorReading::IdColumnName . " = ?";
       $stmt = $pdo->prepare($qry);
       $stmt->execute([$id]);
    }
@@ -240,7 +243,7 @@ class DalSensorReading extends AbstractDalBase
    public function Update($object): void
    {
       $pdo = DbHelper::GetPDO();
-      $qry = "UPDATE " . $this->GetDatabaseNameDotTableName() . " SET " .
+      $qry = "UPDATE " . SensorReading::TableName . " SET " .
          SensorReading::SensorIdColumnName . " = ?, " .
          SensorReading::TempColumnName . " = ?, " .
          SensorReading::RelHumColumnName . " = ?, " .

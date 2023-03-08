@@ -1,6 +1,8 @@
 <?php
 /** @noinspection DuplicatedCode */
 
+declare(strict_types=1);
+
 use App\dto\IndexViewModel;
 use App\util\Helper;
 use App\view\partial\SensorCrudPartialCreateEdit;
@@ -13,7 +15,6 @@ $dateTo = $model->input->dateTo;
 $periods = $model->periods;
 
 $sensors = $model->sensors;
-$lastReadingsView = $model->lastReadingsView;
 $sensorReadingOutOfBounds = $model->sensorAlertsMinMax;
 $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
 $colors = $model->colors;
@@ -235,7 +236,11 @@ $colors = $model->colors;
             <div class="🎯 table-head"><i class="bi bi-droplet-half">%<br> max</i></div>
          </div>
          <?php
-         foreach ($sensors as $i => $sensor):?>
+         foreach ($sensors as $i => $sensor):
+            $lastReading = $sensor->sensorReading;
+            $sensor = $sensor->sensor;
+            ?>
+
 
             <div class="🎯 collapse-and-change-icon zebra-overview" style="display: grid; grid-auto-rows: auto;
                            grid-template-columns: 30px 5fr 6fr 2fr 2fr 2fr 2fr 2fr 2fr 2fr;
@@ -245,29 +250,56 @@ $colors = $model->colors;
                   <i class="bi bi-caret-right"></i>
                </span>
                <?php
-               $temps = array_map(fn($obj) => $obj->getTemp(), $sensorReadingsBySensorId[$sensor->id]);
+               $temps = array_map(fn($obj) => $obj->temp, $sensorReadingsBySensorId[$sensor->id]);
                $tempAvg = sizeof($temps) === 0 ? 'NULL' : number_format(array_sum($temps) / sizeof($temps), 1);
                $tempMax = sizeof($temps) === 0 ? 'NULL' : number_format(max($temps), 1);
                $tempMix = sizeof($temps) === 0 ? 'NULL' : number_format(min($temps), 1);
 
-               $hums = array_map(fn($obj) => $obj->getRelHum(), $sensorReadingsBySensorId[$sensor->id]);
+               $hums = array_map(fn($obj) => $obj->relHum, $sensorReadingsBySensorId[$sensor->id]);
                $humAvg = sizeof($hums) === 0 ? 'NULL' : number_format(array_sum($hums) / sizeof($hums), 1);
                $humMax = sizeof($hums) === 0 ? 'NULL' : number_format(max($hums), 1);
                $humMix = sizeof($hums) === 0 ? 'NULL' : number_format(min($hums), 1);
                ?>
                <div><?= htmlspecialchars($sensor->name) ?></div>
+               <?php
+
+               $dateRecorded = 'NO DATA';
+               $col = 'red';
+               if ($lastReading !== null) {
+                  $lastDate = $lastReading->dateRecorded->format('d/m/Y H:i');
+                  $minutesDiff = floor((
+                     Helper::GetDateNowAsDateTime()->getTimestamp() -
+                     $lastReading->dateRecorded->getTimestamp()
+                  ) / 60);
+                  if ($sensor->readingIntervalMinutes - $minutesDiff < 0 && !$sensor->isPortable) {
+                     $dateRecorded = 'DOWN @' . $lastDate;
+                     $col = 'red';
+                  }
+                  if ($sensor->readingIntervalMinutes - $minutesDiff >= 0 && !$sensor->isPortable) {
+                     $dateRecorded = 'UP @' . $lastDate;
+                     $col = 'black';
+                  }
+                  if ($sensor->isPortable) {
+                     $dateRecorded = 'Portable sensor';
+                     $col = 'black';
+                  }
+               }
+               $temp = $lastReading !== null ? $lastReading->temp . '℃' : 'NO DATA';
+               $relHum = $lastReading !== null ? $lastReading->relHum . '%' : 'NO DATA';
+
+               ?>
                <div>
                   <div
-                     style="height: 1em; margin-bottom: 6px; overflow: hidden; font-size: 13px; color: <?php echo $lastReadingsView[$sensor->id]->color ?>">
-                     <?= htmlspecialchars($lastReadingsView[$sensor->id]->dateRecorded); ?>
+                     style="height: 1em; margin-bottom: 6px; overflow: hidden; font-size: 13px; color: <?php echo $col ?>">
+                     <?= htmlspecialchars($dateRecorded); ?>
                   </div>
                   <div style="--xpos: center; --ypos: center; display: grid; grid-auto-rows: auto;
                         grid-template-columns: auto auto;">
                      <div>
-                        <i class="bi bi-thermometer-half"></i><?= $lastReadingsView[$sensor->id]->temp; ?>
+                        <i class="bi bi-thermometer-half"></i><?= $temp; ?>
                      </div>
                      <div>
-                        <i class="bi bi-droplet-half"></i><?= $lastReadingsView[$sensor->id]->relHum; ?>
+                        <i class="bi bi-droplet-half"></i><?= $relHum; ?>
                      </div>
                   </div>
                </div>
@@ -440,6 +472,7 @@ $colors = $model->colors;
                <tbody id="sensorDrawingSettings">
                <?php
                foreach ($sensors as $i => $sensor):
+                  $sensor = $sensor->sensor;
                   ?>
                   <tr class="zebra-graph-settings">
                      <td style="display: none" class="sensorId"><?php echo $sensor->id ?></td>
@@ -1126,7 +1159,8 @@ $colors = $model->colors;
          }
          let sensorsOld = JSON.parse('<?php echo Helper::EchoJson($sensors); ?>');
          let sensors = [];
-         for (let sensor of sensorsOld) {
+         for (let sensorWithLastReading of sensorsOld) {
+            let sensor = sensorWithLastReading.sensor;
             sensors.push(new Sensor(
                sensor.id,
                sensor.name,

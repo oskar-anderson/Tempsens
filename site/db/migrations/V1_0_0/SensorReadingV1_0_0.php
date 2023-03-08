@@ -2,7 +2,7 @@
 
 namespace App\db\migrations\V1_0_0;
 
-use App\model\SensorReading;
+use App\domain\SensorReading;
 use DateTimeImmutable;
 
 class SensorReadingV1_0_0 {

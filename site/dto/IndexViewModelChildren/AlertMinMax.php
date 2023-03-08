@@ -6,7 +6,8 @@ namespace App\dto\IndexViewModelChildren;
 
 require_once (__DIR__."/../../../vendor/autoload.php");
 
-use App\model\Sensor;
+use App\dto\Sensor;
+use App\dto\SensorReading;
 use DateTimeImmutable;
 
 class AlertMinMax
@@ -28,7 +29,7 @@ class AlertMinMax
 
    /**
     * @param Sensor $sensor
-    * @param SensorReadingDTO[] $outOfBoundsGroup
+    * @param SensorReading[] $outOfBoundsGroup
     * @return AlertMinMax
     */
    private static function Create(Sensor $sensor, array $outOfBoundsGroup): AlertMinMax
@@ -39,14 +40,14 @@ class AlertMinMax
       }
       if (sizeof($outOfBoundsGroup) === 1) {
          [$temp, $relHum] = AlertMinMax::GetDeviation($sensor, $outOfBoundsGroup);
-         return new AlertMinMax($outOfBoundsGroup[0]->getDate(), 0, 1, $temp, $relHum);
+         return new AlertMinMax($outOfBoundsGroup[0]->dateRecorded, 0, 1, $temp, $relHum);
       }
       $before = $outOfBoundsGroup[0];
       $end = $outOfBoundsGroup[sizeof($outOfBoundsGroup) - 1];
       [$temp, $relHum] = AlertMinMax::GetDeviation($sensor, $outOfBoundsGroup);
       $result = new AlertMinMax(
-         beforeDate: $before->getDate(),
-         duration: ($end->getDate()->getTimestamp() - $before->getDate()->getTimestamp()) / 60,
+         beforeDate: $before->dateRecorded,
+         duration: ($end->dateRecorded->getTimestamp() - $before->dateRecorded->getTimestamp()) / 60,
          count: sizeof($outOfBoundsGroup),
          temp: $temp,
          hum: $relHum
@@ -54,13 +55,13 @@ class AlertMinMax
       return $result;
    }
 
-   /* @param SensorReadingDTO[] $outOfBoundsGroup */
+   /* @param SensorReading[] $outOfBoundsGroup */
    private static function GetDeviation(Sensor $sensor, array $outOfBoundsGroup): array {
       $hums = array_map(function ($x) {
-         return $x->getRelHum();
+         return $x->relHum;
       }, $outOfBoundsGroup);
       $temps = array_map(function ($x) {
-         return $x->getTemp();
+         return $x->temp;
       }, $outOfBoundsGroup);
       $lowTemp = min($temps);
       $highTemp = max($temps);
@@ -75,7 +76,7 @@ class AlertMinMax
    }
 
    /**
-    * @param SensorReadingDTO[] $ungroupedOutOfBounds
+    * @param SensorReading[] $ungroupedOutOfBounds
     * @return AlertMinMax[]
     */
    public static function Get(Sensor $sensor, array $ungroupedOutOfBounds): array {
@@ -97,8 +98,8 @@ class AlertMinMax
          $rawOutOfBoundBefore = $ungroupedOutOfBounds[$i];
          $rawOutOfBoundAfter = $ungroupedOutOfBounds[$i + 1];
 
-         $isPartOfSameChain = ($rawOutOfBoundAfter->getDate()->getTimestamp() -
-            $rawOutOfBoundBefore->getDate()->getTimestamp())
+         $isPartOfSameChain = ($rawOutOfBoundAfter->dateRecorded->getTimestamp() -
+            $rawOutOfBoundBefore->dateRecorded->getTimestamp())
             / 60 <= $sensor->readingIntervalMinutes;
          $isPartOfChainBreak = sizeof($outOfBoundsChain) > 1 && ! $isPartOfSameChain;
          $isNotPartOfChain = sizeof($outOfBoundsChain) === 0 && ! $isPartOfSameChain;

@@ -2,7 +2,7 @@
 
 namespace App\db\migrations\V1_0_0;
 
-use App\model\Sensor;
+use App\domain\Sensor;
 
 class SensorV1_0_0 {
 

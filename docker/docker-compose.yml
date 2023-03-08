@@ -20,17 +20,17 @@ services:
       - ../:/var/www
       - ./nginx:/etc/nginx/conf.d
   db:
-    image: mysql:5.7
+    image: mysql:8.0
     container_name: tempsens-db
     restart: always
     environment:
-      MYSQL_DATABASE: 'db'
-      MYSQL_USER: 'user'
-      MYSQL_PASSWORD: 'password'
-      MYSQL_ROOT_PASSWORD: 'password'
+      MYSQL_DATABASE: ${dbName}
+      MYSQL_USER: ${dbUsername}
+      MYSQL_PASSWORD: ${dbPassword}
+      MYSQL_ROOT_PASSWORD: ${dbPassword}
     ports:
       # <Port exposed> : < MySQL Port running inside container>
-      - '3307:3307'
+      - '3307:3306'
     expose:
       # Opens port 3307 on the container
       - '3307'

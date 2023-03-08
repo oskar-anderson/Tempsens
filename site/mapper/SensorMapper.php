@@ -3,7 +3,7 @@
 namespace App\mapper;
 
 use App\frontendDto\Sensor\Sensor_v1;
-use App\model\Sensor;
+use App\domain\Sensor;
 
 class SensorMapper
 {

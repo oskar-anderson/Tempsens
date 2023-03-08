@@ -21,16 +21,6 @@ class Config
       }
    }
 
-   #[ArrayShape(["connectDsn" => "string", "username" => "string", "password" => "string"])]
-   public function GetEnvDbCredentials(): array
-   {
-      return [
-         "connectDsn" => $this->GetConnectDsn(),
-         "username" => $this->GetUsername(),
-         "password" => $this->GetWebDbPassword()
-      ];
-   }
-
    /**
     * @throws Exception Undefined
     */
@@ -60,9 +50,17 @@ class Config
    /**
     * @throws Exception Undefined
     */
-   public function GetConnectDsn(): string
+   public function GetHost(): string
    {
-      return $this->GetByName("dbConnectDsn");
+      return $this->GetByName("dbHost");
+   }
+
+   /**
+    * @throws Exception Undefined
+    */
+   public function GetPort(): string
+   {
+      return $this->GetByName("dbPort");
    }
 
    /**

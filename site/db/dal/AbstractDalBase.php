@@ -10,23 +10,11 @@ use PDO;
 use PDOException;
 
 abstract class AbstractDalBase {
-    /**
-    *  @return string
-    */
-   public abstract function GetTableName(): string;
 
    /**
     *  @return string
     */
     public abstract function SqlCreateTableStmt(): string;
-
-    public function GetDatabaseName(): string {
-       return (new Config())->GetDatabaseName();
-    }
-
-    public function GetDatabaseNameDotTableName(): string {
-       return $this->GetDatabaseName() . "." . $this->GetTableName();
-    }
 
    public abstract function Map(array $value);
    /**

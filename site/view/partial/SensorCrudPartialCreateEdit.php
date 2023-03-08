@@ -5,7 +5,7 @@ namespace App\view\partial;
 
 require_once(__DIR__."/../../../vendor/autoload.php");
 
-use App\model\Sensor;
+use App\dto\Sensor;
 use App\util\Base64;
 
 class SensorCrudPartialCreateEdit
