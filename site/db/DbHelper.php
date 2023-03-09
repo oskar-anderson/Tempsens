@@ -4,7 +4,6 @@ namespace App\db;
 
 require_once(__DIR__."/../../vendor/autoload.php");
 
-use App\db\dal\DalCache;
 use App\db\dal\DalSensorReading;
 use App\db\dal\DalSensors;
 use App\db\dal\AbstractDalBase;
@@ -22,8 +21,7 @@ class DbHelper {
    {
       return [
          new DalSensors(),
-         new DalSensorReading(),
-         new DalCache()
+         new DalSensorReading()
       ];
    }
 

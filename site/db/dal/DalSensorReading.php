@@ -31,26 +31,9 @@ class DalSensorReading extends AbstractDalBase
       return $result;
    }
 
-   public static function ResetCache(): void
-   {
-      $sensors = (new DalSensors())->GetAll();
-      $lastReadings = (new DalSensorReading())->GetLastSensorReadings($sensors);
-      DalCache::SaveSensorReadings($lastReadings);
-   }
-
-   /**
-    *  @param SensorReading $sensorReading
-    */
-   public static function SetLastReadingsCache(SensorReading $sensorReading): void
-   {
-      $cacheSensorReadings = DalCache::ReadSensorReadings();
-      $cacheSensorReadings[$sensorReading->sensorId] = $sensorReading;
-      DalCache::SaveSensorReadings($cacheSensorReadings);
-   }
-
    /**
     *  @param Sensor[] $sensors
-    *  @return SensorReading[]
+    *  @return \App\dtoWeb\SensorReading[]
     */
    public static function GetLastReadingsFromCacheOrDefault(array $sensors): array
    {
@@ -66,7 +49,7 @@ class DalSensorReading extends AbstractDalBase
    /**
     * Get assoc array of sensor id and sensor's last SensorReading? (SensorReading|null)[]
     * @param Sensor[] $sensors
-    * @return array<SensorReading|null>
+    * @return array<\App\dtoWeb\SensorReading|null>
     */
    public function GetLastSensorReadings(array $sensors): array {
       // https://stackoverflow.com/questions/2411559/how-do-i-query-sql-for-a-latest-record-date-for-each-user
@@ -80,9 +63,9 @@ class DalSensorReading extends AbstractDalBase
 
    /**
     *  @param string $sensorId
-    *  @return SensorReading|null
+    *  @return \App\dtoWeb\SensorReading|null
     */
-   public function GetLastSensorReading(string $sensorId): SensorReading|null
+   public function GetLastSensorReading(string $sensorId): \App\dtoWeb\SensorReading|null
    {
       $pdo = DbHelper::GetPDO();
       $qry = "SELECT " . SensorReading::IdColumnName . ", " .
@@ -100,13 +83,13 @@ class DalSensorReading extends AbstractDalBase
          return null;
       }
       $value[SensorReading::SensorIdColumnName] = $sensorId;
-      return $this->Map($value);
+      return $this->MapToDTO($value);
    }
 
    /**
     * @param string $from
     * @param string $to
-    * @return \App\dto\SensorReading[]
+    * @return \App\dtoWeb\SensorReading[]
     */
    public function GetAllBetween(string $from, string $to): array
    {
@@ -138,7 +121,7 @@ class DalSensorReading extends AbstractDalBase
 
    /**
     *  @param string $sensorId
-    *  @return \App\dto\SensorReading[]
+    *  @return \App\dtoWeb\SensorReading[]
     */
    public function GetAllWhereSensorId(string $sensorId): array
    {
@@ -203,9 +186,9 @@ class DalSensorReading extends AbstractDalBase
       );
    }
 
-   public function MapToDTO(array $value): \App\dto\SensorReading {
+   public function MapToDTO(array $value): \App\dtoWeb\SensorReading {
 
-      return new \App\dto\SensorReading(
+      return new \App\dtoWeb\SensorReading(
          id: $value[SensorReading::IdColumnName],
          sensorId: $value[SensorReading::SensorIdColumnName],
          temp: floatval($value[SensorReading::TempColumnName]),

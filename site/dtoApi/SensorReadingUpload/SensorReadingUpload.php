@@ -1,6 +1,6 @@
 <?php
 
-namespace App\frontendDto\SensorReadingUpload;
+namespace App\dtoApi\SensorReadingUpload;
 
 class SensorReadingUpload
 {

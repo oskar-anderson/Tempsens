@@ -2,7 +2,7 @@
 
 namespace App\mapper;
 
-use App\frontendDto\Sensor\Sensor_v1;
+use App\dtoApi\Sensor\Sensor_v1;
 use App\domain\Sensor;
 
 class SensorMapper

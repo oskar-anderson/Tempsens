@@ -1,7 +1,7 @@
 <?php
 
 
-namespace App\frontendDto\Sensor;
+namespace App\dtoApi\Sensor;
 
 class SensorWithAuth_v1
 {

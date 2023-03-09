@@ -1,6 +1,6 @@
 <?php
 
-namespace App\dto\IndexViewModelChildren;
+namespace App\dtoWeb\IndexViewModelChildren;
 
 use DateTimeImmutable;
 

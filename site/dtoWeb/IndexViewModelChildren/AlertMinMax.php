@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\dto\IndexViewModelChildren;
+namespace App\dtoWeb\IndexViewModelChildren;
 
 require_once (__DIR__."/../../../vendor/autoload.php");
 
-use App\dto\Sensor;
-use App\dto\SensorReading;
+use App\dtoWeb\Sensor;
+use App\dtoWeb\SensorReading;
 use DateTimeImmutable;
 
 class AlertMinMax

@@ -3,7 +3,7 @@
 
 declare(strict_types=1);
 
-use App\dto\IndexViewModel;
+use App\dtoWeb\IndexViewModel;
 use App\util\Helper;
 use App\view\partial\SensorCrudPartialCreateEdit;
 
@@ -17,7 +17,6 @@ $periods = $model->periods;
 $sensors = $model->sensors;
 $sensorReadingOutOfBounds = $model->sensorAlertsMinMax;
 $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
-$colors = $model->colors;
 
 ?>
 
@@ -979,7 +978,7 @@ $colors = $model->colors;
       let chart = new google.visualization.LineChart(chartEle);
 
       google.visualization.events.addListener(chart, 'ready', function () {
-         document.getElementById('chartAsPictureDiv').innerHTML = `<img id="chartAsPictureImg" src="${chart.getImageURI()}">`;
+         document.getElementById('chartAsPictureDiv').innerHTML = `<img id="chartAsPictureImg" src="${chart.getImageURI()}" alt="chart">`;
       })
 
       chart.draw(data, options);

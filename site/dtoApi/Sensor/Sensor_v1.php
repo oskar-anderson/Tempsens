@@ -1,6 +1,6 @@
 <?php
 
-namespace App\frontendDto\Sensor;
+namespace App\dtoApi\Sensor;
 
 class Sensor_v1
 {

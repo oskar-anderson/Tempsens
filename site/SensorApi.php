@@ -33,7 +33,6 @@ class SensorApi
       );
       $db = DbHelper::GetPDO();
       (new DalSensorReading)->InsertByChunk([$reading], $db);
-      DalSensorReading::SetLastReadingsCache($reading);
       return $id;
    }
 }

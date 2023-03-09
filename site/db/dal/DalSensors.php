@@ -7,7 +7,7 @@ require_once(__DIR__."/../../../vendor/autoload.php");
 use App\domain\Sensor;
 use App\db\DbHelper;
 use App\domain\SensorReading;
-use App\dto\SensorAndLastReading;
+use App\dtoWeb\SensorAndLastReading;
 use DateTimeImmutable;
 use JetBrains\PhpStorm\Pure;
 use PDO;
@@ -127,7 +127,7 @@ class DalSensors extends AbstractDalBase
          $sensorMaxRelHum = floatval($value[Sensor::MaxRelHumColumnName]);
          $sensorReadingIntervalMinutes = intval($value[Sensor::ReadingIntervalMinutesColumnName]);
 
-         $sensor = new \App\dto\Sensor(
+         $sensor = new \App\dtoWeb\Sensor(
             id: $sensorId, name: $sensorName, serial: $sensorSerial,
             model: $sensorModel, ip: $sensorIp, location: $sensorLocation,
             isPortable: $sensorIsPortable, minTemp: $sensorMinTemp, maxTemp: $sensorMaxTemp,
@@ -144,7 +144,7 @@ class DalSensors extends AbstractDalBase
             $readingDateRecorded = DateTimeImmutable::createFromFormat('YmdHis', $value[SensorReading::DateRecordedColumnName]);
             $readingDateAdded = $value[SensorReading::DateAddedColumnName] === null ? null : DateTimeImmutable::createFromFormat('YmdHis', $value[SensorReading::DateAddedColumnName]);
 
-            $sensorReading = new \App\dto\SensorReading(id: $readingId, sensorId: $readingSensorId, temp: $readingTemp, relHum: $readingRelHum, dateRecorded: $readingDateRecorded, dateAdded: $readingDateAdded);
+            $sensorReading = new \App\dtoWeb\SensorReading(id: $readingId, sensorId: $readingSensorId, temp: $readingTemp, relHum: $readingRelHum, dateRecorded: $readingDateRecorded, dateAdded: $readingDateAdded);
          }
          $row = new SensorAndLastReading($sensor, $sensorReading);
 

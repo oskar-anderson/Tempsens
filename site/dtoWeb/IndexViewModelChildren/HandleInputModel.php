@@ -1,7 +1,7 @@
 <?php
 
 
-namespace App\dto\IndexViewModelChildren;
+namespace App\dtoWeb\IndexViewModelChildren;
 
 
 class HandleInputModel

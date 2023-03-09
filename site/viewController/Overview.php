@@ -9,19 +9,18 @@ require_once(__DIR__."/../../vendor/autoload.php");
 use App\db\dal\DalSensorReading;
 use App\db\dal\DalSensors;
 use App\db\DbHelper;
-use App\dto\IndexViewModel;
-use App\dto\IndexViewModelChildren\AlertMinMax;
-use App\dto\IndexViewModelChildren\HandleInputModel;
-use App\dto\IndexViewModelChildren\Period;
-use App\frontendDto\Sensor\SensorWithAuth_v1;
-use App\frontendDto\SensorReadingUpload\SensorReadingUpload;
-use App\frontendDto\SensorReadingUpload\SensorReadingUploadReadings;
+use App\dtoWeb\IndexViewModel;
+use App\dtoWeb\IndexViewModelChildren\AlertMinMax;
+use App\dtoWeb\IndexViewModelChildren\HandleInputModel;
+use App\dtoWeb\IndexViewModelChildren\Period;
+use App\dtoApi\Sensor\SensorWithAuth_v1;
+use App\dtoApi\SensorReadingUpload\SensorReadingUpload;
+use App\dtoApi\SensorReadingUpload\SensorReadingUploadReadings;
 use App\mapper\SensorMapper;
 use App\domain\SensorReading;
 use App\util\Base64;
 use App\util\Config;
 use App\util\Helper;
-use App\util\InputValidation;
 use DateTimeImmutable;
 use Illuminate\Support\Collection;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -39,13 +38,15 @@ class Overview {
    public function Index(Request $request, Response $response, $args): Response
    {
       $start = microtime(true);
-      $before = microtime(true);
 
+      $before = microtime(true);
       $input = $this->HandleInput();
-      $sensors = (new DalSensors())->GetAllWithLastReading();
+      array_push($this->debugs,'Handle input: ' . microtime(true) - $before);
 
-      array_push($this->debugs,'Get sensors and handle input: ' . microtime(true) - $before);
       $before = microtime(true);
+      $sensors = (new DalSensors())->GetAllWithLastReading();
+      array_push($this->debugs,'Get sensors: ' . microtime(true) - $before);
+
 
       $from = DateTimeImmutable::createFromFormat('d-m-Y', $input->dateFrom);
       $to = DateTimeImmutable::createFromFormat('d-m-Y', $input->dateTo);
@@ -56,38 +57,26 @@ class Overview {
       foreach ($sensors as $sensor) {
          $sensorReadingsBySensorId[$sensor->sensor->id] = [];
       }
-      $sensorReadingsBySensorId = array_merge($sensorReadingsBySensorId, (new DalSensorReading())->GetAllBetween($from->format('Ymd') . '2359', $to->format('Ymd') . '2359'));
 
-      array_push($this->debugs,"GetAllBetween(" . $from->format('Ymd') . '2359' . ", " . $to->format('Ymd') . '2359' .  ") query (count: " . (new Collection($sensorReadingsBySensorId))->map(function ($readings) { return count($readings); })->sum() . "): " . microtime(true) - $before);
       $before = microtime(true);
+      $sensorReadingsBySensorId = array_merge($sensorReadingsBySensorId, (new DalSensorReading())->GetAllBetween($from->format('Ymd') . '2359', $to->format('Ymd') . '2359'));
+      array_push($this->debugs,"GetAllBetween(" . $from->format('Ymd') . '2359' . ", " . $to->format('Ymd') . '2359' .  ") query (count: " . (new Collection($sensorReadingsBySensorId))->map(function ($readings) { return count($readings); })->sum() . "): " . microtime(true) - $before);
 
+      $before = microtime(true);
       $sensorAlertsMinMax = [];
-      foreach ($sensors as $sensor) {
-         $sensor = $sensor->sensor;
-         $rawOutOfBounds = array_values(array_filter($sensorReadingsBySensorId[$sensor->id], fn(\App\dto\SensorReading $x) =>
+      foreach ($sensors as $sensorPlus) {
+         $sensor = $sensorPlus->sensor;
+         $rawOutOfBounds = array_values(array_filter($sensorReadingsBySensorId[$sensor->id], fn(\App\dtoWeb\SensorReading $x) =>
             $x->temp < $sensor->minTemp || $x->temp > $sensor->maxTemp ||
             $x->relHum < $sensor->minRelHum || $x->relHum > $sensor->maxRelHum
          ));
          $sensorAlertsMinMax[$sensor->id] = AlertMinMax::Get($sensor, $rawOutOfBounds);
       }
-
       array_push($this->debugs,'Group chaining sensor alerts: ' . microtime(true) - $before);
       $before = microtime(true);
 
-      $colors = [];
-      for ($i = 0; $i < sizeof($sensors) * 2; $i++) {
-         mt_srand($i * 13 + 1);    // feel free to experiment with the seed
-         $val = '#' . str_pad(dechex(mt_rand(0x000000, 0xFFFFFF)), 6, '0', STR_PAD_RIGHT);
-         array_push($colors, $val);
-      }
-
-      $htmlInjects = (new IndexViewModel())
-         ->SetColors($colors)
-         ->SetInput($input)
-         ->SetSensorAlertsMinMax($sensorAlertsMinMax)
-         ->SetSensorReadingsBySensorId($sensorReadingsBySensorId)
-         ->SetSensorsAndLastReadings($sensors)
-         ->SetPeriods($periods);
+      $htmlInjects = (new IndexViewModel(input: $input, sensors: $sensors, sensorAlertsMinMax: $sensorAlertsMinMax,
+         sensorReadingsBySensorId: $sensorReadingsBySensorId, periods: $periods));
 
       $content = Helper::Render(__DIR__ . "/../view/main/overview.php", $htmlInjects);
       array_push($this->debugs,'PHP generating page: ' . microtime(true) - $before);
@@ -101,19 +90,19 @@ class Overview {
    {
       $inputDateTo = $_GET['To'] ?? '';
       $inputDateFrom = $_GET['From'] ?? '';
-      if (! isset($_GET['To']) || ! isset($_GET['From']) ||
-         ! InputValidation::isDateFormat__d_m_Y($inputDateTo) &&
-         ! (
-            (strlen($inputDateFrom) > 0 && $inputDateFrom[0] === '-' && is_numeric(substr($inputDateFrom, 1))) ||
-            (InputValidation::isDateFormat__d_m_Y($inputDateFrom))
-         )
+      $dateToIsValid = !! DateTimeImmutable::createFromFormat('d-m-Y', $inputDateTo);
+      $dateFromIsValidDate = !! DateTimeImmutable::createFromFormat('d-m-Y', $inputDateFrom);
+      if (! isset($_GET['To']) ||
+         ! isset($_GET['From']) ||
+         ! $dateToIsValid ||
+         ! (preg_match('/-\d*/', $inputDateFrom) || $dateFromIsValidDate)
       ) {
          // default value
          $now = Helper::GetDateNowAsDateTime();
          return new HandleInputModel($now->modify("-91 day"), $now, 'relative');
       }
       $dateTo = DateTimeImmutable::createFromFormat('d-m-Y', $inputDateTo);
-      [$dateFrom, $dateFromType] = InputValidation::isDateFormat__d_m_Y($inputDateFrom) ?
+      [$dateFrom, $dateFromType] = $dateFromIsValidDate ?
          [DateTimeImmutable::createFromFormat('d-m-Y', $inputDateFrom), 'absolute'] :
          [$dateTo->modify($inputDateFrom . "day"), 'relative'];
 
@@ -243,7 +232,6 @@ class Overview {
       (new DalSensorReading())->InsertByChunk($newSensorReadings, $pdo);
       $pdo->commit();
 
-      DalSensorReading::ResetCache();
       $response->getBody()->write('Success!');
       return $response->withStatus(200);
    }
