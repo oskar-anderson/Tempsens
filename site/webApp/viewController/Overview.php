@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\viewController;
-
-require_once(__DIR__."/../../vendor/autoload.php");
+namespace App\webApp\viewController;
 
 use App\db\dal\DalSensorReading;
 use App\db\dal\DalSensors;
@@ -66,7 +64,7 @@ class Overview {
       $htmlInjects = (new IndexViewModel(input: $input, sensors: $sensors, sensorAlertsMinMax: $sensorAlertsMinMax,
          sensorReadingsBySensorId: $sensorReadingsBySensorId, periods: $periods));
 
-      $content = Helper::Render(__DIR__ . "/../view/main/overview.php", $htmlInjects);
+      $content = Helper::Render(__DIR__ . "/../view/main/Overview.php", $htmlInjects);
       array_push($this->debugs,'PHP generating page: ' . microtime(true) - $before);
       array_push($this->debugs,'PHP total: ' . microtime(true) - $start);
       $content .= '<script type=text/javascript>' . join("", array_map(fn($x) => 'console.log(' . json_encode($x) . ');', $this->debugs)) . '</script>';

@@ -2,8 +2,6 @@
 
 namespace App\db\dal;
 
-require_once(__DIR__."/../../../vendor/autoload.php");
-
 use App\util\Config;
 use App\util\Console;
 use PDO;
@@ -15,8 +13,6 @@ abstract class AbstractDalBase {
     *  @return string
     */
     public abstract function SqlCreateTableStmt(): string;
-
-   public abstract function Map(array $value);
    /**
     *  @throws PDOException
     */

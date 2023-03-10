@@ -3,8 +3,6 @@
 
 namespace App\util;
 
-require_once(__DIR__."/../../vendor/autoload.php");
-
 
 class Console
 {

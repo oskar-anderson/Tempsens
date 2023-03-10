@@ -6,8 +6,6 @@ namespace App\util;
 use DateTimeImmutable;
 use DateTimeZone;
 
-require_once(__DIR__."/../../vendor/autoload.php");
-
 
 class Helper
 {

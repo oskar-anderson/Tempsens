@@ -2,8 +2,6 @@
 
 namespace App\db;
 
-require_once(__DIR__."/../../vendor/autoload.php");
-
 use App\db\dal\DalSensorReading;
 use App\db\dal\DalSensors;
 use App\db\dal\AbstractDalBase;
@@ -38,13 +36,9 @@ class DbHelper {
    public static function GetPDO(): PDO
    {
       $config = new Config();
-      try {
-         $pdo = new PDO("mysql:host={$config->GetHost()};port={$config->GetPort()};dbname={$config->GetDatabaseName()}", $config->GetUsername(), $config->GetPassword());
-         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-         // var_dump($pdo->setAttribute(PDO::ATTR_TIMEOUT, 28800)); // this fails
-         return $pdo;
-      } catch (PDOException $e) {
-         throw $e;
-      }
+      $pdo = new PDO("mysql:host={$config->GetHost()};port={$config->GetPort()};dbname={$config->GetDatabaseName()}", $config->GetUsername(), $config->GetPassword());
+      $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+      // var_dump($pdo->setAttribute(PDO::ATTR_TIMEOUT, 28800)); // this fails
+      return $pdo;
    }
 }

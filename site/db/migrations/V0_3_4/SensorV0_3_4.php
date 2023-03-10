@@ -5,6 +5,7 @@ namespace App\db\migrations\V0_3_4;
 
 use App\db\migrations\V1_0_0\SensorV1_0_0;
 use App\util\Base64;
+use Exception;
 
 error_reporting(E_STRICT);
 
@@ -47,6 +48,7 @@ class SensorV0_3_4 {
     * @param SensorV0_3_4[] $sensors
     * @param string $serial
     * @return SensorV0_3_4
+    * @throws Exception
     */
    public static function GetSensorBySerial(array $sensors, string $serial): SensorV0_3_4
    {
@@ -54,8 +56,8 @@ class SensorV0_3_4 {
          function ($obj) use ($serial) {
             return $obj->serial === $serial;
          }));
-      if (sizeof($arr) === 0) die('Sensor with serial:' . $serial . ' does not exist!');
-      if (sizeof($arr) > 1) die('Multiple sensors with serial:' . $serial);
+      if (sizeof($arr) === 0) throw new Exception('Sensor with serial:' . $serial . ' does not exist!');
+      if (sizeof($arr) > 1) throw new Exception('Multiple sensors with serial:' . $serial);
       return $arr[0];
    }
 }

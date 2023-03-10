@@ -1,8 +1,6 @@
 <?php
 
-namespace App\viewController;
-
-require_once(__DIR__."/../../vendor/autoload.php");
+namespace App\webApp\viewController;
 
 use App\dtoApi\Sensor\Sensor_v1;
 use Psr\Http\Message\ResponseInterface as Response;

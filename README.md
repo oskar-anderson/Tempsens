@@ -2,6 +2,8 @@
 
 Sirowa warehouse sensor temperature and humidity data visualization logserver.
 
+![Preview image](_documents/images/version_1.1.1.png)
+
 ## Installation
 ### Local
 
@@ -30,10 +32,10 @@ Possible errors:
 * [phpdotenv](https://github.com/vlucas/phpdotenv) - Loads environment variables from `.env` to `getenv()`, `$_ENV` and `$_SERVER` automagically.
 * [Slim](https://github.com/slimphp/Slim) - PHP micro framework that helps you quickly write simple yet powerful web applications and APIs.
 * [Symfony/Serializer and PropertyAccess](https://symfony.com/doc/current/components/serializer.html) - hydrated JSON deserialization to class instance
-* [Illuminate/Support/Collection](https://laravel.com/api/8.x/Illuminate/Support/Collection.html) - convenient array methods
+* [Illuminate/Support/Collection](https://laravel.com/api/8.x/Illuminate/Support/Collection.html) - Convenient array methods
 
 ### Client side
-* [Reset CSS](https://meyerweb.com/eric/tools/css/reset) - cross browser style inconsistency remover
+* [Reset CSS](https://meyerweb.com/eric/tools/css/reset) - Cross browser style inconsistency remover
 * [Bootstrap Icons](https://icons.getbootstrap.com) - Different icons (class tags `bi bi-`)
 * [jQuery](https://jquery.com) - Needed for jQuery UI
 * [jQuery UI](https://jqueryui.com/datepicker) - Cross browser identical calendar/datepicker, kinda stupid for such a simple thing
@@ -54,32 +56,28 @@ Documentation for physical sensor API and Tempsens logserver API:
 
 ### Database Schema
 
-[Note] Disable word wrap to display table correctly (alt + z in VSCode). Viewing markdown files through Github is not an issue. 
-
 ```
 +------------------------------------+      +---------------------------------------------+                                                                                                              
 |               Sensors              |      |               SensorReading                 |                                                                                                              
 +--------------+---------------+-----+      +--------------+----------------+-------------+                                                                                                              
-| Id           | string!       | PK  |      | Id           | string!        | PK          |                                                                                                              
-| Name         | string!       |     |1....*| SensorId     | string!        | FK(sensors) |                                                                                                              
-| Serial       | string!       |     |      | Temp         | decimal(18,1)! |             |                                                                                                              
-| Model        | string!       |     |      | RelHum       | decimal(18,1)! |             |                                                                           
-| Ip           | string!       |     |      | DateRecorded | string!        | Idx         |                                                                           
-| Location     | string!       |     |      | DateAdded    | string?        |             |                                                                        
-| IsPortable   | bool!         |     |      +--------------+----------------+-------------+                                                                                                        
-| MinTemp      | decimal(18,1)!|     |                                                                                                              
-| MaxTemp      | decimal(18,1)!|     |                                                                                                                                         
-| MinRelHum    | decimal(18,1)!|     |                                                                                                                                                           
-| MaxRelHum    | decimal(18,1)!|     |                                                                                                              
-| ReadingInterv| int!          |     |                                                                                                               
+| id           | string!       | PK  |      | id           | string!        | PK          |                                                                                                              
+| name         | string!       |     |1....*| sensor_id    | string!        | FK(sensors) |                                                                                                              
+| serial       | string!       |     |      | temp         | decimal(18,1)! |             |                                                                                                              
+| model        | string!       |     |      | rel_hum      | decimal(18,1)! |             |                                                                           
+| ip           | string!       |     |      | date_recorded| string!        |             |                                                                           
+| location     | string!       |     |      | date_added   | string?        |             |                                                                        
+| is_portable  | bool!         |     |      +--------------+----------------+-------------+                                                                                                        
+| min_temp     | decimal(18,1)!|     |                                                                                                              
+| max_temp     | decimal(18,1)!|     |                                                                                                                                         
+| min_rel_hum  | decimal(18,1)!|     |                                                                                                                                                           
+| max_rel_hum  | decimal(18,1)!|     |                                                                                                              
+| reading_inter| int!          |     |                                                                                                               
 +--------------+---------------+-----+                                                                        
 
 ```                                                                                                           
-[Tip] Use VSCode multiline editing shortcuts (alt + mouse_click; alt + ctrl + down/up arrow) to edit DB schema
 
 Date format is YYYYMMDDHHmm. This makes ordering SensorReadings by date easy (eg 13:42, 13.03.2021 becomes 202103131342)                
-DateAdded is `null` for not isPortable sensors.  
-Cache is `string` key to JSON `SensorReading[]` value for latest `SensorReading` values for all sensors.
+DateAdded is `null` for not isPortable sensors.
 
 ## Testing
 
@@ -121,7 +119,7 @@ Versioning follows major.minor.patch three digit numbering:
 
 ### 1.0.0
 
-![Preview image](_documents/images/version_1.0.0.png)
+[Preview image](_documents/images/version_1.0.0.png)
 
 Notes:
 * Remade database (removed: alarms, emails, emails_to_sensor, parms, portable and queue. Redesigned sensor and sensorReading)
@@ -151,7 +149,7 @@ Made with ❤️ by Karl Oskar Anderson
 ### 1.1.0
 Notes:
 * Update UI - Sensor info (Alerts, Actions, Details) are organized into clickable `nav` element buttons
-* Change database table collation to binary. All field comparisons are now case sensitive.
+* Change database table collation to binary. All field comparisons are now case-sensitive.
 * Remove dependency from existing database:
   * Update environment variable reading
   * Change database initializer to work with CSV files
@@ -159,3 +157,13 @@ Notes:
 * Fix a bug causing alert packing to result in a null pointer exception
 
 Made with ❤️ by Karl Oskar Anderson
+
+### 1.1.1
+[Preview image](_documents/images/version_1.1.1.png)
+
+Notes: 
+* Used REST API for cleaner controllers
+* Minor UI tweaks to sensor alert view
+* Reduced memory usage
+* Removed cache file
+* Refactored project structure

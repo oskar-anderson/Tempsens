@@ -2,8 +2,8 @@ import sys
 import re
 import getopt
 
-TEMPLATE_FILE_PATHS = [ './site/view/partial/FooterPartialTemplate.html' ]
-BUILD_FILE_PATHS =    [ './site/view/partial/FooterPartial.html' ]
+TEMPLATE_FILE_PATHS = [ './site/webApp/view/partial/FooterPartialTemplate.html' ]
+BUILD_FILE_PATHS =    [ './site/webApp/view/partial/FooterPartial.html' ]
 
 def githubSideRendering(argv):
     # constants

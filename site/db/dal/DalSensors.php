@@ -2,8 +2,6 @@
 
 namespace App\db\dal;
 
-require_once(__DIR__."/../../../vendor/autoload.php");
-
 use App\domain\Sensor;
 use App\db\DbHelper;
 use App\domain\SensorReading;

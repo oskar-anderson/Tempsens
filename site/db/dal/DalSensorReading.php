@@ -2,8 +2,6 @@
 
 namespace App\db\dal;
 
-require_once(__DIR__ . "/../../../vendor/autoload.php");
-
 use App\db\DbHelper;
 use App\domain\Sensor;
 use App\domain\SensorReading;
@@ -83,7 +81,7 @@ class DalSensorReading extends AbstractDalBase
          return null;
       }
       $value[SensorReading::SensorIdColumnName] = $sensorId;
-      return $this->MapToDTO($value);
+      return $this->Map($value);
    }
 
    /**
@@ -113,7 +111,7 @@ class DalSensorReading extends AbstractDalBase
          if (! array_key_exists($key, $result)) {
             $result[$key] = [];
          }
-         array_push($result[$key], $this->MapToDTO($value));
+         array_push($result[$key], $this->Map($value));
       }
 
       return $result;
@@ -141,7 +139,7 @@ class DalSensorReading extends AbstractDalBase
       $stmt->execute([$sensorId]);
       while ($value = $stmt->fetch()) {
          $value[SensorReading::SensorIdColumnName] = $sensorId;
-         array_push($result, $this->MapToDTO($value));
+         array_push($result, $this->Map($value));
       }
 
       return $result;
@@ -170,23 +168,7 @@ class DalSensorReading extends AbstractDalBase
       $stmt->execute($params);
    }
 
-   /**
-    * @param array $value
-    * @return SensorReading
-    */
-   public function Map(array $value): SensorReading
-   {
-      return new SensorReading(
-         $value[SensorReading::IdColumnName],
-         $value[SensorReading::SensorIdColumnName],
-         floatval($value[SensorReading::TempColumnName]),
-         floatval($value[SensorReading::RelHumColumnName]),
-         DateTimeImmutable::createFromFormat('YmdHis', $value[SensorReading::DateRecordedColumnName]),
-         $value[SensorReading::DateAddedColumnName] === null ? null : DateTimeImmutable::createFromFormat('YmdHis', $value[SensorReading::DateAddedColumnName])
-      );
-   }
-
-   public function MapToDTO(array $value): \App\dtoWeb\SensorReading {
+   public function Map(array $value): \App\dtoWeb\SensorReading {
 
       return new \App\dtoWeb\SensorReading(
          id: $value[SensorReading::IdColumnName],

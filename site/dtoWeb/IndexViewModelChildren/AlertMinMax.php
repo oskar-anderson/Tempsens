@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\dtoWeb\IndexViewModelChildren;
 
-require_once (__DIR__."/../../../vendor/autoload.php");
-
 use App\dtoWeb\Sensor;
 use App\dtoWeb\SensorReading;
 use DateTimeImmutable;
+use Exception;
 
 class AlertMinMax
 {
@@ -31,16 +30,17 @@ class AlertMinMax
     * @param Sensor $sensor
     * @param SensorReading[] $outOfBoundsGroup
     * @return AlertMinMax
+    * @throws Exception
     */
    private static function Create(Sensor $sensor, array $outOfBoundsGroup): AlertMinMax
    {
       $outOfBoundsGroup = array_values($outOfBoundsGroup);
       if (sizeof($outOfBoundsGroup) === 0) {
-         die('Invalid input! Array has less than 0 elements!' . var_export($outOfBoundsGroup, true));
+         throw new Exception('Invalid input! Array has less than 0 elements!' . var_export($outOfBoundsGroup, true));
       }
       if (sizeof($outOfBoundsGroup) === 1) {
          [$temp, $relHum] = AlertMinMax::GetDeviation($sensor, $outOfBoundsGroup);
-         return new AlertMinMax($outOfBoundsGroup[0]->dateRecorded, 0, 1, $temp, $relHum);
+         return new AlertMinMax($outOfBoundsGroup[0]->dateRecorded, (int) ceil($sensor->readingIntervalMinutes / 2), 1, $temp, $relHum);
       }
       $before = $outOfBoundsGroup[0];
       $end = $outOfBoundsGroup[sizeof($outOfBoundsGroup) - 1];
@@ -78,6 +78,7 @@ class AlertMinMax
    /**
     * @param SensorReading[] $ungroupedOutOfBounds
     * @return AlertMinMax[]
+    * @throws Exception
     */
    public static function Get(Sensor $sensor, array $ungroupedOutOfBounds): array {
       $outOfBounds = [];
@@ -104,7 +105,7 @@ class AlertMinMax
          $isPartOfChainBreak = sizeof($outOfBoundsChain) > 1 && ! $isPartOfSameChain;
          $isNotPartOfChain = sizeof($outOfBoundsChain) === 0 && ! $isPartOfSameChain;
          $state = ["", "isPartOfSameChain", "isPartOfChainBreak", "", "isNotPartOfChain"][(int) $isPartOfSameChain * 1 + (int) $isPartOfChainBreak * 2 + (int) $isNotPartOfChain * 4];
-         if (sizeof($outOfBoundsChain) === 1) die("Program logic error! Chain cannot contain singular element!");  // sanity check
+         if (sizeof($outOfBoundsChain) === 1) throw new Exception("Program logic error! Chain cannot contain singular element!");  // sanity check
          $isLast = $i === sizeof($ungroupedOutOfBounds) - 2;
          switch ($state) {
             case "isPartOfSameChain":  // leads to isPartOfSameChain or isPartOfChainBreak
@@ -130,7 +131,7 @@ class AlertMinMax
                }
                break;
             default:
-               die("Unknown switch case!");
+               throw new Exception("Unknown switch case!");
          }
       }
       return $outOfBounds;

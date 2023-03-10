@@ -2,9 +2,6 @@
 
 namespace App\util;
 
-require_once (__DIR__."/../../vendor/autoload.php");
-
-
 class Base64
 {
    public static function GenerateId(int $length = 22): string

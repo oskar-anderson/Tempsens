@@ -1,6 +1,6 @@
 <?php
 
-namespace App\apiController\v1;
+namespace App\webApp\apiController\v1;
 
 use App\db\dal\DalSensors;
 use App\db\DbHelper;

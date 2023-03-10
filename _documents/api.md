@@ -15,9 +15,9 @@ Official info about the M1140 portable model data logger sensor from Comet Syste
 Physical sensor API used in Tempsens logserver.
 
 ### Insert
-Data transfer between the physical sensors and logserver web app using SOAP XML.
+Data is transfer between the physical sensors and logserver web app via SOAP XML.
 
-Sensor insert API requests can be tested locally using an API testing tool like Postman. Send a `POST` request to URL `http://localhost:80/api/physical-sensor/insert-reading` with request body:
+Sensor insert API requests can be tested locally using an API testing tool like Postman. Send a `POST` request to URL `http://localhost:8000/api/v1/sensor-reading/insert-reading-xml` with request body:
 
 XML request body:
 ```xml

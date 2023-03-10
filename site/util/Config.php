@@ -3,7 +3,6 @@
 
 namespace App\util;
 
-require_once(__DIR__."/../../vendor/autoload.php");
 use Dotenv\Dotenv;
 use Exception;
 use JetBrains\PhpStorm\ArrayShape;

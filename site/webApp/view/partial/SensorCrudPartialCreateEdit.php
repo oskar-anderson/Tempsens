@@ -1,9 +1,7 @@
 <?php
 
 
-namespace App\view\partial;
-
-require_once(__DIR__."/../../../vendor/autoload.php");
+namespace App\webApp\view\partial;
 
 use App\dtoWeb\Sensor;
 use App\util\Base64;

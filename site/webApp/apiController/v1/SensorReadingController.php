@@ -1,6 +1,6 @@
 <?php
 
-namespace App\apiController\v1;
+namespace App\webApp\apiController\v1;
 
 use App\db\dal\DalSensorReading;
 use App\db\dal\DalSensors;
@@ -22,16 +22,13 @@ use Symfony\Component\Serializer\Serializer;
 
 class SensorReadingController
 {
-   function Save(Request $request, Response $response, $args): Response {
+   function Insert(Request $request, Response $response, $args): Response {
       $xml_string = $request->getBody()->getContents();
       $xmlStringParsable = str_replace('soap:', '', $xml_string);    // https://stackoverflow.com/questions/4194489/how-to-parse-soap-xml
       $requestDataObject = @simplexml_load_string($xmlStringParsable); // add @ before function call to prevent warning message from being added to response
       if (! $requestDataObject) {
-         $response->getBody()->write("Failed to parse XML: {
-         xml_string: $xml_string,
-         xmlStringParsable: $xmlStringParsable
-      }");
-         return $response;
+         $response->getBody()->write("Failed to parse XML!");
+         return $response->withStatus(400);
       }
       $serial = (string) $requestDataObject->Body->InsertTx5xxSample->passKey;
       $temp = (float) $requestDataObject->Body->InsertTx5xxSample->temp;

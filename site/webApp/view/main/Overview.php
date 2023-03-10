@@ -5,7 +5,7 @@ declare(strict_types=1);
 
 use App\dtoWeb\IndexViewModel;
 use App\util\Helper;
-use App\view\partial\SensorCrudPartialCreateEdit;
+use App\webApp\view\partial\SensorCrudPartialCreateEdit;
 
 /* @var IndexViewModel $model */
 
@@ -19,7 +19,7 @@ $sensorReadingOutOfBounds = $model->sensorAlertsMinMax;
 $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
 
 ?>
-
+<!--suppress HtmlUnknownTarget -->
 <!DOCTYPE HTML>
 <html lang="en">
 <head>
@@ -31,14 +31,14 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
 
    <title>Sensor</title>
    <!-- IDE might complain about links not resolving, but they are resolved relative to the viewController dir not the view dir -->
-   <link rel="icon" href="../static/gfx/favicon3.png" type="image/png"/>
+   <link rel="icon" href="../webApp/static/gfx/favicon3.png" type="image/png"/>
 
    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css"/>
    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"/>
    <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
 
-   <link rel="stylesheet" type="text/css" media="screen" href="../static/css/reset.css"/>
-   <link rel="stylesheet" type="text/css" media="screen" href="../static/css/main-layout.css"/>
+   <link rel="stylesheet" type="text/css" media="screen" href="../webApp/static/css/reset.css"/>
+   <link rel="stylesheet" type="text/css" media="screen" href="../webApp/static/css/main-layout.css"/>
 
    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
    <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
@@ -89,7 +89,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
 
                <div>
                   <label class="dateFromOption" for="typeAbsolute">
-                     <input type="radio" onclick="handleRadioClick(this);" name="dateFromType" id="typeAbsolute"
+                     <input type="radio" name="dateFromType" id="typeAbsolute"
                         <?= $dateFromType === 'absolute' ? 'checked' : '' ?>
                             value="absolute"/>
                      <span style="margin-left: 20px">From Date</span>
@@ -102,7 +102,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
 
                <div>
                   <label class="dateFromOption" for="typeRelative">
-                     <input type="radio" onclick="handleRadioClick(this);" name="dateFromType" id="typeRelative"
+                     <input type="radio" name="dateFromType" id="typeRelative"
                         <?= $dateFromType === 'relative' ? "checked" : ''?>
                             value="relative"/>
                      <span style="margin-left: 20px">From Relative</span>
@@ -148,38 +148,18 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
             <div style="margin-bottom: 1em;">
 
                <p>
-                  Click on sensor to:
-               </p>
-               <ul style="margin-bottom: 12px">
-                  <li>Show alert info</li>
-                  <li>Export data</li>
-                  <li>Upload data (only for portable sensors)</li>
-                  <li>Edit sensor fields (requires password, will not affect sensor's own configuration)</li>
-               </ul>
-               <p>
-                  Exported and imported data is semicolon delimited CSV.
-                  It is worth noting that Excel reads files using the computer regional settings and will
-                  likely display semicolon delimited files incorrectly.
-                  Excel uses delimiter from user PC
-                  <code>Control Panel\Clock and Region -> Region -> Additional settings -> List separator</code>
-                  (this should be changed from <code>,</code> to <code>;</code>). The exported data format
-                  itself is correct.
-               </p>
-
-               <p>
-                  For portable sensors reading data can be added to database by parsing CSV files.
-                  Look for upload option under the specific portable sensor.
-                  Order of columns can be changed.
+                  Portable sensor reading data can be added to database by parsing CSV files.
+                  Order of parsed CSV file columns can be changed.
                   Column separator is <code>;</code>.
                   Double separator <code>;;</code> skips in between column.
                   Any empty values and error values are skipped.
                   Allowed column values are: <code>date</code>, <code>temp</code>, <code>relHum</code>.
                </p>
                <p>
-                  Sensors alarms will combine all continues alarms under one parent alarm.
-                  Parent alarm will show starting time, duration, count of sub alarms and sub alarm deviation
-                  (largest offset from average allowed value) of temperature and relative humidity.
-                  Alarm duration is approximate depending on sensor reading interval.
+                  Sensor alarms will combine all continues alarms under one parent alarm.
+                  Parent alarm will show starting time, duration and alarm deviation
+                  (the largest offset from average allowed value) of temperature and relative humidity.
+                  Alarm duration is approximate - accuracy depends on sensor reading interval.
                </p>
             </div>
 
@@ -562,7 +542,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
 <script type="module">
 
    dayjs.extend(window.dayjs_plugin_customParseFormat);
-   let baseApi = window.location.protocol + '//' + window.location.host + "/v1"
+   let baseApi = window.location.protocol + '//' + window.location.host + "/api"
 
    function handleSensorCreate() {
       let submitBtn = document.querySelector('#collapseSensorCreateSubmitBtn');
@@ -573,8 +553,8 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
             return;
          }
          let formData = getFormSensor(form);
-         console.log("Sending a post request: ", baseApi + "/sensor/create")
-         let response = await fetch(baseApi + "/sensor/create", {
+         console.log("Sending a post request: ", baseApi + "/v1/sensor/create")
+         let response = await fetch(baseApi + "/v1/sensor/create", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json'},
             body: JSON.stringify(formData)
@@ -599,8 +579,8 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
                return;
             }
             let formData = getFormSensor(form);
-            console.log("Sending a post request: ", baseApi + "/sensor/update")
-            let response = await fetch(baseApi + "/sensor/update", {
+            console.log("Sending a post request: ", baseApi + "/v1/sensor/update")
+            let response = await fetch(baseApi + "/v1/sensor/update", {
                method: 'POST',
                headers: { 'Content-Type': 'application/json'},
                body: JSON.stringify(formData)
@@ -664,8 +644,8 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
                id: id,
                auth: auth
             };
-            console.log("Sending a post request: ", baseApi + "/sensor/delete")
-            let response = await fetch(baseApi + "/sensor/delete", {
+            console.log("Sending a post request: ", baseApi + "/v1/sensor/delete")
+            let response = await fetch(baseApi + "/v1/sensor/delete", {
                method: 'POST',
                headers: { 'Content-Type': 'application/json'},
                body: JSON.stringify(formData)
@@ -1051,7 +1031,8 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
    }
 
 
-   function handleRadioClick(dateFromType) {
+   function handleRadioClick(e) {
+      let dateFromType = e.target;
       const absoluteDateFromInput = document.getElementById("absoluteDateFrom");
       const relativeDateFromInput = document.getElementById("relativeDateFrom");
 
@@ -1174,8 +1155,10 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
 
    async function main() {
       let indexModel = new IndexModel();
-      let footerResponse = await fetch("../view/partial/FooterPartial.html");
+      let footerResponse = await fetch("../webApp/view/partial/FooterPartial.html");
       document.querySelector(".footer").innerHTML = await footerResponse.text()
+      document.querySelector('#typeAbsolute').onclick = (e) => handleRadioClick(e);
+      document.querySelector('#typeRelative').onclick = (e) => handleRadioClick(e);
       document.querySelector('#saveImgBtn').onclick = () => saveChartImg(
          indexModel.dateFrom.format("DD-MM-YYYY"),
          indexModel.dateTo.format("DD-MM-YYYY")
