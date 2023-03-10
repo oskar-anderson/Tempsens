@@ -47,15 +47,8 @@ abstract class AbstractDalBase {
     */
    public function InsertByChunk($objects, $pdo): void {
       $chunks = array_chunk($objects, 1000);
-      try {
-         foreach ($chunks as $i => $chunk) {
-            $this->Insert($chunk, $pdo);
-         }
-      }
-      catch (PDOException $e) {
-         $console = new Console(Console::$BreakLF, true);
-         $console->WriteLine("PDOException " . $i . "/" . sizeof($chunks) . ": " . $e);
-         die();
+      foreach ($chunks as $i => $chunk) {
+         $this->Insert($chunk, $pdo);
       }
    }
 

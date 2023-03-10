@@ -1,5 +1,7 @@
 <?php
 
+use App\apiController\v1\SensorController;
+use App\apiController\v1\SensorReadingController;
 use App\SensorApi;
 use App\viewController\Debug;
 use App\viewController\Overview;
@@ -41,7 +43,7 @@ $errorMiddleware->setDefaultErrorHandler($customErrorHandler);
 
 // PAGES
 $app->get('/', function (Request $request, Response $response, $args) {
-   $response->getBody()->write("Hello world! You probably want to visit <a href='/overview'>/overview</a>");
+   $response->getBody()->write("Welcome to the app! To view sensor data <a href='/overview'>click here</a>.</div>");
    return $response;
 });
 
@@ -51,34 +53,17 @@ $app->get('/info', function (Request $request, Response $response, $args) {
 });
 
 $app->get('/overview', [Overview::class, "Index"]);
-$app->post('/v1/sensor-reading/upload', [Overview::class, "UploadReadings"]);
-$app->post('/v1/sensor/create', [Overview::class, "CreateSensor"]);
-$app->post('/v1/sensor/update', [Overview::class, "UpdateSensor"]);
-$app->post('/v1/sensor/delete', [Overview::class, "DeleteSensor"]);
-$app->post('/test1', [Debug::class, "Test1_HydrateWithPostData"]);
-$app->post('/test2', [Debug::class, "Test2_HydrateWithSampleData"]);
-
 $app->get('/debug', [Debug::class, "main"]);
 
 // API
-$app->post('/api/physical-sensor/insert-reading', function (Request $request, Response $response, $args) {
-   $xml_string = $request->getBody()->getContents();
-   $xmlStringParsable = str_replace('soap:', '', $xml_string);    // https://stackoverflow.com/questions/4194489/how-to-parse-soap-xml
-   $requestDataObject = @simplexml_load_string($xmlStringParsable); // add @ before function call to prevent warning message from being added to response
-   if (! $requestDataObject) {
-      $response->getBody()->write("Failed to parse XML: {
-         xml_string: $xml_string,
-         xmlStringParsable: $xmlStringParsable
-      }");
-      return $response;
-   }
-   $serial = (string) $requestDataObject->Body->InsertTx5xxSample->passKey;
-   $temp = (float) $requestDataObject->Body->InsertTx5xxSample->temp;
-   $relHum = (float) $requestDataObject->Body->InsertTx5xxSample->relHum;
+$app->post('/v1/sensor-reading/insert-reading', [SensorReadingController::class, "Save"]);
+$app->post('/v1/sensor-reading/upload', [SensorReadingController::class, "UploadReadings"]);
+$app->post('/v1/sensor/create', [SensorController::class, "CreateSensor"]);
+$app->post('/v1/sensor/update', [SensorController::class, "UpdateSensor"]);
+$app->post('/v1/sensor/delete', [SensorController::class, "DeleteSensor"]);
 
-   $id = SensorApi::Save($serial, $temp, $relHum);
-   $response->getBody()->write($id);
-   return $response;
-});
+// testing
+$app->post('/test1', [Debug::class, "Test1_HydrateWithPostData"]);
+$app->post('/test2', [Debug::class, "Test2_HydrateWithSampleData"]);
 
 $app->run();

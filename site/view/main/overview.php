@@ -43,7 +43,6 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
    <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
    <script type="text/javascript" src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-   <script type="text/javascript" src="https://mozilla.github.io/nunjucks/files/nunjucks.js"></script>
    <style>
       .dateFromOption {
          display: grid;
@@ -80,20 +79,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
 
 <div>
    <div>
-      <div class="templating-root m-2" style="display: none">
-         {% if errors.length !== 0 %}
-         <div class="alert alert-danger alert-dismissible fade show" style="margin-bottom: 2em" role="alert">
-            <h4>Errors: </h4>
-            <ol>
-               {% for error in errors %}
-                  <li>{{ error }}</li>
-               {% endfor %}
-            </ol>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span>&times;</span>
-            </button>
-         </div>
-         {% endif %}
-      </div>
+      <div class="error-alert"></div>
 
       <div class="🎯">
 
@@ -267,7 +253,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
                if ($lastReading !== null) {
                   $lastDate = $lastReading->dateRecorded->format('d/m/Y H:i');
                   $minutesDiff = floor((
-                     Helper::GetDateNowAsDateTime()->getTimestamp() -
+                     Helper::GetUtcNow()->getTimestamp() -
                      $lastReading->dateRecorded->getTimestamp()
                   ) / 60);
                   if ($sensor->readingIntervalMinutes - $minutesDiff < 0 && !$sensor->isPortable) {
@@ -538,6 +524,12 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
 <footer class="footer">
    Javascript failed!
 </footer>
+<div style="display: none">
+   <div id="dataSensor"><?php echo json_encode($sensors); ?></div>
+   <div id="dataSensorReadingsBySensorId"><?php echo json_encode($sensorReadingsBySensorId); ?></div>
+   <div id="dataDateTo"><?php echo $dateTo . ', 23:59:59' ?></div>
+   <div id="dataDateFrom"><?php echo $dateFrom . ', 00:00:00' ?></div>
+</div>
 <!-- Modal -->
 <div class="modal fade" id="JsonModal" tabindex="-1" role="dialog">
    <div class="modal-dialog" role="document">
@@ -567,13 +559,12 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
 </div>
 </body>
 
-<script type="text/javascript">
+<script type="module">
 
    dayjs.extend(window.dayjs_plugin_customParseFormat);
-   let stateTemplate = document.querySelector('.templating-root').innerHTML;
    let baseApi = window.location.protocol + '//' + window.location.host + "/v1"
 
-   function HandleSensorCreate() {
+   function handleSensorCreate() {
       let submitBtn = document.querySelector('#collapseSensorCreateSubmitBtn');
       submitBtn.addEventListener('click', async (e) => {
          e.preventDefault();
@@ -593,12 +584,12 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
          if (response.ok) {
             location.reload();
          } else {
-            stateHasChanged([msg]);
+            displayError(msg);
          }
       })
    }
 
-   function HandleSensorUpdate() {
+   function handleSensorUpdate() {
       let submitBtns = document.querySelectorAll('.sensorCrudActionSaveBtn');
       for (let submitBtn of submitBtns) {
          submitBtn.addEventListener('click', async (e) => {
@@ -619,7 +610,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
             if (response.ok) {
                location.reload();
             } else {
-               stateHasChanged([msg]);
+               displayError(msg);
             }
          })
       }
@@ -658,7 +649,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
       };
    }
 
-   function HandleSensorDelete() {
+   function handleSensorDelete() {
       let submitBtns = document.querySelectorAll('.sensorCrudActionDeleteBtn');
       for (let submitBtn of submitBtns) {
          submitBtn.addEventListener('click', async (e) => {
@@ -670,8 +661,8 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
             let id = form.querySelector('input[name="id"]').value;
             let auth = form.querySelector('input[name="auth"]').value;
             let formData = {
-               'id': id,
-               'auth': auth
+               id: id,
+               auth: auth
             };
             console.log("Sending a post request: ", baseApi + "/sensor/delete")
             let response = await fetch(baseApi + "/sensor/delete", {
@@ -684,14 +675,14 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
             if (response.ok) {
                location.reload();
             } else {
-               stateHasChanged([msg]);
+               displayError(msg);
             }
          })
       }
    }
 
 
-   function TriggerPortableSensorDataCsvUpload(csvFileUploadBtn) {
+   function triggerPortableSensorDataCsvUpload(csvFileUploadBtn) {
       let id = csvFileUploadBtn.getAttribute('data-sensorId');
       let reader = new FileReader();
       reader.onload = function (event) {
@@ -702,22 +693,22 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
          try {
             [arr, skipCount] = csvToJsonArray(csv, delimiter, headers);
          } catch (e) {
-            stateHasChanged([e]);
+            displayError(e);
             return false;
          }
-         document.getElementById('modalMsg').innerText = `Total data rows count: ${arr.length + skipCount}, skipped ${skipCount}`;
+         document.getElementById('modalMsg').innerText = `CSV file contained ${arr.length + skipCount} rows, skipped ${skipCount} rows.`;
          document.getElementById('csvDataDisplay').innerText = JSON.stringify(arr, null, 2);
          document.getElementById('csvDataDisplay').style.display = 'block';
          document.querySelector('#import-form-submit-btn').onclick = async () => {
             let pass = document.getElementById('import-form-password-input').value;
-            console.log("Sending a post request: ", baseApi + "/sensor-reading/upload")
-            let response = await fetch(baseApi + "/sensor-reading/upload", {
+            console.log("Sending a post request: ", baseApi + "/v1/sensor-reading/upload")
+            let response = await fetch(baseApi + "/v1/sensor-reading/upload", {
                method: 'POST',
                headers: { 'Content-Type': 'application/json'},
                body: JSON.stringify({
-                  "sensorReadings": arr,
-                  "sensorId": id,
-                  "auth": pass
+                  sensorReadings: arr,
+                  sensorId: id,
+                  auth: pass
                })
             })
             let msg = await response.text();
@@ -725,7 +716,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
             if (response.ok) {
                location.reload();
             } else {
-               stateHasChanged([msg]);
+               displayError(msg);
                $('#JsonModal').modal('hide');
             }
          }
@@ -743,7 +734,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
    }
 
 
-   function LoadButtonEvent() {
+   function loadButtonEvent() {
       let dateTo = document.getElementById('dateTo').value;
       let type = document.querySelector('input[name="dateFromType"]:checked').value;
       if (! ['absolute', 'relative'].includes(type)) throw `Unknown type: ${type}`;
@@ -751,24 +742,17 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
       window.location.href = window.location.protocol + '//' + window.location.host + `/overview?From=${dateFrom}&To=${dateTo}`;
    }
 
-   function getEOL() {
-      let aPlatform = navigator.platform.toLowerCase();
-      if (aPlatform.indexOf('win') !== -1) return '\r\n'
-      if (aPlatform.indexOf('mac') !== -1) return '\r'
-      return '\n'
-   }
 
    function csvToJsonArray(csv, delimiter, headers) {
       let allowedHeaders = ['date', 'temp', 'relHum'];
       if (!allowedHeaders.every(x => headers.includes(x))) {
          throw `Missing field, fields [${allowedHeaders.join(',')}] must be defined in [${headers.join(',')}]!`;
       }
-      let eol = getEOL();
-      // skip 1. row (the header)
-      let rows = csv.slice(csv.indexOf(eol) + eol.length).split(eol);
-      if (rows.length === 0) {
+      let rows = csv.split('\n');
+      if (rows.length <= 1) {
          throw 'No rows!';
       }
+      rows.shift(); // remove title row
       rows.pop(); // remove newline
 
       let result = [];
@@ -832,7 +816,10 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
       // undefined value is ignored in graph
       let graphDefaultValue = document.getElementById('graphOptionsLoudNoValue').checked ? 0 : undefined;
 
-      let sensors = indexModel.GetSensorsWithSettings().filter(sensor => sensor.sensorSettings.isTemp || sensor.sensorSettings.isRelHum)
+      let sensors = indexModel.sensors.filter(x => {
+         let settings = getDrawingSettings(x.id);
+         return settings.isTemp || settings.isRelHum
+      })
 
       let chartDiv = document.getElementById('chartDiv');
       let chartErr = document.getElementById('chartErr');
@@ -851,8 +838,8 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
          let nextDate = dateFrom.add(step * i, 'minutes');
          if (nextDate >= dateTo) break;
          xAxisTimesToSensors.push({
-            'datetime': nextDate,
-            'data': []  // will match graphLines length
+            datetime: nextDate,
+            data: []  // will match graphLines length
          });
       }
 
@@ -886,36 +873,37 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
                   case 'deviation':
                      return getDeviationValue(arr, graphDefaultValue, sensorRangeAvg);
                   default:
-                     throw Error("Unknown value!");
+                     throw "Unknown value!";
                }
             }
             let before = xAxisTimesToSensors[i].datetime;
             let after = xAxisTimesToSensors[i + 1].datetime;
 
-            let tmp = FilterSortedArrayValuesBetweenDates(sensorReadings, before, after, low);
+            let tmp = filterSortedArrayValuesBetweenDates(sensorReadings, before, after, low);
             let currentRows = tmp.result;
             low = tmp.low;
 
-            if (sensor.sensorSettings.isTemp) {
+            let drawingSettings = getDrawingSettings(sensor.id);
+            if (drawingSettings.isTemp) {
                let tempValue = doStrategy(strategy, currentRows.map(x => x.temp), graphDefaultValue, tempRangeAvg);
                xAxisTimesToSensors[i].data.push(tempValue);
                if (i === 0) {
                   graphLines.push({
                      sensorName: encodeURI(sensor.name),
                      unit: "℃",
-                     graphLineColor: sensor.sensorSettings.colorTemp,
+                     graphLineColor: drawingSettings.colorTemp,
                      label: `${sensor.name} temperature (℃)`
                   });
                }
             }
-            if (sensor.sensorSettings.isRelHum) {
+            if (drawingSettings.isRelHum) {
                let relHumValue = doStrategy(strategy, currentRows.map(x => x.relHum), graphDefaultValue, humRangeAvg);
                xAxisTimesToSensors[i].data.push(relHumValue);
                if (i === 0) {
                   graphLines.push({
                      sensorName: encodeURI(sensor.name),
                      unit: "%",
-                     graphLineColor: sensor.sensorSettings.colorRelHum,
+                     graphLineColor: drawingSettings.colorRelHum,
                      label: `${sensor.name} relative humidity (%)`
                   });
                }
@@ -926,7 +914,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
       xAxisTimesToSensors.pop();
 
       // add header columns
-      data.addColumn('date');  // This column is for the x axis, you can also use datetime.
+      data.addColumn('date');  // This column is for the x-axis, you can also use datetime.
       for (let lineData of graphLines) {
          data.addColumn('number', lineData.label);  // This column is the data, label is used in legend for each line
          data.addColumn({ type: 'string', role: 'tooltip', p: { html: true } });  // This column is for HTML tooltips for hovering cursor over line
@@ -984,13 +972,13 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
       chart.draw(data, options);
    }
 
-   function SaveChartImg(dateFrom, dateTo) {
+   function saveChartImg(dateFrom, dateTo) {
       let base64 = document.getElementById('chartAsPictureImg').src;
       let fileName = 'tempsens ' + dateFrom + '-' + dateTo;
-      ExportBase(base64, fileName)
+      exportBase(base64, fileName)
    }
 
-   function ExportBase(encodedUri, filename) {
+   function exportBase(encodedUri, filename) {
       let link = document.createElement("a");
       // document.body.appendChild(link); // This might be needed in some browsers, currently not needed.
       link.setAttribute("href", encodedUri);
@@ -998,7 +986,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
       link.click();
    }
 
-   function FilterSortedArrayValuesBetweenDates(sensorReadings, before, after, low) {
+   function filterSortedArrayValuesBetweenDates(sensorReadings, before, after, low) {
       // this would be more readable, but much slower duo to searching the entire array
       // sensorReadings.filter(x => before <= x.date && after > x.date);
 
@@ -1014,12 +1002,12 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
          low++;
       }
       return {
-         'result': result,
-         'low': low
+         result: result,
+         low: low
       };
    }
 
-   function GetDrawingSettings(_sensorId) {
+   function getDrawingSettings(_sensorId) {
       let table = document.getElementById('sensorDrawingSettings');
       for (let row of table.children) {
          let sensorId = row.querySelector('.sensorId').innerHTML;
@@ -1044,14 +1032,13 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
    }
 
    class Sensor {
-      constructor(id, name, maxTemp, minTemp, maxRelHum, minRelHum, sensorSettings) {
+      constructor(id, name, maxTemp, minTemp, maxRelHum, minRelHum) {
          this.id = id;
          this.name = name;
          this.maxTemp = maxTemp;
          this.minTemp = minTemp;
          this.maxRelHum = maxRelHum;
          this.minRelHum = minRelHum;
-         this.sensorSettings = sensorSettings;
       }
    }
 
@@ -1071,7 +1058,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
       const relative = "relative";
       const absolute = "absolute";
       if (! [relative, absolute].includes(dateFromType.value)) {
-         stateHasChanged("Unexpected value: " + dateFromType.value);
+         displayError("Unexpected value: " + dateFromType.value);
          return;
       }
       if (absoluteDateFromInput.disabled && dateFromType.value !== absolute ||
@@ -1082,7 +1069,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
       relativeDateFromInput.disabled = dateFromType.value !== relative;
    }
 
-   function HandleCollapseSymbolChange() {
+   function handleCollapseSymbolChange() {
       document.querySelectorAll('.collapse-and-change-icon').forEach(x => x.onclick = () => {
          let targetElement = document.querySelector(x.getAttribute("data-target"))
          if (targetElement.classList.contains("collapsing")) {
@@ -1103,11 +1090,10 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
          let row = [sensorReading.date.format("DD/MM/YYYY HH:mm:ss"), sensorReading.temp, sensorReading.relHum];
          data.push(row)
       }
-      let eol = getEOL();
-      let csvContent = "data:text/csv;charset=utf-8," + data.map(e => e.join(";")).join(eol);
+      let csvContent = "data:text/csv;charset=utf-8," + data.map(e => e.join(";")).join('\n');
       let encodedUri = encodeURI(csvContent);
 
-      ExportBase(encodedUri, filename)
+      exportBase(encodedUri, filename)
    }
 
    Math.seed = function(s) {
@@ -1133,13 +1119,13 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
 
 
    class IndexModel {
-      dateTo = dayjs('<?php echo $dateTo . ', 23:59:59' ?>', 'DD-MM-YYYY, HH:mm:ss');
-      dateFrom = dayjs('<?php echo $dateFrom . ', 00:00:00' ?>', 'DD-MM-YYYY, HH:mm:ss');
+      dateTo = dayjs(document.querySelector('#dataDateTo').innerHTML, 'DD-MM-YYYY, HH:mm:ss');
+      dateFrom = dayjs(document.querySelector('#dataDateFrom').innerHTML, 'DD-MM-YYYY, HH:mm:ss');
       sensorReadingsMap = [];
-      sensorsWithoutSettings = [];
+      sensors = [];
 
       constructor() {
-         let sensorReadingsById = JSON.parse('<?php echo Helper::EchoJson($sensorReadingsBySensorId); ?>');
+         let sensorReadingsById = JSON.parse(document.querySelector('#dataSensorReadingsBySensorId').innerHTML);
 
          let sensorReadingsMap = [];
          for (let [id, sensorReadings] of Object.entries(sensorReadingsById)) {
@@ -1156,7 +1142,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
                   value: newSensorReadings
                });
          }
-         let sensorsOld = JSON.parse('<?php echo Helper::EchoJson($sensors); ?>');
+         let sensorsOld = JSON.parse(document.querySelector('#dataSensor').innerHTML);
          let sensors = [];
          for (let sensorWithLastReading of sensorsOld) {
             let sensor = sensorWithLastReading.sensor;
@@ -1166,58 +1152,48 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
                sensor.maxTemp,
                sensor.minTemp,
                sensor.maxRelHum,
-               sensor.minRelHum,
-               null
+               sensor.minRelHum
             ));
          }
-         this.sensorsWithoutSettings = sensors;
+         this.sensors = sensors;
          this.sensorReadingsMap = sensorReadingsMap;
-      }
-
-      GetSensorsWithSettings() {
-         let sensors = [];
-         for (let sensor of this.sensorsWithoutSettings) {
-            sensors.push(new Sensor(
-               sensor.id,
-               sensor.name,
-               sensor.maxTemp,
-               sensor.minTemp,
-               sensor.maxRelHum,
-               sensor.maxRelHum,
-               GetDrawingSettings(sensor.id)
-            ));
-         }
-         return sensors;
       }
    }
 
-   function stateHasChanged(errors) {
-      document.querySelector('.templating-root').innerHTML = nunjucks.renderString(stateTemplate, { errors: errors });
+   function displayError(error) {
+      document.querySelector('.error-alert').innerHTML = `
+         <div class="alert alert-danger alert-dismissible fade show m-2" role="alert">
+            <h4>Error: </h4>
+            <p>${error}</p>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span>&times;</span>
+            </button>
+         </div>
+         `;
       window.scrollTo(0, 0);
    }
 
    async function main() {
       let indexModel = new IndexModel();
-      stateHasChanged([]);
-      fetch("../view/partial/FooterPartial.html").then(x => x.text().then(res => document.querySelector(".footer").innerHTML = res));
-      document.querySelector('#saveImgBtn').onclick = () => SaveChartImg(
+      let footerResponse = await fetch("../view/partial/FooterPartial.html");
+      document.querySelector(".footer").innerHTML = await footerResponse.text()
+      document.querySelector('#saveImgBtn').onclick = () => saveChartImg(
          indexModel.dateFrom.format("DD-MM-YYYY"),
          indexModel.dateTo.format("DD-MM-YYYY")
       );
       let getRandom = Math.seed(9);
       document.querySelectorAll('.colorSelectTemp').forEach(x => x.value = randomHexColor(getRandom));
       document.querySelectorAll('.colorSelectHum').forEach(x => x.value = randomHexColor(getRandom));
-      document.querySelectorAll('.csvFile').forEach(x => x.onclick = () => TriggerPortableSensorDataCsvUpload(x));
+      document.querySelectorAll('.csvFile').forEach(x => x.onclick = () => triggerPortableSensorDataCsvUpload(x));
       document.querySelectorAll('.js-export-btn').forEach(x => x.onclick = () =>
          ExportCSV(
             x.getAttribute("data-filename"),
             indexModel.sensorReadingsMap.find(y => y.key === x.getAttribute("data-sensorId")).value
          )
       );
-      HandleSensorCreate();
-      HandleSensorUpdate();
-      HandleSensorDelete();
-      document.querySelector('#btnLoad').onclick = LoadButtonEvent;
+      handleSensorCreate();
+      handleSensorUpdate();
+      handleSensorDelete();
+      document.querySelector('#btnLoad').onclick = loadButtonEvent;
       // we need dates to be in this format for GET request
       ['#dateTo', '#absoluteDateFrom'].forEach(item => $(item).datepicker({dateFormat: "dd-mm-yy"}));
       document.querySelector('#ChartDrawButton').onclick = () => {
@@ -1228,11 +1204,10 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
             indexModel.dateTo
          ));
       };
-      HandleCollapseSymbolChange()
+      handleCollapseSymbolChange()
    }
 
-   main();
-   document.querySelector('.templating-root').style.display = 'block';
+   await main();
 
 </script>
 </html>

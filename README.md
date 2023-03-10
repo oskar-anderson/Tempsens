@@ -29,7 +29,6 @@ Possible errors:
 ### Server side
 * [phpdotenv](https://github.com/vlucas/phpdotenv) - Loads environment variables from `.env` to `getenv()`, `$_ENV` and `$_SERVER` automagically.
 * [Slim](https://github.com/slimphp/Slim) - PHP micro framework that helps you quickly write simple yet powerful web applications and APIs.
-* [Valinor](https://github.com/CuyZ/Valinor) - hydrated JSON deserialization to class instance
 * [Symfony/Serializer and PropertyAccess](https://symfony.com/doc/current/components/serializer.html) - hydrated JSON deserialization to class instance
 * [Illuminate/Support/Collection](https://laravel.com/api/8.x/Illuminate/Support/Collection.html) - convenient array methods
 
@@ -39,7 +38,6 @@ Possible errors:
 * [jQuery](https://jquery.com) - Needed for jQuery UI
 * [jQuery UI](https://jqueryui.com/datepicker) - Cross browser identical calendar/datepicker, kinda stupid for such a simple thing
 * [bootstrap](https://getbootstrap.com) - HTML, CSS and JavaScript framework, Used components: collapsable, modal
-* [Nunjucks](https://github.com/mozilla/nunjucks) - Templating engine (abandoned, but useful) (IN PROGRESS)
 * [Google Chart](https://developers.google.com/chart) (charts/loader.js) - Drawing charts
 * [Day.js](https://day.js.org/) (with plugins: customParseFormat) - date parsing, needed for chart data manipulation
 
@@ -76,14 +74,6 @@ Documentation for physical sensor API and Tempsens logserver API:
 | ReadingInterv| int!          |     |                                                                                                               
 +--------------+---------------+-----+                                                                        
 
-
-+------------------------------------+
-|                Cache               |
-+--------------+---------------+-----+
-| Id           | string!       | PK  |
-| Key0         | string!       |     |
-| Content      | string!       |     |
-+--------------+---------------+-----+
 ```                                                                                                           
 [Tip] Use VSCode multiline editing shortcuts (alt + mouse_click; alt + ctrl + down/up arrow) to edit DB schema
 

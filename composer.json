@@ -12,7 +12,6 @@
         "vlucas/phpdotenv": "5.5",
         "slim/slim": "^4.10",
         "slim/psr7": "^1.5",
-        "cuyz/valinor": "^1.3",
         "symfony/serializer": "^6.0.19",
         "symfony/property-access": "6.0.19",
         "illuminate/support": "9.52.4"

@@ -28,7 +28,7 @@ class SensorApi
          sensorId: $sensor->id,
          temp: $temp,
          relHum: $relHum,
-         dateRecorded: Helper::GetDateNowAsDateTime(),
+         dateRecorded: Helper::GetUtcNow(),
          dateAdded: null
       );
       $db = DbHelper::GetPDO();
