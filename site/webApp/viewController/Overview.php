@@ -30,7 +30,7 @@ class Overview {
       array_push($this->debugs,'Handle input: ' . microtime(true) - $before);
 
       $before = microtime(true);
-      $sensors = (new DalSensors())->GetAllWithLastReading();
+      $sensorsWithLastReading = (new DalSensors())->GetAllWithLastReading();
       array_push($this->debugs,'Get sensors: ' . microtime(true) - $before);
 
 
@@ -40,28 +40,39 @@ class Overview {
 
 
       $sensorReadingsBySensorId = [];
-      foreach ($sensors as $sensor) {
-         $sensorReadingsBySensorId[$sensor->sensor->id] = [];
+      foreach ($sensorsWithLastReading as $sensorAndLastReading) {
+         $sensorReadingsBySensorId[$sensorAndLastReading->sensor->id] = [];
       }
 
       $before = microtime(true);
-      $sensorReadingsBySensorId = array_merge($sensorReadingsBySensorId, (new DalSensorReading())->GetAllBetween($from->format('Ymd') . '2359', $to->format('Ymd') . '2359'));
-      array_push($this->debugs,"GetAllBetween(" . $from->format('Ymd') . '2359' . ", " . $to->format('Ymd') . '2359' .  ") query (count: " . (new Collection($sensorReadingsBySensorId))->map(function ($readings) { return count($readings); })->sum() . "): " . microtime(true) - $before);
+      $sensorReadingsBySensorId = array_merge($sensorReadingsBySensorId, (new DalSensorReading())->GetAllBetween($from->format('Ymd') . '000000', $to->format('Ymd') . '235959'));
+      array_push($this->debugs,"GetAllBetween(" . $from->format('Ymd') . '000000' . ", " . $to->format('Ymd') . '235959' .  ") query (count: " . (new Collection($sensorReadingsBySensorId))->map(function ($readings) { return count($readings); })->sum() . "): " . microtime(true) - $before);
 
       $before = microtime(true);
       $sensorAlertsMinMax = [];
-      foreach ($sensors as $sensorPlus) {
-         $sensor = $sensorPlus->sensor;
-         $rawOutOfBounds = array_values(array_filter($sensorReadingsBySensorId[$sensor->id], fn(\App\dtoWeb\SensorReading $x) =>
-            $x->temp < $sensor->minTemp || $x->temp > $sensor->maxTemp ||
-            $x->relHum < $sensor->minRelHum || $x->relHum > $sensor->maxRelHum
-         ));
-         $sensorAlertsMinMax[$sensor->id] = AlertMinMax::Get($sensor, $rawOutOfBounds);
+      foreach ($sensorsWithLastReading as $sensorAndLastReading) {
+         $sensor = $sensorAndLastReading->sensor;
+         $tempAndRelHumAlertChains = AlertMinMax::GroupAlerts($sensorReadingsBySensorId[$sensor->id],
+               function($x) use ($sensor) {
+                  return $x->temp < $sensor->minTemp || $x->temp > $sensor->maxTemp ||
+                     $x->relHum < $sensor->minRelHum || $x->relHum > $sensor->maxRelHum;
+               },
+               function(\App\dtoWeb\SensorReading $start, \App\dtoWeb\SensorReading $next) use ($sensor) {
+                  return ($next->dateRecorded->getTimestamp() - $start->dateRecorded->getTimestamp()) / 60 <= $sensor->readingIntervalMinutes;
+               });
+         $tempAndRelHumAlerts = [];
+         foreach ($tempAndRelHumAlertChains as $tempAndRelHumAlertChain) {
+            array_push($tempAndRelHumAlerts, ...AlertMinMax::CreateTempAndOrRelHumAlert($sensor, $tempAndRelHumAlertChain));
+         }
+         $missingValuesAlerts = AlertMinMax::GetMissingValuesAsAlerts($sensor, $sensorReadingsBySensorId[$sensor->id], $from, $to);
+         $sensorAlertsMinMax[$sensor->id] = [];
+         array_push($sensorAlertsMinMax[$sensor->id], ...$missingValuesAlerts);
+         array_push($sensorAlertsMinMax[$sensor->id], ...$tempAndRelHumAlerts);
       }
       array_push($this->debugs,'Group chaining sensor alerts: ' . microtime(true) - $before);
       $before = microtime(true);
 
-      $htmlInjects = (new IndexViewModel(input: $input, sensors: $sensors, sensorAlertsMinMax: $sensorAlertsMinMax,
+      $htmlInjects = (new IndexViewModel(input: $input, sensors: $sensorsWithLastReading, sensorAlertsMinMax: $sensorAlertsMinMax,
          sensorReadingsBySensorId: $sensorReadingsBySensorId, periods: $periods));
 
       $content = Helper::Render(__DIR__ . "/../view/main/Overview.php", $htmlInjects);

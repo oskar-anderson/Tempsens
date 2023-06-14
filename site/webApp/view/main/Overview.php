@@ -269,16 +269,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
                   </div>
                </div>
                <div>
-                  <?= sizeof(array_filter(
-                     $sensorReadingOutOfBounds[$sensor->id],
-                     fn($x) => $x->temp < $sensor->minTemp || $x->temp > $sensor->maxTemp)
-                  )
-                  . "|" .
-                  sizeof(array_filter(
-                     $sensorReadingOutOfBounds[$sensor->id],
-                     fn($x) => $x->hum < $sensor->minRelHum || $x->hum > $sensor->maxRelHum)
-                  )
-                  ?>
+                  <?= sizeof($sensorReadingOutOfBounds[$sensor->id]) ?>
                </div>
                <div><?= $tempAvg ?></div>
                <div><?= $tempMix ?></div>
@@ -322,8 +313,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
                               <tr>
                                  <th>Timestamp</th>
                                  <th>Duration (min)</th>
-                                 <th>Deviation Temp (℃)</th>
-                                 <th>Deviation Hum (%)</th>
+                                 <th>Content</th>
                               </tr>
                               </thead>
                               <tbody>
@@ -333,15 +323,8 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
                                  <tr style="border-bottom: 1px solid #394960;">
                                     <td><?php echo $item->beforeDate->format("d/m/Y H:i") ?></td>
                                     <td title="Readings count: <?php echo $item->count ?>"><?php echo $item->duration ?></td>
-                                    <td <?php echo $item->temp < $sensor->minTemp || $item->temp > $sensor->maxTemp ?
-                                       "style='color: #dc3545;'" :
-                                       "" ?>>
-                                       <?php echo number_format($item->temp, 1) ?>
-                                    </td>
-                                    <td <?php echo $item->hum < $sensor->minRelHum || $item->hum > $sensor->maxRelHum ?
-                                       "style='color: #dc3545;'" :
-                                       "" ?>>
-                                       <?php echo number_format($item->hum, 1) ?>
+                                    <td>
+                                       <?php echo $item->content ?>
                                     </td>
                                  </tr>
                               <?php } ?>
@@ -811,33 +794,42 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
       chartDiv.style.display = 'block';
       chartErr.innerText = '';
 
-
-      let graphLines = [];
-      let xAxisTimesToSensors = [];
-      for (let i = 0; ; i++) {
-         let nextDate = dateFrom.add(step * i, 'minutes');
-         if (nextDate >= dateTo) break;
-         xAxisTimesToSensors.push({
-            datetime: nextDate,
-            data: []  // will match graphLines length
-         });
+      const getBuckets = (dateFrom, dateTo) => {
+         let buckets = [];
+         let bucketStartDate = dateFrom;  // doing this saves 50ms on large graphs opposed to doing dateFrom.add(step * (i - 1), 'minutes');
+         for (let i = 1; ; i++) {
+            let bucketNextDate = dateFrom.add(step * i, 'minutes');
+            if (bucketNextDate >= dateTo) break;
+            buckets.push({
+               startDateTime: bucketStartDate,
+               endDateTime: bucketNextDate,
+               row: []  // will match graphLines length
+            });
+            bucketStartDate = bucketNextDate;
+         }
+         return buckets;
       }
+      let buckets = getBuckets(dateFrom, dateTo);
 
       for (let sensor of sensors) {
          let sensorReadings = indexModel.sensorReadingsMap.find(x => x.key === sensor.id).value;
          let tempRangeAvg = (sensor.maxTemp + sensor.minTemp) / 2;
          let humRangeAvg = (sensor.maxRelHum + sensor.minRelHum) / 2;
 
+         let drawingSettings = getDrawingSettings(sensor.id);
+         if (!drawingSettings.isRelHum && !drawingSettings.isTemp) continue;
          let low = 0;
-         for (let i = 0; i < xAxisTimesToSensors.length - 1; i++) {
+         for (let bucket of buckets) {
             let doStrategy = function (strategy, arr, graphDefaultValue, sensorRangeAvg) {
                let getMedianValue = function (arr, graphDefaultValue) {
                   let valOrUndefined = arr[Math.floor(arr.length / 2)];
                   return valOrUndefined === undefined ? graphDefaultValue : valOrUndefined;
                }
                let getAverageValue = function (arr, graphDefaultValue) {
-                  // rounded to 1 decimal places
-                  return arr.length === 0 ? graphDefaultValue : Math.round(arr.reduce((a, b) => a + b) / arr.length * 10 + Number.EPSILON ) / 10;
+                  if (arr.length === 0) return graphDefaultValue;
+                  let average = arr.reduce((a, b) => a + b) / arr.length;
+                  // rounded to 1 decimal point
+                  return Math.round(average * 10) / 10;
                }
                let getDeviationValue = function (arr, graphDefaultValue, sensorRangeAvg) {
                   return arr.length === 0 ? graphDefaultValue :
@@ -856,66 +848,68 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
                      throw "Unknown value!";
                }
             }
-            let before = xAxisTimesToSensors[i].datetime;
-            let after = xAxisTimesToSensors[i + 1].datetime;
 
-            let tmp = filterSortedArrayValuesBetweenDates(sensorReadings, before, after, low);
+            let tmp = filterSortedArrayValuesBetweenDates(sensorReadings, bucket.startDateTime, bucket.endDateTime, low);
             let currentRows = tmp.result;
             low = tmp.low;
 
-            let drawingSettings = getDrawingSettings(sensor.id);
+
             if (drawingSettings.isTemp) {
                let tempValue = doStrategy(strategy, currentRows.map(x => x.temp), graphDefaultValue, tempRangeAvg);
-               xAxisTimesToSensors[i].data.push(tempValue);
-               if (i === 0) {
-                  graphLines.push({
-                     sensorName: encodeURI(sensor.name),
-                     unit: "℃",
-                     graphLineColor: drawingSettings.colorTemp,
-                     label: `${sensor.name} temperature (℃)`
-                  });
-               }
+               bucket.row.push(tempValue);
             }
             if (drawingSettings.isRelHum) {
                let relHumValue = doStrategy(strategy, currentRows.map(x => x.relHum), graphDefaultValue, humRangeAvg);
-               xAxisTimesToSensors[i].data.push(relHumValue);
-               if (i === 0) {
-                  graphLines.push({
-                     sensorName: encodeURI(sensor.name),
-                     unit: "%",
-                     graphLineColor: drawingSettings.colorRelHum,
-                     label: `${sensor.name} relative humidity (%)`
-                  });
-               }
+               bucket.row.push(relHumValue);
             }
          }
       }
-      // We needed one extra date for data manipulation. The last data is empty
-      xAxisTimesToSensors.pop();
+
+      let graphLines = [];
+      for (let sensor of sensors) {
+         let drawingSettings = getDrawingSettings(sensor.id);
+         if (buckets.length === 0) break;
+         if (drawingSettings.isTemp) { // order of temp and humidity data insertion must be same as bucket insertion order
+            graphLines.push({
+               sensorName: encodeURI(sensor.name),
+               unit: "℃",
+               graphLineColor: drawingSettings.colorTemp,
+               label: `${sensor.name} temperature (℃)`
+            });
+         }
+         if (drawingSettings.isRelHum) {
+            graphLines.push({
+               sensorName: encodeURI(sensor.name),
+               unit: "%",
+               graphLineColor: drawingSettings.colorRelHum,
+               label: `${sensor.name} relative humidity (%)`
+            });
+         }
+      }
 
       // add header columns
-      data.addColumn('date');  // This column is for the x-axis, you can also use datetime.
+      data.addColumn('datetime');  // This column is for the x-axis
       for (let lineData of graphLines) {
          data.addColumn('number', lineData.label);  // This column is the data, label is used in legend for each line
-         data.addColumn({ type: 'string', role: 'tooltip', p: { html: true } });  // This column is for HTML tooltips for hovering cursor over line
+         data.addColumn({ type: 'string', role: 'tooltip', p: { html: true } });  // This column is for overriding HTML tooltips for hovering cursor over line
       }
 
       // add data columns
       let rows = [];
-      for (let xAxisTime of xAxisTimesToSensors) {
+      for (let bucket of buckets) {
          let row = [];
-         row.push(xAxisTime.datetime.add(step / 2, 'minutes').toDate())
+         row.push(bucket.startDateTime.add(step / 2, 'minutes').toDate())
          for (let i = 0; i < graphLines.length; i++) {
-            row.push(xAxisTime.data[i]);
+            row.push(bucket.row[i]);
             row.push(
                `<div class="p-2">
                   <p>
-                     <b>${xAxisTime.datetime.format('HH:mm, DD-MM-YYYY')}</b>
+                     <b>${bucket.startDateTime.format('HH:mm, DD-MM-YYYY')}</b>
                   </p>
                   <p style="white-space: nowrap;" class="mt-3">
                      <i style="color: ${graphLines[i].graphLineColor}" class="bi bi-circle-fill"></i>
                      ${graphLines[i].sensorName}:
-                     <b>${xAxisTime.data[i]} ${graphLines[i].unit}</b>
+                     <b>${bucket.row[i]} ${graphLines[i].unit}</b>
                   </p>
                </div>`
             );
