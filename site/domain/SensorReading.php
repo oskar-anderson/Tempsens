@@ -2,7 +2,10 @@
 
 namespace App\domain;
 
+use DateTime;
 use DateTimeImmutable;
+use DateTimeInterface;
+use DateTimeZone;
 
 class SensorReading
 {
@@ -31,8 +34,8 @@ class SensorReading
       $this->sensorId = $sensorId;
       $this->temp = $temp;
       $this->relHum = $relHum;
-      $this->dateRecorded = $dateRecorded->format('YmdHis');
-      $this->dateAdded = is_null($dateAdded) ? null : $dateAdded->format('YmdHis');
+      $this->dateRecorded = $dateRecorded->format(DateTimeInterface::ATOM);
+      $this->dateAdded = is_null($dateAdded) ? null : $dateAdded->format(DateTimeInterface::ATOM);
    }
 
 
@@ -46,10 +49,10 @@ class SensorReading
    }
 
    public function getDateRecordedAsDateTime(): DateTimeImmutable {
-      return DateTimeImmutable::createFromFormat('YmdHis', $this->dateRecorded);
+      return DateTimeImmutable::createFromFormat(DateTimeInterface::ATOM, $this->dateRecorded, new DateTimeZone('UTC'));
    }
 
    public function getDateAddedAsDateTime(): DateTimeImmutable|null {
-      return is_null($this->dateAdded) ? null : DateTimeImmutable::createFromFormat('YmdHis', $this->dateRecorded);
+      return is_null($this->dateAdded) ? null : DateTimeImmutable::createFromFormat(DateTimeInterface::ATOM, $this->dateRecorded, new DateTimeZone('UTC'));
    }
 }

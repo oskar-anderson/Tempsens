@@ -4,17 +4,19 @@
 namespace App\dtoWeb\IndexViewModelChildren;
 
 
+use DateTimeImmutable;
+
 class HandleInputModel
 {
-   public string $dateFrom;
-   public string $dateTo;
+   public DateTimeImmutable $dateFrom;
+   public DateTimeImmutable $dateTo;
    public string $dateFromType;
 
 
    function __construct(\DateTimeImmutable $dateFrom, \DateTimeImmutable $dateTo, string $dateFromType)
    {
-      $this->dateFrom = $dateFrom->format('d-m-Y');
-      $this->dateTo = $dateTo->format('d-m-Y');
+      $this->dateFrom = $dateFrom;
+      $this->dateTo = $dateTo;
       $this->dateFromType = $dateFromType;
    }
 }

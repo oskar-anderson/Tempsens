@@ -10,8 +10,11 @@ use App\dtoWeb\IndexViewModel;
 use App\dtoWeb\IndexViewModelChildren\AlertMinMax;
 use App\dtoWeb\IndexViewModelChildren\HandleInputModel;
 use App\dtoWeb\IndexViewModelChildren\Period;
+use App\dtoWeb\SensorReading;
 use App\util\Helper;
 use DateTimeImmutable;
+use DateTimeInterface;
+use DateTimeZone;
 use Illuminate\Support\Collection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -34,8 +37,8 @@ class Overview {
       array_push($this->debugs,'Get sensors: ' . microtime(true) - $before);
 
 
-      $from = DateTimeImmutable::createFromFormat('d-m-Y', $input->dateFrom);
-      $to = DateTimeImmutable::createFromFormat('d-m-Y', $input->dateTo);
+      $from = DateTimeImmutable::createFromFormat('siH_d-m-Y', "000000_" . $input->dateFrom->format("d-m-Y"), new DateTimeZone('UTC'));
+      $to = DateTimeImmutable::createFromFormat('siH_d-m-Y', "595923_" . $input->dateTo->format("d-m-Y"), new DateTimeZone('UTC'));
       $periods = Period::GetPeriodOptions($from, $to);
 
 
@@ -45,29 +48,36 @@ class Overview {
       }
 
       $before = microtime(true);
-      $sensorReadingsBySensorId = array_merge($sensorReadingsBySensorId, (new DalSensorReading())->GetAllBetween($from->format('Ymd') . '000000', $to->format('Ymd') . '235959'));
-      array_push($this->debugs,"GetAllBetween(" . $from->format('Ymd') . '000000' . ", " . $to->format('Ymd') . '235959' .  ") query (count: " . (new Collection($sensorReadingsBySensorId))->map(function ($readings) { return count($readings); })->sum() . "): " . microtime(true) - $before);
+      $sensorReadingsBySensorId = array_merge($sensorReadingsBySensorId, (new DalSensorReading())->GetAllBetween($from->format(DateTimeInterface::ATOM), $to->format(DateTimeInterface::ATOM)));
+      array_push($this->debugs,"GetAllBetween(" . $from->format(DateTimeInterface::ATOM) . ", " . $to->format(DateTimeInterface::ATOM) .  ") query (count: " . (new Collection($sensorReadingsBySensorId))->map(function ($readings) { return count($readings); })->sum() . "): " . microtime(true) - $before);
 
       $before = microtime(true);
       $sensorAlertsMinMax = [];
       foreach ($sensorsWithLastReading as $sensorAndLastReading) {
          $sensor = $sensorAndLastReading->sensor;
-         $tempAndRelHumAlertChains = AlertMinMax::GroupAlerts($sensorReadingsBySensorId[$sensor->id],
-               function($x) use ($sensor) {
-                  return $x->temp < $sensor->minTemp || $x->temp > $sensor->maxTemp ||
-                     $x->relHum < $sensor->minRelHum || $x->relHum > $sensor->maxRelHum;
-               },
-               function(\App\dtoWeb\SensorReading $start, \App\dtoWeb\SensorReading $next) use ($sensor) {
+         $tempAlertChains = AlertMinMax::GroupAlerts(
+            array_values(array_filter($sensorReadingsBySensorId[$sensor->id], fn($x) => $x->temp < $sensor->minTemp || $x->temp > $sensor->maxTemp)),
+               function(SensorReading $start, SensorReading $next) use ($sensor) {
                   return ($next->dateRecorded->getTimestamp() - $start->dateRecorded->getTimestamp()) / 60 <= $sensor->readingIntervalMinutes;
                });
+         $relHumAlertChains = AlertMinMax::GroupAlerts(
+            array_values(array_filter($sensorReadingsBySensorId[$sensor->id], fn($x) => $x->relHum < $sensor->minRelHum || $x->relHum > $sensor->maxRelHum)),
+            function(SensorReading $start, SensorReading $next) use ($sensor) {
+               return ($next->dateRecorded->getTimestamp() - $start->dateRecorded->getTimestamp()) / 60 <= $sensor->readingIntervalMinutes;
+            });
          $tempAndRelHumAlerts = [];
-         foreach ($tempAndRelHumAlertChains as $tempAndRelHumAlertChain) {
-            array_push($tempAndRelHumAlerts, ...AlertMinMax::CreateTempAndOrRelHumAlert($sensor, $tempAndRelHumAlertChain));
+         foreach ($tempAlertChains as $tempAlertChain) {
+            array_push($tempAndRelHumAlerts, AlertMinMax::CreateTempAndOrRelHumAlert($sensor, $tempAlertChain, "temperature"));
+         }
+         foreach ($relHumAlertChains as $relHumAlertChain) {
+            array_push($tempAndRelHumAlerts, AlertMinMax::CreateTempAndOrRelHumAlert($sensor, $relHumAlertChain, "relative humidity"));
          }
          $missingValuesAlerts = AlertMinMax::GetMissingValuesAsAlerts($sensor, $sensorReadingsBySensorId[$sensor->id], $from, $to);
          $sensorAlertsMinMax[$sensor->id] = [];
-         array_push($sensorAlertsMinMax[$sensor->id], ...$missingValuesAlerts);
-         array_push($sensorAlertsMinMax[$sensor->id], ...$tempAndRelHumAlerts);
+
+         $mergedAlerts = array_merge($missingValuesAlerts, $tempAndRelHumAlerts);
+         usort($mergedAlerts, fn(AlertMinMax $a, AlertMinMax $b) => $a->beforeDate->getTimestamp() - $b->beforeDate->getTimestamp());  // sorted ASC
+         array_push($sensorAlertsMinMax[$sensor->id], ...$mergedAlerts);
       }
       array_push($this->debugs,'Group chaining sensor alerts: ' . microtime(true) - $before);
       $before = microtime(true);
@@ -87,8 +97,8 @@ class Overview {
    {
       $inputDateTo = $_GET['To'] ?? '';
       $inputDateFrom = $_GET['From'] ?? '';
-      $dateToIsValid = !! DateTimeImmutable::createFromFormat('d-m-Y', $inputDateTo);
-      $dateFromIsValidDate = !! DateTimeImmutable::createFromFormat('d-m-Y', $inputDateFrom);
+      $dateToIsValid = !! DateTimeImmutable::createFromFormat('siH_d-m-Y', "595923_" . $inputDateTo, new DateTimeZone('UTC'));
+      $dateFromIsValidDate = !! DateTimeImmutable::createFromFormat('siH_d-m-Y', "000000_" . $inputDateFrom, new DateTimeZone('UTC'));
       if (! isset($_GET['To']) ||
          ! isset($_GET['From']) ||
          ! $dateToIsValid ||
@@ -98,9 +108,9 @@ class Overview {
          $now = Helper::GetUtcNow();
          return new HandleInputModel($now->modify("-91 day"), $now, 'relative');
       }
-      $dateTo = DateTimeImmutable::createFromFormat('d-m-Y', $inputDateTo);
+      $dateTo = DateTimeImmutable::createFromFormat('siH_d-m-Y', "595923_" . $inputDateTo, new DateTimeZone('UTC'));
       [$dateFrom, $dateFromType] = $dateFromIsValidDate ?
-         [DateTimeImmutable::createFromFormat('d-m-Y', $inputDateFrom), 'absolute'] :
+         [DateTimeImmutable::createFromFormat('siH_d-m-Y', "000000_" . $inputDateFrom, new DateTimeZone('UTC')), 'absolute'] :
          [$dateTo->modify($inputDateFrom . "day"), 'relative'];
 
       return new HandleInputModel($dateFrom, $dateTo, $dateFromType);

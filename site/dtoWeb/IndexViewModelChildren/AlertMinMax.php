@@ -30,13 +30,12 @@ class AlertMinMax
    /**
     * @param Sensor $sensor
     * @param SensorReading[] $chain Chain of back to back alerts within the sensor readingIntervalMinutes interval
-    * @return AlertMinMax[]
+    * @param string $type "temperature" if the alert is for temperature, "relative humidity" if the alert is for relative humidity
+    * @return AlertMinMax
     * @throws Exception
     */
-   public static function CreateTempAndOrRelHumAlert(Sensor $sensor, array $chain): array
+   public static function CreateTempAndOrRelHumAlert(Sensor $sensor, array $chain, string $type = "temperature"): AlertMinMax
    {
-      $result = [];
-      $chain = array_values($chain);
       if (sizeof($chain) === 0) {
          throw new Exception('Invalid input! Array has less than 0 elements!' . var_export($chain, true));
       }
@@ -44,19 +43,20 @@ class AlertMinMax
       $temps = array_map(fn($x) => $x->temp, $chain);
       $relHums = array_map(fn($x) => $x->relHum, $chain);
       $end = $chain[sizeof($chain) - 1];
-      $duration = ($end->dateRecorded->getTimestamp() - $before->dateRecorded->getTimestamp()) / 60;
+      $duration = (int) ceil(($end->dateRecorded->getTimestamp() - $before->dateRecorded->getTimestamp()) / 60);
       if (sizeof($chain) === 1) {
          $duration = (int) ceil($sensor->readingIntervalMinutes / 2);
       }
-      if (max($temps) > $sensor->maxTemp || min($temps) < $sensor->minTemp) {
-         $temp = AlertMinMax::GetDeviation($temps, ($sensor->minTemp + $sensor->maxTemp) / 2);
-         $result[] = new AlertMinMax($before->dateRecorded, $duration, sizeof($chain), "Temperature: " . number_format($temp, 1) . " ℃");
+      switch ($type) {
+         case "temperature":
+            $temp = AlertMinMax::GetDeviation($temps, ($sensor->minTemp + $sensor->maxTemp) / 2);
+            return new AlertMinMax($before->dateRecorded, $duration, sizeof($chain), "Temperature: " . number_format($temp, 1) . " ℃");
+         case "relative humidity":
+            $relHum = AlertMinMax::GetDeviation($relHums, ($sensor->minRelHum + $sensor->maxRelHum) / 2);
+            return new AlertMinMax($before->dateRecorded, $duration, sizeof($chain), "Relative Humidity: " . number_format($relHum, 1) . " %");
+         default:
+            throw new Exception(`Unknown type: ${$type}`);
       }
-      if (max($relHums) > $sensor->maxRelHum || min($relHums) < $sensor->minRelHum) {
-         $relHum = AlertMinMax::GetDeviation($relHums, ($sensor->minRelHum + $sensor->maxRelHum) / 2);
-         $result[] = new AlertMinMax($before->dateRecorded, $duration, sizeof($chain), "Relative Humidity: " . number_format($relHum, 1) . " %");
-      }
-      return $result;
    }
 
    private static function GetDeviation(array $values, float $average): float {
@@ -67,31 +67,29 @@ class AlertMinMax
 
    /**
     * Groups the input array into sub arrays based on $isPartOfSameChainCallback callback marking values as similar
-    * @param array $valuesToSearchAlertsIn
-    * @param callable $isPartOfSameChainCallback takes in 2 SensorReading arguments and returns a boolean
+    * @param array $sortedUngroupedAlertValues T value that has DateTimeImmutable property that can be compared in the callback
+    * @param callable $isPartOfSameChainCallback takes in 2 T arguments and returns a boolean
     * @return array[] grouped alerts
     * @throws Exception
     */
-   public static function GroupAlerts(array $valuesToSearchAlertsIn, callable $filterCallback, callable $isPartOfSameChainCallback): array {
-      $valuesToSearchAlertsIn = array_values(array_filter($valuesToSearchAlertsIn, fn($x) => $filterCallback($x)));
-
+   public static function GroupAlerts(array $sortedUngroupedAlertValues, callable $isPartOfSameChainCallback): array {
       $result = [];
       $chain = [];
 
-      if (sizeof($valuesToSearchAlertsIn) === 0) {
+      if (sizeof($sortedUngroupedAlertValues) === 0) {
          return [];
       }
-      if (sizeof($valuesToSearchAlertsIn) === 1) {
-         array_push($result, $valuesToSearchAlertsIn);
+      if (sizeof($sortedUngroupedAlertValues) === 1) {
+         array_push($result, $sortedUngroupedAlertValues);
          return $result;
       }
 
       // 1 = isPartOfSameChain, 2 = isPartOfChainBreak, 3 = isNotPartOfChain
       // 1    , 1    , 2,   , 3,   , 1
       // 20:58, 21:12, 21:23, 23:45, 00:40, 00:47
-      for ($i = 0; $i < sizeof($valuesToSearchAlertsIn) - 1; $i++) {
-         $start = $valuesToSearchAlertsIn[$i];
-         $next = $valuesToSearchAlertsIn[$i + 1];
+      for ($i = 0; $i < sizeof($sortedUngroupedAlertValues) - 1; $i++) {
+         $start = $sortedUngroupedAlertValues[$i];
+         $next = $sortedUngroupedAlertValues[$i + 1];
 
          $isPartOfSameChain = $isPartOfSameChainCallback($start, $next);
          $isPartOfChainBreak = sizeof($chain) > 1 && ! $isPartOfSameChain;
@@ -103,7 +101,7 @@ class AlertMinMax
             default => ""
          };
          if (sizeof($chain) === 1) throw new Exception("Program logic error! Chain cannot contain singular element!");  // sanity check
-         $isLast = $i === sizeof($valuesToSearchAlertsIn) - 2;
+         $isLast = $i === sizeof($sortedUngroupedAlertValues) - 2;
 
          switch ($state) {
             case "isPartOfSameChain":  // leads to isPartOfSameChain or isPartOfChainBreak
@@ -136,11 +134,12 @@ class AlertMinMax
    }
 
    /**
-    * @param Sensor $sensor
+    * Creates buckets from start to end date on sensor expected interval and returns the buckets with no value as alerts
+    * @param int $readingIntervalMinutes bucket creation interval
     * @param SensorReading[] $sensorReadings sorted array of sensorReadings by $dateRecorded
-    * @param DateTimeImmutable $from
-    * @param DateTimeImmutable $to
-    * @return AlertMinMax[]
+    * @param DateTimeImmutable $from from date to start creating buckets
+    * @param DateTimeImmutable $to to date to stop making buckets
+    * @return AlertMinMax[] chain of continues buckets with no value array
     */
    public static function GetMissingValuesAsAlerts(Sensor $sensor, array $sensorReadings, DateTimeImmutable $from, DateTimeImmutable $to): array
    {
@@ -150,19 +149,34 @@ class AlertMinMax
       for ($i = 1; ; $i++) {
          $next = $start->modify("+" . $sensor->readingIntervalMinutes . "minutes");
          if ($next >= $to) break;
-         array_push($buckets, [$start, $next, null]);
+         array_push($buckets, [$start, $next, 0]);
          $start = $next;
       }
+      $lowestElementIndex = 0;
       for ($i = 0; $i < sizeof($buckets); $i++) {
+         $bucketNumberOfElements = 0;
          $bucketStart = $buckets[$i][0];
          $bucketEnd = $buckets[$i][1];
-         $bucketValues = array_filter($sensorReadings, fn($sensorReading) => $sensorReading->dateRecorded >= $bucketStart && $sensorReading->dateRecorded < $bucketEnd);
-         $buckets[$i][2] = sizeof($bucketValues);
+         while ($lowestElementIndex < sizeof($sensorReadings)) {
+            $reading = $sensorReadings[$lowestElementIndex];
+            if ($reading->dateRecorded < $bucketStart) {
+               $lowestElementIndex++;
+               continue;
+            }
+            if ($reading->dateRecorded >= $bucketStart && $reading->dateRecorded < $bucketEnd) {
+               $bucketNumberOfElements++;
+               $lowestElementIndex++;
+               continue;
+            }
+            break;
+         }
+         $buckets[$i][2] = $bucketNumberOfElements;
       }
-      $alertChainArr = AlertMinMax::GroupAlerts($buckets,
-         function ($x) use ($sensor) {
-            return $x[2] === 0;
-         },
+      if ($sensor->id === "00000001x0000x00000003") {
+         echo json_encode($buckets);
+      }
+      $alertChainArr = AlertMinMax::GroupAlerts(
+         array_values(array_filter($buckets, fn($x) => $x[2] === 0)),
          function ($start, $next) use ($sensor) {
             return ($next[0]->getTimestamp() - $start[0]->getTimestamp()) / 60 <= $sensor->readingIntervalMinutes;
          });

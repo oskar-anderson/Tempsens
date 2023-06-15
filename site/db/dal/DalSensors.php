@@ -7,6 +7,8 @@ use App\db\DbHelper;
 use App\domain\SensorReading;
 use App\dtoWeb\SensorAndLastReading;
 use DateTimeImmutable;
+use DateTimeInterface;
+use DateTimeZone;
 use JetBrains\PhpStorm\Pure;
 use PDO;
 
@@ -139,8 +141,8 @@ class DalSensors extends AbstractDalBase
             $readingSensorId = $value[SensorReading::SensorIdColumnName];
             $readingRelHum = floatval($value[SensorReading::RelHumColumnName]);
             $readingTemp = floatval($value[SensorReading::TempColumnName]);
-            $readingDateRecorded = DateTimeImmutable::createFromFormat('YmdHis', $value[SensorReading::DateRecordedColumnName]);
-            $readingDateAdded = $value[SensorReading::DateAddedColumnName] === null ? null : DateTimeImmutable::createFromFormat('YmdHis', $value[SensorReading::DateAddedColumnName]);
+            $readingDateRecorded = DateTimeImmutable::createFromFormat(DateTimeInterface::ATOM, $value[SensorReading::DateRecordedColumnName], new DateTimeZone('UTC'));
+            $readingDateAdded = $value[SensorReading::DateAddedColumnName] === null ? null : DateTimeImmutable::createFromFormat(DateTimeInterface::ATOM, $value[SensorReading::DateAddedColumnName], new DateTimeZone('UTC'));
 
             $sensorReading = new \App\dtoWeb\SensorReading(id: $readingId, sensorId: $readingSensorId, temp: $readingTemp, relHum: $readingRelHum, dateRecorded: $readingDateRecorded, dateAdded: $readingDateAdded);
          }

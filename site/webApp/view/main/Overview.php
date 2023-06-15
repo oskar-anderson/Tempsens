@@ -72,6 +72,8 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
    <!-- date parsing -->
    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dayjs@1.10.4/dayjs.min.js"></script>
    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dayjs@1.10.4/plugin/customParseFormat.js"></script>
+   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dayjs@1.10.4/plugin/timezone.js"></script>
+   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/dayjs@1.10.4/plugin/utc.js"></script>
 
 </head>
 <body style="min-height: 100vh; min-width: 900px;">
@@ -95,7 +97,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
                      <span style="margin-left: 20px">From Date</span>
                      <span class="child-input 🎯" style="--xpos: end;">
                         <input name="absoluteDateFrom" type="text" id="absoluteDateFrom"
-                               value="<?= $dateFrom ?>" <?= $dateFromType !== 'absolute' ? 'disabled' : ''; ?> />
+                               value="<?= $dateFrom->format('d-m-Y') ?>" <?= $dateFromType !== 'absolute' ? 'disabled' : ''; ?> />
                      </span>
                   </label>
                </div>
@@ -125,7 +127,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
             </div>
             <div class="🎯" style="height: var(--row_height);">
                <label for="dateTo" style="width: 100%;">To Date</label>
-               <input type="text" name="dateTo" id="dateTo" value="<?= $dateTo; ?>"/>
+               <input type="text" name="dateTo" id="dateTo" value="<?= $dateTo->format('d-m-Y'); ?>"/>
             </div>
 
 
@@ -367,7 +369,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
                   <div class="tab-pane" id="nav-export-<?php echo $i ?>" role="tabpanel">
                      <h3 class="h3">Export</h3>
                      <button style="margin-bottom: 0.4em" class="js-export-btn button"
-                             data-filename='<?php echo htmlspecialchars($sensor->name . '_' . $dateFrom . '_' . $dateTo . '.csv'); ?>'
+                             data-filename='<?php echo htmlspecialchars($sensor->name . '_' . $dateFrom->format('d-m-Y') . '_' . $dateTo->format('d-m-Y') . '.csv'); ?>'
                              data-sensorId='<?php echo $sensor->id; ?>'>Export
                      </button>
                   </div>
@@ -490,8 +492,8 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
 <div style="display: none">
    <div id="dataSensor"><?php echo json_encode($sensors); ?></div>
    <div id="dataSensorReadingsBySensorId"><?php echo json_encode($sensorReadingsBySensorId); ?></div>
-   <div id="dataDateTo"><?php echo $dateTo . ', 23:59:59' ?></div>
-   <div id="dataDateFrom"><?php echo $dateFrom . ', 00:00:00' ?></div>
+   <div id="dataDateTo"><?php echo $dateTo->format(DateTimeInterface::ATOM) ?></div>
+   <div id="dataDateFrom"><?php echo $dateFrom->format(DateTimeInterface::ATOM) ?></div>
 </div>
 <!-- Modal -->
 <div class="modal fade" id="JsonModal" tabindex="-1" role="dialog">
@@ -525,6 +527,8 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
 <script type="module">
 
    dayjs.extend(window.dayjs_plugin_customParseFormat);
+   dayjs.extend(window.dayjs_plugin_utc)
+   dayjs.extend(window.dayjs_plugin_timezone)
    let baseApi = window.location.protocol + '//' + window.location.host + "/api"
 
    function handleSensorCreate() {
@@ -745,7 +749,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
             }
             switch (header) {
                case 'date':
-                  let date = dayjs(value, 'DD/MM/YYYY HH:mm:ss');
+                  let date = dayjs.tz(value, 'DD/MM/YYYY HH:mm:ss', "Europe/Tallinn").tz("UTC");
                   if (!date.isValid()) {
                      throw `Row: ${nRowNumber}, Invalid date format! Must be DD/MM/YYYY HH:mm:ss!`
                   }
@@ -1094,8 +1098,8 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
 
 
    class IndexModel {
-      dateTo = dayjs(document.querySelector('#dataDateTo').innerHTML, 'DD-MM-YYYY, HH:mm:ss');
-      dateFrom = dayjs(document.querySelector('#dataDateFrom').innerHTML, 'DD-MM-YYYY, HH:mm:ss');
+      dateTo = dayjs(document.querySelector('#dataDateTo').innerHTML);
+      dateFrom = dayjs(document.querySelector('#dataDateFrom').innerHTML);
       sensorReadingsMap = [];
       sensors = [];
 
@@ -1107,7 +1111,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
             let newSensorReadings = [];
             for (let sensorReading of sensorReadings) {
                newSensorReadings.push(new SensorReading(
-                  dayjs(sensorReading.date, 'YYYYMMDDHHmmss'),
+                  dayjs(sensorReading.date),
                   parseFloat(sensorReading.temp),
                   parseFloat(sensorReading.relHum)));
             }

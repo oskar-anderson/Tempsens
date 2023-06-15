@@ -2,6 +2,7 @@
 
 namespace App\dtoWeb;
 
+use DateTimeInterface;
 use JsonSerializable;
 
 class SensorReading implements JsonSerializable
@@ -20,7 +21,7 @@ class SensorReading implements JsonSerializable
    public function jsonSerialize(): array
    {
       return [
-         "date" => $this->dateRecorded->format("YmdHis"),
+         "date" => $this->dateRecorded->format(DateTimeInterface::ATOM),
          "temp" => $this->temp,
          "relHum" => $this->relHum
       ];

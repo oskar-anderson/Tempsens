@@ -66,7 +66,7 @@ class SensorReadingController
       /** @var SensorReadingUploadReadings[] $sensorReadingDeserialized */
       $sensorReadingDeserialized = [];
       foreach ($model->sensorReadings as $sensorReading) {
-         $sensorReadingDeserialized[] = new SensorReadingUploadReadings(DateTimeImmutable::createFromFormat("d-m-Y H:i:s", $sensorReading['date']), $sensorReading['temp'], $sensorReading['relHum']);
+         $sensorReadingDeserialized[] = new SensorReadingUploadReadings(DateTimeImmutable::createFromFormat("d-m-Y H:i:s", $sensorReading['date'], new \DateTimeZone("Europe/Tallinn")), $sensorReading['temp'], $sensorReading['relHum']);
       }
       $model->sensorReadings = $sensorReadingDeserialized;
 

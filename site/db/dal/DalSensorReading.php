@@ -7,6 +7,8 @@ use App\domain\Sensor;
 use App\domain\SensorReading;
 use App\util\Console;
 use DateTimeImmutable;
+use DateTimeInterface;
+use DateTimeZone;
 use PDO;
 
 class DalSensorReading extends AbstractDalBase
@@ -175,8 +177,8 @@ class DalSensorReading extends AbstractDalBase
          sensorId: $value[SensorReading::SensorIdColumnName],
          temp: floatval($value[SensorReading::TempColumnName]),
          relHum: floatval($value[SensorReading::RelHumColumnName]),
-         dateRecorded: DateTimeImmutable::createFromFormat('YmdHis', $value[SensorReading::DateRecordedColumnName]),
-         dateAdded: $value[SensorReading::DateAddedColumnName] === null ? null : DateTimeImmutable::createFromFormat('YmdHis', $value[SensorReading::DateAddedColumnName])
+         dateRecorded: DateTimeImmutable::createFromFormat(DateTimeInterface::ATOM, $value[SensorReading::DateRecordedColumnName], new DateTimeZone('UTC')),
+         dateAdded: $value[SensorReading::DateAddedColumnName] === null ? null : DateTimeImmutable::createFromFormat(DateTimeInterface::ATOM, $value[SensorReading::DateAddedColumnName], new DateTimeZone('UTC'))
       );
    }
 
