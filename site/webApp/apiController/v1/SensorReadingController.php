@@ -12,6 +12,7 @@ use App\dtoApi\SensorReadingUpload\SensorReadingUploadReadings;
 use App\util\Config;
 use App\util\Helper;
 use DateTimeImmutable;
+use DateTimeZone;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Ramsey\Uuid\Uuid;
@@ -66,7 +67,7 @@ class SensorReadingController
       /** @var SensorReadingUploadReadings[] $sensorReadingDeserialized */
       $sensorReadingDeserialized = [];
       foreach ($model->sensorReadings as $sensorReading) {
-         $sensorReadingDeserialized[] = new SensorReadingUploadReadings(DateTimeImmutable::createFromFormat("d-m-Y H:i:s", $sensorReading['date'], new \DateTimeZone("Europe/Tallinn")), $sensorReading['temp'], $sensorReading['relHum']);
+         $sensorReadingDeserialized[] = new SensorReadingUploadReadings(DateTimeImmutable::createFromFormat("d-m-Y H:i:s", $sensorReading['date'], new DateTimeZone("UTC")), $sensorReading['temp'], $sensorReading['relHum']);
       }
       $model->sensorReadings = $sensorReadingDeserialized;
 
