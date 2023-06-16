@@ -34,7 +34,7 @@ class AlertMinMax
     * @return AlertMinMax
     * @throws Exception
     */
-   public static function CreateTempAndOrRelHumAlert(Sensor $sensor, array $chain, string $type = "temperature"): AlertMinMax
+   public static function CreateTempOrRelHumAlert(Sensor $sensor, array $chain, string $type = "temperature"): AlertMinMax
    {
       if (sizeof($chain) === 0) {
          throw new Exception('Invalid input! Array has less than 0 elements!' . var_export($chain, true));
@@ -141,13 +141,13 @@ class AlertMinMax
     * @param DateTimeImmutable $to to date to stop making buckets
     * @return AlertMinMax[] chain of continues buckets with no value array
     */
-   public static function GetMissingValuesAsAlerts(Sensor $sensor, array $sensorReadings, DateTimeImmutable $from, DateTimeImmutable $to): array
+   public static function GetMissingValuesAsAlerts(int $readingIntervalMinutes, array $sensorReadings, DateTimeImmutable $from, DateTimeImmutable $to): array
    {
       $start = $from;
       /** @var DateTimeImmutable[][] $buckets */
       $buckets = [];
       for ($i = 1; ; $i++) {
-         $next = $start->modify("+" . $sensor->readingIntervalMinutes . "minutes");
+         $next = $start->modify("+" . $readingIntervalMinutes . "minutes");
          if ($next >= $to) break;
          array_push($buckets, [$start, $next, 0]);
          $start = $next;
@@ -157,28 +157,24 @@ class AlertMinMax
          $bucketNumberOfElements = 0;
          $bucketStart = $buckets[$i][0];
          $bucketEnd = $buckets[$i][1];
+
+         // this is the same optimization step used in JS filterSortedArrayValuesBetweenDates function
          while ($lowestElementIndex < sizeof($sensorReadings)) {
             $reading = $sensorReadings[$lowestElementIndex];
-            if ($reading->dateRecorded < $bucketStart) {
-               $lowestElementIndex++;
-               continue;
+            if ($bucketEnd <= $reading->dateRecorded) {
+               break;
             }
-            if ($reading->dateRecorded >= $bucketStart && $reading->dateRecorded < $bucketEnd) {
+            if ($reading->dateRecorded >= $bucketStart) {
                $bucketNumberOfElements++;
-               $lowestElementIndex++;
-               continue;
             }
-            break;
+            $lowestElementIndex++;
          }
          $buckets[$i][2] = $bucketNumberOfElements;
       }
-      if ($sensor->id === "00000001x0000x00000003") {
-         echo json_encode($buckets);
-      }
       $alertChainArr = AlertMinMax::GroupAlerts(
          array_values(array_filter($buckets, fn($x) => $x[2] === 0)),
-         function ($start, $next) use ($sensor) {
-            return ($next[0]->getTimestamp() - $start[0]->getTimestamp()) / 60 <= $sensor->readingIntervalMinutes;
+         function ($start, $next) use ($readingIntervalMinutes) {
+            return ($next[0]->getTimestamp() - $start[0]->getTimestamp()) / 60 <= $readingIntervalMinutes;
          });
       $missingChains = [];
       foreach ($alertChainArr as $alertChain) {

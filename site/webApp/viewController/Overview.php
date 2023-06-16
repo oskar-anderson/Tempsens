@@ -34,22 +34,17 @@ class Overview {
 
       $before = microtime(true);
       $sensorsWithLastReading = (new DalSensors())->GetAllWithLastReading();
-      array_push($this->debugs,'Get sensors: ' . microtime(true) - $before);
+      array_push($this->debugs,'Get sensors and last readings: ' . microtime(true) - $before);
 
-
-      $from = DateTimeImmutable::createFromFormat('siH_d-m-Y', "000000_" . $input->dateFrom->format("d-m-Y"), new DateTimeZone('UTC'));
-      $to = DateTimeImmutable::createFromFormat('siH_d-m-Y', "595923_" . $input->dateTo->format("d-m-Y"), new DateTimeZone('UTC'));
-      $periods = Period::GetPeriodOptions($from, $to);
-
-
+      $periods = Period::GetPeriodOptions($input->dateFrom, $input->dateTo);
       $sensorReadingsBySensorId = [];
       foreach ($sensorsWithLastReading as $sensorAndLastReading) {
          $sensorReadingsBySensorId[$sensorAndLastReading->sensor->id] = [];
       }
 
       $before = microtime(true);
-      $sensorReadingsBySensorId = array_merge($sensorReadingsBySensorId, (new DalSensorReading())->GetAllBetween($from->format(DateTimeInterface::ATOM), $to->format(DateTimeInterface::ATOM)));
-      array_push($this->debugs,"GetAllBetween(" . $from->format(DateTimeInterface::ATOM) . ", " . $to->format(DateTimeInterface::ATOM) .  ") query (count: " . (new Collection($sensorReadingsBySensorId))->map(function ($readings) { return count($readings); })->sum() . "): " . microtime(true) - $before);
+      $sensorReadingsBySensorId = array_merge($sensorReadingsBySensorId, (new DalSensorReading())->GetAllBetween($input->dateFrom->format(DateTimeInterface::ATOM), $input->dateTo->format(DateTimeInterface::ATOM)));
+      array_push($this->debugs,"GetAllBetween(" . $input->dateFrom->format(DateTimeInterface::ATOM) . ", " . $input->dateTo->format(DateTimeInterface::ATOM) .  ") query (count: " . (new Collection($sensorReadingsBySensorId))->map(function ($readings) { return count($readings); })->sum() . "): " . microtime(true) - $before);
 
       $before = microtime(true);
       $sensorAlertsMinMax = [];
@@ -67,12 +62,12 @@ class Overview {
             });
          $tempAndRelHumAlerts = [];
          foreach ($tempAlertChains as $tempAlertChain) {
-            array_push($tempAndRelHumAlerts, AlertMinMax::CreateTempAndOrRelHumAlert($sensor, $tempAlertChain, "temperature"));
+            array_push($tempAndRelHumAlerts, AlertMinMax::CreateTempOrRelHumAlert($sensor, $tempAlertChain, "temperature"));
          }
          foreach ($relHumAlertChains as $relHumAlertChain) {
-            array_push($tempAndRelHumAlerts, AlertMinMax::CreateTempAndOrRelHumAlert($sensor, $relHumAlertChain, "relative humidity"));
+            array_push($tempAndRelHumAlerts, AlertMinMax::CreateTempOrRelHumAlert($sensor, $relHumAlertChain, "relative humidity"));
          }
-         $missingValuesAlerts = AlertMinMax::GetMissingValuesAsAlerts($sensor, $sensorReadingsBySensorId[$sensor->id], $from, $to);
+         $missingValuesAlerts = AlertMinMax::GetMissingValuesAsAlerts($sensor->readingIntervalMinutes, $sensorReadingsBySensorId[$sensor->id], $input->dateFrom, $input->dateTo);
          $sensorAlertsMinMax[$sensor->id] = [];
 
          $mergedAlerts = array_merge($missingValuesAlerts, $tempAndRelHumAlerts);

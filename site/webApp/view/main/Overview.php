@@ -663,7 +663,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
             displayError(e);
             return false;
          }
-         document.getElementById('modalMsg').innerText = `CSV file contained ${arr.length + skipCount} rows, skipped ${skipCount} rows.`;
+         document.getElementById('modalMsg').innerText = `CSV file contained ${arr.length + skipCount} rows, skipped ${skipCount} rows. Converted dates to UTC timezone.`;
          document.getElementById('csvDataDisplay').innerText = JSON.stringify(arr, null, 2);
          document.getElementById('csvDataDisplay').style.display = 'block';
          document.querySelector('#import-form-submit-btn').onclick = async () => {
@@ -749,11 +749,11 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
             }
             switch (header) {
                case 'date':
-                  let date = dayjs.tz(value, 'DD/MM/YYYY HH:mm:ss', "Europe/Tallinn").tz("UTC");
+                  let date = dayjs.tz(value, 'DD/MM/YYYY HH:mm:ss', "Europe/Tallinn").utc();
                   if (!date.isValid()) {
                      throw `Row: ${nRowNumber}, Invalid date format! Must be DD/MM/YYYY HH:mm:ss!`
                   }
-                  obj[header] = date.format('DD-MM-YYYY HH:mm:ss')
+                  obj[header] = date.utc().format('DD-MM-YYYY HH:mm:ss')
                   break;
                case 'relHum':
                case 'temp':
@@ -902,13 +902,13 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
       let rows = [];
       for (let bucket of buckets) {
          let row = [];
-         row.push(bucket.startDateTime.add(step / 2, 'minutes').toDate())
+         row.push(bucket.startDateTime.add(step / 2, 'minutes').utc().toDate())
          for (let i = 0; i < graphLines.length; i++) {
             row.push(bucket.row[i]);
             row.push(
                `<div class="p-2">
                   <p>
-                     <b>${bucket.startDateTime.format('HH:mm, DD-MM-YYYY')}</b>
+                     <b>${bucket.startDateTime.utc().format('HH:mm, DD-MM-YYYY')}</b>
                   </p>
                   <p style="white-space: nowrap;" class="mt-3">
                      <i style="color: ${graphLines[i].graphLineColor}" class="bi bi-circle-fill"></i>
@@ -931,11 +931,15 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
             title: 'Temperature (℃) and Relative Humidity (%)',
          },
          hAxis: {
-            title: `Datetime (${dateFrom.format('DD-MM-YYYY, HH:mm')} - ${dateTo.format('DD-MM-YYYY, HH:mm')})`,
+            title: `Datetime (${dateFrom.utc().format('DD-MM-YYYY, HH:mm')} - ${dateTo.utc().format('DD-MM-YYYY, HH:mm')})`,
             minorGridlines: { // will hide non month vertical gridlines
                color: 'transparent'
             },
-            format: "dd. MMM"
+            format: "dd. MMM",
+            viewWindow: {  // this will force the range of the graph, otherwise the range can be smaller because only non-undefined points are drawn
+               min: dateFrom.utc().toDate(),
+               max: dateTo.utc().toDate()
+            }
          },
          tooltip: {isHtml: true},
          colors: colors,  // hexadecimal color values for every line in order
@@ -1062,11 +1066,11 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
    }
 
 
-   function ExportCSV(filename, sensorReadings) {
+   function exportCSV(filename, sensorReadings) {
       let data = [];
       data.push(['Timestamp', 'Temperature (*C)', 'Relative Humidity (%)'])
       for (let sensorReading of sensorReadings) {
-         let row = [sensorReading.date.format("DD/MM/YYYY HH:mm:ss"), sensorReading.temp, sensorReading.relHum];
+         let row = [sensorReading.date.utc().format("DD/MM/YYYY HH:mm:ss"), sensorReading.temp, sensorReading.relHum];
          data.push(row)
       }
       let csvContent = "data:text/csv;charset=utf-8," + data.map(e => e.join(";")).join('\n');
@@ -1075,7 +1079,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
       exportBase(encodedUri, filename)
    }
 
-   Math.seed = function(s) {
+   function getSeededHexColorRandomizer(s) {
       // https://stackoverflow.com/questions/521295/seeding-the-random-number-generator-in-javascript
       let mask = 0xffffffff;
       let m_w  = (123456789 + s) & mask;
@@ -1158,15 +1162,15 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
       document.querySelector('#typeAbsolute').onclick = (e) => handleRadioClick(e);
       document.querySelector('#typeRelative').onclick = (e) => handleRadioClick(e);
       document.querySelector('#saveImgBtn').onclick = () => saveChartImg(
-         indexModel.dateFrom.format("DD-MM-YYYY"),
-         indexModel.dateTo.format("DD-MM-YYYY")
+         indexModel.dateFrom.utc().format("DD-MM-YYYY"),
+         indexModel.dateTo.utc().format("DD-MM-YYYY")
       );
-      let getRandom = Math.seed(9);
+      let getRandom = getSeededHexColorRandomizer(9);
       document.querySelectorAll('.colorSelectTemp').forEach(x => x.value = randomHexColor(getRandom));
       document.querySelectorAll('.colorSelectHum').forEach(x => x.value = randomHexColor(getRandom));
       document.querySelectorAll('.csvFile').forEach(x => x.onclick = () => triggerPortableSensorDataCsvUpload(x));
       document.querySelectorAll('.js-export-btn').forEach(x => x.onclick = () =>
-         ExportCSV(
+         exportCSV(
             x.getAttribute("data-filename"),
             indexModel.sensorReadingsMap.find(y => y.key === x.getAttribute("data-sensorId")).value
          )
