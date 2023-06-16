@@ -9,12 +9,12 @@ use App\domain\Sensor;
 use App\domain\SensorReading;
 use App\dtoApi\SensorReadingUpload\SensorReadingUpload;
 use App\dtoApi\SensorReadingUpload\SensorReadingUploadReadings;
-use App\util\Base64;
 use App\util\Config;
 use App\util\Helper;
 use DateTimeImmutable;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Ramsey\Uuid\Uuid;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
@@ -40,7 +40,7 @@ class SensorReadingController
          $response->getBody()->write('Error! Sensor with serial:' . $serial . ' does not exist!');
          return $response->withStatus(400);
       }
-      $id = Base64::GenerateId();
+      $id = Uuid::uuid4()->toString();
       $reading = new SensorReading(
          id: $id,
          sensorId: $sensor->id,
@@ -87,7 +87,7 @@ class SensorReadingController
 
       $newSensorReadings = array_map(function ($row) use ($sensor) {
          return new SensorReading(
-            id: Base64::GenerateId(),
+            id: Uuid::uuid4()->toString(),
             sensorId: $sensor->id,
             temp: $row->temp,
             relHum: $row->relHum,

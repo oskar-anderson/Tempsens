@@ -11,7 +11,6 @@ use App\db\migrations\V2\SensorReadingV2;
 use App\db\migrations\V2\SensorV2;
 use App\domain\Sensor;
 use App\domain\SensorReading;
-use App\util\Base64;
 use App\util\Config;
 use App\Util\Console;
 use DateTimeImmutable;

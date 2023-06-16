@@ -33,6 +33,7 @@ Possible errors:
 * [Slim](https://github.com/slimphp/Slim) - PHP micro framework that helps you quickly write simple yet powerful web applications and APIs.
 * [Symfony/Serializer and PropertyAccess](https://symfony.com/doc/current/components/serializer.html) - hydrated JSON deserialization to class instance
 * [Illuminate/Support/Collection](https://laravel.com/api/8.x/Illuminate/Support/Collection.html) - Convenient array methods
+* [Ramsey/Uuid](https://uuid.ramsey.dev/en/stable/rfc4122/version4.html) - database table row UUID ID generator
 
 ### Client side
 * [Reset CSS](https://meyerweb.com/eric/tools/css/reset) - Cross browser style inconsistency remover

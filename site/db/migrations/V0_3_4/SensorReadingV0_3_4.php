@@ -3,7 +3,7 @@
 namespace App\db\migrations\V0_3_4;
 
 use App\db\migrations\V1_0_0\SensorReadingV1_0_0;
-use App\util\Base64;
+use Ramsey\Uuid\Uuid;
 
 class SensorReadingV0_3_4 {
 
@@ -33,7 +33,7 @@ class SensorReadingV0_3_4 {
     {
       // $sensorId = SensorV0_3_4::GetSensorBySerial($sensors, $this->passkey);
        return new SensorReadingV1_0_0(
-         id: Base64::GenerateId(),
+         id: Uuid::uuid4()->toString(),
          sensorId: $sensorId,
          temp: $this->temp,
          relHum: $this->relHum,

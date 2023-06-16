@@ -4,7 +4,7 @@
 namespace App\webApp\view\partial;
 
 use App\dtoWeb\Sensor;
-use App\util\Base64;
+use Ramsey\Uuid\Uuid;
 
 class SensorCrudPartialCreateEdit
 {
@@ -63,7 +63,7 @@ class SensorCrudPartialCreateEdit
 
 
       $idAppend = 'newSensor';
-      $id = Base64::GenerateId();
+      $id = Uuid::uuid4()->toString();
       $name = '';
       $serial = '';
       $model = '';

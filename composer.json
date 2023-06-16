@@ -14,7 +14,8 @@
         "slim/psr7": "^1.5",
         "symfony/serializer": "^6.0.19",
         "symfony/property-access": "6.0.19",
-        "illuminate/support": "9.52.4"
+        "illuminate/support": "9.52.4",
+        "ramsey/uuid": "^4.7"
     },
     "autoload": {
         "psr-4": {
