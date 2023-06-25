@@ -247,7 +247,7 @@ $sensorReadingsBySensorId = $model->sensorReadingsBySensorId;
                      $col = 'black';
                   }
                   if ($sensor->isPortable) {
-                     $dateRecorded = 'Portable sensor';
+                     $dateRecorded = 'Portable sensor @' . $lastDate;
                      $col = 'black';
                   }
                }
