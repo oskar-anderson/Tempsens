@@ -172,6 +172,7 @@ Notes:
 ### 1.1.2
 
 Notes:
-* Changed database ID to UUIDv4
+* Changed database table ID to UUIDv4 and time fields to ISO8601
 * Switched all times to UTC timezone to remove false alert due to daylight savings
-* Added support for missing readings alerts to serverside as well as clientside in the drawn chart 
+* Added support for missing readings alerts
+
