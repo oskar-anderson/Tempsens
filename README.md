@@ -2,7 +2,7 @@
 
 Sirowa warehouse sensor temperature and humidity data visualization logserver.
 
-![Preview image](_documents/images/version_1.1.1.png)
+![Preview image](_documents/images/version_1.1.2.png)
 
 ## Installation
 ### Local
@@ -170,6 +170,7 @@ Notes:
 * Refactored project structure
 
 ### 1.1.2
+[Preview image](_documents/images/version_1.1.2.png)
 
 Notes:
 * Changed database table ID to UUIDv4 and time fields to ISO8601
