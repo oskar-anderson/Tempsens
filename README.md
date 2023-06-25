@@ -168,3 +168,10 @@ Notes:
 * Reduced memory usage
 * Removed cache file
 * Refactored project structure
+
+### 1.1.2
+
+Notes:
+* Changed database ID to UUIDv4
+* Switched all times to UTC timezone to remove false alert due to daylight savings
+* Added support for missing readings alerts to serverside as well as clientside in the drawn chart 
